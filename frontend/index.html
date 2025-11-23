@@ -10,7 +10,27 @@
 </head>
 
 <body>
-    <h1>Hello, world!</h1>
+    <!-- Prueba de conexion con la api-->
+    <div class="container mt-5">
+        <h1 class="mb-4">Prueba de API Neuro Sound</h1>
+        <button id="testApiBtn" class="btn btn-primary">Prueba de conexion</button>
+        <div id="apiResponse" class="mt-4"></div>
+    </div>
+
+    <script>
+        document.getElementById('testApiBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/test');
+                const data = await response.json();
+                document.getElementById('apiResponse').innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('apiResponse').innerText = 'Error de conexion a la API: ' + error.message;
+            }
+        });
+    </script>
+
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
