@@ -22,4 +22,3 @@ export const verifyPassword = (plainPassword, hashedPassword) => {
     return bcrypt.compareSync(plainPassword, hashedPassword);
 };
 
-export { hashPassword, verifyPassword };
