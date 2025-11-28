@@ -1,21 +1,17 @@
 /* Configuracion principa de express */
 import express from 'express';
-import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import connectDB from './config/database.js';
-
-/* Conexion a la base de datos */
-connectDB();
+import cors from 'cors';
 
 const app = express();
 
 /* Middlewares */
-app.use(cors());
-dotenv.config();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(cookieParser());
 
-/* Ruta para enviar un mensaje de prueba */
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API de NeuroSound funcionando correctamente' });
-});
+dotenv.config();
 
 export default app;
