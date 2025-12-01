@@ -1,0 +1,21 @@
+body {
+    background: linear-gradient(to right, #4c92cd, #7f72a6,#7960a2);
+}
+
+.Login{
+    background-color: rgba(255, 255, 255, 0.5); /* blanco con 50% de opacidad */
+    border-radius: 10%;
+    padding: 10%;
+}
+
+.logocontainer {
+    display: flex;             /* Pone el logo y el texto en línea */
+    align-items: center;        /* Centra verticalmente */
+    gap: 10px;                  /* Espacio entre imagen y texto */
+}
+
+.logocontainer img {
+    width: 100px;                /* Ajusta el tamaño del logo */
+    height: auto;               /* Mantiene proporción */
+}
+

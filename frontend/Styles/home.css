@@ -1,0 +1,105 @@
+.navbar{
+    background-color: #494949;
+    border-radius: 10px;
+}
+.row{
+    background-color: black;
+}
+.header{
+    background-color: #5e5e5e;
+    color: white;
+}
+
+.space{
+    background-color: #5e5e5e;
+    padding-top: 1%;
+    padding-bottom: 1%;
+    padding-right: 0%;
+}
+.rightpanel{
+    background-color: #5e5e5e;
+}
+.content{
+    background-color: #ffde5d;
+    padding: 1%;
+    border-radius: 10px;
+}
+
+.charts{
+    background-color: #42f468;
+    border-radius: 10px;
+    padding: 1%;
+}
+
+.playback{
+    background-color: #d142f4;
+    border-radius: 10px;
+    padding: 1%;
+
+}
+
+.h-70 {
+    flex: 6;
+}
+.h-30 {
+    flex: 4;
+}
+
+/* Asegura centrado total */
+.sidebar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Quita botones pegados, hace área clickeable */
+.sidebar-item {
+    padding: 10px 0;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    border-radius: 10px;
+}
+
+/* Hover suave */
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+/* Texto e iconos blancos (si quieres) */
+.sidebar-item i,
+.sidebar-item span {
+    color: white;
+}
+
+/* Sidebar color (si quieres uno oscuro) */
+.navbar {
+    background-color: #3f3f3f; /* opcional */
+}
+
+.album-cover {
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.track-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.playback {
+    background-color: #d142f4;
+    border-radius: 10px;
+}
+
+.playbackcontrols i {
+    cursor: pointer;
+    transition: 0.2s;
+    color: #fff;
+}
+
+
+
+
