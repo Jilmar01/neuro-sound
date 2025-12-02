@@ -1,30 +1,12 @@
-import express from "express";
-import cors from "cors";
-import connectDB from "./config/database.js";
-import userRoutes from "./routes/user.routes.js";
-import authRoutes from "./routes/auth.routes.js"; // si ya lo tienes
+/* Arranque del servidor */
+import app from './app.js';
+import connectDB from './config/database.js';
 
-const app = express();
-
-// Conectar BD
+/* Conexion a la base de datos */
 connectDB();
 
-// CORS CORRECTO para cookies
-app.use(
-    cors({
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000"], 
-        credentials: true
-    })
-);
+const PORT = process.env.PORT || 500;
 
-app.use(express.json());
-
-// Rutas
-app.use("/api/users", userRoutes);
-app.use("/api/auth", authRoutes); // login/logout
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor corriendo http://localhost:${PORT}`);
 });
