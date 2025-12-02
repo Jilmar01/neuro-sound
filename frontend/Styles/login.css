@@ -1,0 +1,67 @@
+body {
+    background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.Login {
+    background-color: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(6px); /* efecto glass */
+    border-radius: 15px;
+    padding: 40px 30px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.logocontainer {
+    display: flex;
+    flex-direction: column; /* logo arriba, texto abajo */
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.logocontainer img {
+    width: 120px;
+    height: auto;
+    object-fit: contain;
+}
+
+.logocontainer h1 {
+    margin-top: 10px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+/* Inputs */
+.input-group .form-control {
+    background-color: rgba(255,255,255,0.8);
+    border: none;
+    padding: 10px;
+}
+
+.input-group-text {
+    background-color: #ffffffb7;
+    border: none;
+}
+
+/* Botón */
+button.btn {
+    padding: 10px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+/* Links */
+p a {
+    font-weight: bold;
+    text-decoration: none;
+}
+
+p a:hover {
+    text-decoration: underline;
+}
