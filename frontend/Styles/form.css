@@ -1,0 +1,155 @@
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+
+    /* Degradado optimizado */
+    background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+    background-attachment: fixed;   /* Mantiene el fondo estable */
+    background-size: cover;         /* Evita duplicación */
+    background-repeat: no-repeat;
+
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+
+.container {
+    width: 90%;
+    max-width: 600px;
+    margin: 40px auto;
+    background-color: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(6px); /* efecto glass */
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.question {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border: none;
+    background: #4b79a1;
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #35516a;
+}
+
+/* Botón "Volver" */
+.back-btn {
+    width: auto;
+    padding: 8px 16px;
+    background: #ffffff;
+    color: black;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    position: absolute;
+    top: 15px;
+    left: 15px;
+}
+
+.back-btn:hover {
+    background: #b3b3b3;
+}
+
+.section {
+    display: none;
+}
+
+.active {
+    display: block;
+}
+
+/* Estilo glass general para inputs, selects y textarea */
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    font-size: 15px;
+    outline: none;
+    transition: 0.25s ease;
+    margin-top: 6px;
+}
+
+/* Hover */
+input:hover, select:hover, textarea:hover {
+    background: rgba(255,255,255,0.45);
+}
+
+/* Focus (cuando el usuario escribe) */
+input:focus, select:focus, textarea:focus {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: 0 0 8px rgba(255,255,255,0.6);
+}
+
+/* Textarea tamaño */
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Multi-select estilo (para listas largas) */
+select[multiple] {
+    height: 140px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.35);
+    padding: 10px;
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.25s ease;
+}
+
+/* Hover */
+.checkbox-group label:hover {
+    background: rgba(255,255,255,0.45);
+}
+
+/* Checkbox redondo estilo moderno */
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4c92cd; /* Color azul violeta */
+    cursor: pointer;
+}

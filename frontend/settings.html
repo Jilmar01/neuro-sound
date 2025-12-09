@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - Neuro-Sound</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* ================================
+           ESTILOS BASE (Mismos del Home)
+        ================================= */
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+            background-size: cover; background-attachment: fixed;
+            margin: 0; padding: 0; font-family: Arial, sans-serif;
+            overflow: hidden; 
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 15px; color: white;
+        }
+
+        /* Sidebar & Layout */
+        .sidebar-container {
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+        }
+
+        .sidebar-item {
+            padding: 15px 0; cursor: pointer; border-radius: 10px;
+            transition: 0.2s; width: 80%; text-decoration: none; /* Quitamos subrayado de links */
+            display: flex; flex-direction: column; align-items: center; color: rgba(255,255,255,0.7);
+        }
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: rgba(255, 255, 255, 0.25); transform: scale(1.05); color: white; 
+        }
+
+        .header {
+            color: white; padding: 15px 25px; border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25); margin: 15px;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+        /* Mobile specific */
+        .mobile-navbar {
+            height: 70px; background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255,255,255,0.2); z-index: 1050;
+        }
+        .nav-link-mobile { color: rgba(255,255,255,0.7); text-decoration: none; }
+        .nav-link-mobile.active { color: white; }
+
+        @media (max-width: 768px) {
+            .space { padding-bottom: 100px !important; }
+            .header { margin: 10px; padding: 10px; }
+        }
+
+        /* ================================
+           ESTILOS ESPECÍFICOS SETTINGS
+        ================================= */
+        .form-control-glass {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; border-radius: 10px;
+        }
+        .form-control-glass:focus {
+            background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.5);
+            color: white; box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); outline: none;
+        }
+        .btn-spotify {
+            background-color: #1DB954; color: white; border: none; border-radius: 50px;
+            padding: 10px 25px; font-weight: bold; transition: 0.3s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .btn-spotify:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(29, 185, 84, 0.4); }
+        .btn-spotify.connected { background-color: transparent; border: 2px solid #1DB954; color: #1DB954; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid h-100 p-0">
+        <div class="row h-100 g-0">
+            
+            <div class="col-md-1 d-none d-md-block h-100">
+                <div class="sidebar-container">
+                    <div class="mb-5 mt-3"><i class="bi bi-vinyl fs-1 text-white"></i></div>
+                    <div class="d-flex flex-column gap-3 w-100 align-items-center">
+                        <a href="home.html" class="sidebar-item">
+                            <i class="bi bi-house-door fs-4"></i><span class="small mt-1">Home</span>
+                        </a>
+                        <a href="#" class="sidebar-item">
+                            <i class="bi bi-music-note-list fs-4"></i><span class="small mt-1">Playlists</span>
+                        </a>
+                        <a href="#" class="sidebar-item active mt-auto mb-4">
+                            <i class="bi bi-gear-fill fs-4"></i><span class="small mt-1">Ajustes</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-11 d-flex flex-column h-100">
+                
+                <div class="flex-shrink-0">
+                    <div class="header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <a href="home.html" class="d-md-none text-white me-3"><i class="bi bi-arrow-left fs-3"></i></a>
+                            <h1 class="mb-0 fs-5 fw-bold text-white">Configuración de Cuenta</h1>
+                        </div>
+                        <div class="profile text-white"><i class="bi bi-person-circle fs-2"></i></div>
+                    </div>
+                </div>
+
+                <div class="row flex-grow-1 m-0 overflow-hidden">
+                    <div class="col-12 h-100 p-0">
+                        <div class="space h-100 p-3 d-flex flex-column">
+                            
+                            <div class="content-area glass-panel p-4 h-100 overflow-auto">
+                                
+                                <div class="row g-4">
+                                    <div class="col-12 col-lg-7">
+                                        <div class="glass-panel p-4 h-100" style="background: rgba(255,255,255,0.05);">
+                                            <h5 class="mb-4 border-bottom border-light border-opacity-25 pb-2">
+                                                <i class="bi bi-person-badge me-2"></i>Información Personal
+                                            </h5>
+                                            <div class="row align-items-center mb-4">
+                                                <div class="col-auto">
+                                                    <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="bi bi-person-fill fs-1"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <h4 class="mb-0">Usuario Demo</h4>
+                                                    <span class="text-white-50 small">Miembro desde 2025</span>
+                                                </div>
+                                            </div>
+                                            <form class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="small text-white-50">Usuario</label>
+                                                    <input type="text" class="form-control form-control-glass" value="Usuario Demo">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="small text-white-50">Email</label>
+                                                    <input type="email" class="form-control form-control-glass" value="hola@neuro-sound.com">
+                                                </div>
+                                                <div class="col-12 mt-4 text-end">
+                                                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-primary">Guardar</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-lg-5">
+                                        <div class="glass-panel p-4 h-100" style="background: rgba(255,255,255,0.05);">
+                                            <h5 class="mb-4 border-bottom border-light border-opacity-25 pb-2">
+                                                <i class="bi bi-link-45deg me-2"></i>Integraciones
+                                            </h5>
+                                            <div class="p-3 rounded mb-3" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);">
+                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <i class="bi bi-spotify text-success" style="font-size: 2.5rem;"></i>
+                                                        <div>
+                                                            <h6 class="m-0 fw-bold">Spotify</h6>
+                                                            <span class="small text-white-50" id="spotify-status-text">No conectado</span>
+                                                        </div>
+                                                    </div>
+                                                    <div id="status-indicator" style="width: 10px; height: 10px; background-color: #dc3545; border-radius: 50%; box-shadow: 0 0 5px #dc3545;"></div>
+                                                </div>
+                                                <button class="btn btn-spotify w-100 justify-content-center" id="btn-spotify-connect" onclick="toggleSpotify()">
+                                                    <i class="bi bi-spotify"></i><span>Conectar Spotify</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar fixed-bottom mobile-navbar d-md-none justify-content-around">
+        <a href="home.html" class="nav-link-mobile text-center">
+            <i class="bi bi-house-door fs-4"></i><div style="font-size: 0.7rem;">Home</div>
+        </a>
+        <div class="nav-link-mobile text-center">
+            <i class="bi bi-bar-chart fs-4 opacity-50"></i><div style="font-size: 0.7rem;">Charts</div>
+        </div>
+        <div class="nav-link-mobile text-center">
+            <i class="bi bi-music-note-list fs-4 opacity-50"></i><div style="font-size: 0.7rem;">Playlist</div>
+        </div>
+        <a href="#" class="nav-link-mobile text-center active">
+            <i class="bi bi-person-fill fs-4 text-info"></i><div style="font-size: 0.7rem;">Perfil</div>
+        </a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 1. Capturar token desde la URL (si viene de la autorización)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if(token) {
+        localStorage.setItem('spotifyToken', token); // Guardar token
+        window.history.replaceState({}, document.title, '/settings.html'); // Limpiar URL
+    }
+
+    // 2. Verificar si hay token guardado
+    const savedToken = localStorage.getItem('spotifyToken');
+    if(savedToken) {
+        // Actualizar UI a "conectado"
+        const btn = document.getElementById('btn-spotify-connect');
+        const statusText = document.getElementById('spotify-status-text');
+        const indicator = document.getElementById('status-indicator');
+        const icon = btn.querySelector('i');
+        const span = btn.querySelector('span');
+
+        btn.classList.add('connected');
+        span.innerText = "Desconectar";
+        statusText.innerText = "Conectado";
+        indicator.style.backgroundColor = "#198754";
+        indicator.style.boxShadow = "0 0 5px #198754";
+        btn.style.backgroundColor = "transparent";
+        btn.style.color = "#1DB954";
+        icon.className = "bi bi-check-circle-fill";
+    }
+
+    // 3. Función para toggle (conectar / desconectar)
+    function toggleSpotify() {
+        const btn = document.getElementById('btn-spotify-connect');
+        if(btn.classList.contains('connected')) {
+            // Desconectar
+            localStorage.removeItem('spotifyToken'); // Borrar token
+            window.location.reload(); // Refresca para actualizar UI
+        } else {
+            // Redirigir a login de Spotify
+            window.location.href = "http://localhost:5000/api/spotify/login";
+        }
+    }
+</script>
+
+</body>
+</html>

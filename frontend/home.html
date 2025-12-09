@@ -3,106 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Responsive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="Styles/home.css">
-    <title>Home</title>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+
+    <style>
+        /* CSS INCRUSTADO POR SI NO CARGA EL ARCHIVO EXTERNO */
+        /* (Solo para asegurar que se vea bien en esta vista previa) */
+        body { height: 100vh; background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2); background-size: cover; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 15px; color: white; }
+        .sidebar-container { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px); border-right: 1px solid rgba(255, 255, 255, 0.2); display: flex; flex-direction: column; align-items: center; padding-top: 20px; height: 100%; }
+        .sidebar-item { padding: 15px 0; cursor: pointer; border-radius: 10px; transition: 0.2s; width: 80%; display: flex; flex-direction: column; align-items: center; }
+        .sidebar-item:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
+        .header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 15px; padding: 15px 25px; margin: 15px; }
+        .searchfield input { background: rgba(255, 255, 255, 0.2); border: none; color: white; border-radius: 20px; }
+        .mobile-navbar { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.2); z-index: 1050; }
+        .offcanvas-glass { background: linear-gradient(135deg, #5b537a, #3e7cae); color: white; backdrop-filter: blur(10px); }
+        .mobile-player { position: fixed; bottom: 75px; left: 10px; right: 10px; height: 65px; z-index: 1040; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+    </style>
+    
 </head>
 <body>
-    <div class="container-fluid h-100">
-        <div class="row h-100">
-            <div class="navbar col-1 min-vh-100 d-flex flex-column align-items-center py-3 sidebar ">
-                <ul class="list-unstyled d-flex flex-column gap-4 w-100 align-items-center">
 
-                    <li class="sidebar-item text-center w-100">
-                        <i class="bi bi-house-door-fill fs-3"></i><br>
-                        <span class="small">Home</span>
-                    </li>
+    <div class="container-fluid h-100 p-0">
+        <div class="row h-100 g-0">
+            
+            <div class="col-md-1 d-none d-md-block h-100">
+                <div class="sidebar-container">
+                    <div class="mb-5 mt-3"><i class="bi bi-vinyl fs-1 text-white"></i></div>
+                    <ul class="list-unstyled d-flex flex-column gap-3 w-100 align-items-center">
+                        
+                        <li class="sidebar-item">
+                            <i class="bi bi-house-door-fill fs-4 text-white"></i>
+                            <span class="small mt-1 text-white">Home</span>
+                        </li>
+                        
+                        <li class="sidebar-item">
+                            <i class="bi bi-music-note-list fs-4 text-white"></i>
+                            <span class="small mt-1 text-white">Playlists</span>
+                        </li>
 
-                    <li class="sidebar-item text-center w-100">
-                        <i class="bi bi-diagram-3-fill fs-3"></i><br>
-                        <span class="small">Playlists</span>
-                    </li>
+                        <li class="sidebar-item">
+                            <a href="settings.html" style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; width: 100%;">
+                                <i class="bi bi-gear-fill fs-4"></i>
+                                <span class="small mt-1">Ajustes</span>
+                            </a>
+                        </li>
 
-                    <li class="sidebar-item text-center w-100">
-                        <i class="bi bi-box-arrow-right fs-3"></i><br>
-                        <span class="small">Logout</span>
-                    </li>
-
-                </ul>
+                        <li class="sidebar-item mt-auto mb-4">
+                            <a href="login.html" style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; width: 100%;">
+                                <i class="bi bi-box-arrow-left fs-4"></i>
+                                <span class="small mt-1">Logout</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="col-11 d-flex flex-column p-0">
-                <div class="header d-flex align-items-center justify-content-between col-12 p-3">
-                    
-                    <!-- Logo -->
-                    <div class="logo d-flex align-items-center">
-                        <img src="img/logo.png" alt="logo" style="width:50px; height:50px; object-fit:cover;">
-                        <h1 class="ms-2 mb-0 fs-4">Neuro-Sound</h1>
+            <div class="col-12 col-md-11 d-flex flex-column h-100">
+                
+                <div class="flex-shrink-0">
+                    <div class="header d-flex align-items-center justify-content-between">
+                        <div class="logo d-flex align-items-center">
+                            <i class="bi bi-soundwave fs-2 text-white d-md-none me-2"></i> 
+                            <h1 class="mb-0 fs-5 fw-bold text-white d-none d-sm-block">Neuro-Sound</h1>
+                        </div>
+                        <div class="searchfield position-relative flex-grow-1 mx-3" style="max-width: 400px;">
+                            <input id="spotifySearchInput"type="text" class="form-control ps-5 py-2" placeholder="Buscar...">
+                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-white"></i>
+                        </div>
+                        
+                        <div class="profile text-white">
+                            <a href="settings.html" class="text-white">
+                                <i class="bi bi-person-circle fs-2"></i>
+                            </a>
+                        </div>
                     </div>
-
-                    <!-- Campo de búsqueda con icono -->
-                    <div class="searchfield position-relative" style="width: 300px;">
-                        <input type="text" class="form-control ps-5" placeholder="Escribe algo para buscar">
-                        <i class="bi bi-search position-absolute top-50 translate-middle-y ms-2"></i>
-                    </div>
-
-                    <!-- Perfil -->
-                    <div class="profile">
-                        <i class="bi bi-person-fill fs-3"></i>
-                    </div>
-
                 </div>
 
-                <div class="row flex-grow-1 m-0">
-                                        <!-- Content -->
-                    <div class="space col-9 h-100 overflow-auto">
-                        <div class="content h-100 overflow-auto">
-                            conenido
-                        </div>
-                    </div>
-
-                    <!-- LeftPanel -->
-                    <div class="rightpanel col-3 h-100 overflow-auto d-flex flex-column p-3 gap-3">
-                        <div class="charts h-70">
-                            charts
-                        </div>
-                        <div class="playback h-30 d-flex flex-column p-2">
-                            <!-- Sección superior: portada + info -->
-                            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="row flex-grow-1 m-0 overflow-hidden">
+                    
+                    <div class="col-12 col-md-9 h-100 p-0">
+                        <div class="space h-100 p-3 d-flex flex-column" style="padding-bottom: 100px;"> <div class="content-area glass-panel p-4 h-100 overflow-auto">
+                                <h2 class="mb-3">Explorar</h2>
                                 
-                                <!-- Imagen -->
-                                
+                                <div class="row g-3" id="spotifyPlaylistsContainer">
 
-                                <!-- Info -->
-                                <div class="track-info">
-                                    <h1 class="track-title m-0">Title</h1>
-                                    <p class="m-0">Artist</p>
-                                    <p class="m-0 text-muted">Album</p>
+                                </div>
+                                <div id="spotifySearchResults" class="mt-4">
+
                                 </div>
                             </div>
-
-                            <!-- Controles -->
-                            <div class="playbackcontrols mb-3 d-flex justify-content-center align-items-center gap-3">
-                                <i class="bi bi-skip-backward fs-3"></i>
-                                <i class="bi bi-play fs-3"></i>
-                                <i class="bi bi-skip-forward fs-3"></i>
-                            </div>
-
-                            <!-- Barra de progreso -->
-                            <div class="progressbar d-flex align-items-center gap-2 w-100">
-                                <p class="actualtime m-0">0:00</p>
-
-                                <input type="range" class="form-range flex-grow-1" id="customRange1" min="0" max="100" step="1" value="0">
-
-                                <p class="endtime m-0">3:26</p>
-                            </div>
                         </div>
                     </div>
+                    <div class="col-md-3 d-none d-md-flex flex-column gap-3 p-3 pt-0 h-100">
+                        <div class="glass-panel flex-grow-1 p-3 overflow-auto">
+                            <h5>Estadísticas</h5>
+                            <div class="d-flex align-items-center justify-content-center h-50 border border-light rounded opacity-50 mt-3">Gráfico</div>
+                        </div>
+                        <div class="glass-panel p-3">
+                        <!-- Desktop panel -->
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <img id="trackCoverDesktop" src="" style="width:50px; height:50px; border-radius:8px;" />
+                            <div>
+                                <h6 id="trackNameDesktop" class="m-0">Track Name</h6>
+                                <small id="trackArtistDesktop" class="opacity-75">Artist</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-center gap-3 fs-4 my-2">
+                            <i id="btnPrevDesktop" class="bi bi-skip-backward-fill"></i>
+                            <i id="btnPlayDesktop" class="bi bi-play-circle-fill"></i>
+                            <i id="btnNextDesktop" class="bi bi-skip-forward-fill"></i>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress" id="progressContainerDesktop" style="height: 6px; background: rgba(255,255,255,0.2); cursor: pointer;">
+                                <div class="progress-bar" id="progressBarDesktop" style="width:0%; background: rgba(255,255,255,0.8); transition: width 0.1s linear;"></div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2 small opacity-75">
+                                <span id="currentTimeDesktop">0:00</span>
+                                <span id="totalTimeDesktop">0:00</span>
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
-    <script src="js/animations.js"></script>
+
+    <div class="mobile-player glass-panel d-md-none shadow-lg">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:40px; height:40px; background:#333; border-radius:5px;"></div> <div class="lh-1">
+                <p class="m-0 fw-bold small">Die For You</p>
+                <small class="m-0 text-white-50" style="font-size: 0.7rem;">The Weeknd</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3 fs-3">
+            <i class="bi bi-play-fill text-white"></i>
+            <i class="bi bi-skip-forward-fill text-white"></i>
+        </div>
+        <div style="position:absolute; bottom:0; left:15px; right:15px; height:2px; background:rgba(255,255,255,0.3);">
+            <div style="width:40%; height:100%; background:white;"></div>
+        </div>
+    </div>
+
+    <nav class="navbar fixed-bottom mobile-navbar d-md-none justify-content-around">
+        <div class="text-center text-white">
+            <i class="bi bi-house-door-fill fs-4"></i>
+            <div style="font-size: 0.7rem;">Home</div>
+        </div>
+        
+        <div class="text-center text-white" data-bs-toggle="offcanvas" data-bs-target="#mobileCharts">
+            <i class="bi bi-bar-chart-fill fs-4 text-info"></i>
+            <div style="font-size: 0.7rem;">Charts</div>
+        </div>
+
+        <div class="text-center text-white">
+            <i class="bi bi-music-note-list fs-4"></i>
+            <div style="font-size: 0.7rem;">Playlist</div>
+        </div>
+        
+        <a href="settings.html" class="text-center text-white text-decoration-none">
+            <i class="bi bi-person fs-4"></i>
+            <div style="font-size: 0.7rem;">Perfil</div>
+        </a>
+    </nav>
+
+    <div class="offcanvas offcanvas-bottom offcanvas-glass h-75" tabindex="-1" id="mobileCharts">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">Estadísticas y Datos</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="p-3 bg-white bg-opacity-10 rounded mb-3">
+                <h6>Reproducciones Semanales</h6>
+                <div style="height: 150px; border-bottom: 2px solid white; display:flex; align-items:end; gap:5px;">
+                    <div style="width:20%; height:40%; background:rgba(255,255,255,0.5)"></div>
+                    <div style="width:20%; height:70%; background:rgba(255,255,255,0.8)"></div>
+                    <div style="width:20%; height:50%; background:rgba(255,255,255,0.5)"></div>
+                </div>
+            </div>
+            <p>Aquí va todo el contenido de los gráficos.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+window.onSpotifyWebPlaybackSDKReady = () => {
+    const token = localStorage.getItem('spotifyToken');
+    if (!token) return console.error('No Spotify token found');
+
+    const player = new Spotify.Player({
+        name: 'Neuro-Sound Player',
+        getOAuthToken: cb => { cb(token); },
+    });
+
+    let progressInterval = null;
+
+    function formatTime(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds.toString().padStart(2,'0')}`;
+    }
+
+    function updateProgressUI(state) {
+        if (!state) return;
+        const track = state.track_window.current_track;
+        const progressPercent = (state.position / state.duration) * 100;
+        const formattedCurrent = formatTime(state.position);
+
+        // Desktop
+        const progressDesktop = document.getElementById('progressBarDesktop');
+        const currentDesktop = document.getElementById('currentTimeDesktop');
+        if (progressDesktop) progressDesktop.style.width = progressPercent + '%';
+        if (currentDesktop) currentDesktop.innerText = formattedCurrent;
+
+        // Mobile
+        const progressMobile = document.getElementById('progressBarMobile');
+        if (progressMobile) progressMobile.style.width = progressPercent + '%';
+    }
+
+    player.addListener('player_state_changed', state => {
+        if (!state) return;
+
+        // Actualiza UI principal
+        updateProgressUI(state);
+
+        // Actualiza info del track si cambió
+        const track = state.track_window.current_track;
+        const coverDesktop = document.getElementById('trackCoverDesktop');
+        const nameDesktop = document.getElementById('trackNameDesktop');
+        const artistDesktop = document.getElementById('trackArtistDesktop');
+        const totalDesktop = document.getElementById('totalTimeDesktop');
+        const coverMobile = document.getElementById('trackCover');
+        const nameMobile = document.getElementById('trackName');
+        const artistMobile = document.getElementById('trackArtist');
+
+        if (coverDesktop) coverDesktop.src = track.album.images[0].url;
+        if (nameDesktop) nameDesktop.innerText = track.name;
+        if (artistDesktop) artistDesktop.innerText = track.artists.map(a=>a.name).join(', ');
+        if (totalDesktop) totalDesktop.innerText = formatTime(state.duration);
+
+        if (coverMobile) coverMobile.src = track.album.images[0].url;
+        if (nameMobile) nameMobile.innerText = track.name;
+        if (artistMobile) artistMobile.innerText = track.artists.map(a=>a.name).join(', ');
+    });
+
+    // Controles
+    ['btnPlayDesktop','btnNextDesktop','btnPrevDesktop','btnPlay','btnNext','btnPrev'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        if (id.includes('Play')) btn.addEventListener('click', ()=>player.togglePlay());
+        if (id.includes('Next')) btn.addEventListener('click', ()=>player.nextTrack());
+        if (id.includes('Prev')) btn.addEventListener('click', ()=>player.previousTrack());
+    });
+
+    player.connect();
+
+    // Interval para actualizar barra continuamente
+    setInterval(async () => {
+        const state = await player.getCurrentState();
+        if (!state) return;
+        updateProgressUI(state);
+    }, 500); // Cada 0.5s
+};
+</script>
+<script>
+const searchInput = document.getElementById('spotifySearchInput');
+const resultsContainer = document.getElementById('spotifySearchResults');
+const token = localStorage.getItem('spotifyToken');
+
+if (!token) console.error('No Spotify token found');
+
+// Función para buscar en Spotify
+async function searchSpotify(query) {
+    if (!query) return;
+    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=8`;
+    const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json();
+    return data;
+}
+
+// Mostrar resultados en el contenido
+function displayResults(data) {
+    if (!data || !data.tracks) return;
+    resultsContainer.innerHTML = ''; // Limpiar resultados anteriores
+
+    data.tracks.items.forEach(track => {
+        const trackDiv = document.createElement('div');
+        trackDiv.className = 'd-flex align-items-center mb-2 p-2 rounded hover-glass';
+        trackDiv.style.cursor = 'pointer';
+        trackDiv.innerHTML = `
+            <img src="${track.album.images[2]?.url || ''}" width="50" height="50" style="border-radius:5px; margin-right:10px;">
+            <div>
+                <strong>${track.name}</strong><br>
+                <small>${track.artists.map(a=>a.name).join(', ')}</small>
+            </div>
+        `;
+        trackDiv.addEventListener('click', () => {
+            // Reproducir canción en tu player
+            player.play({ uris: [track.uri] });
+        });
+        resultsContainer.appendChild(trackDiv);
+    });
+}
+
+// Escucha input con debounce
+let debounceTimer;
+searchInput.addEventListener('input', e => {
+    clearTimeout(debounceTimer);
+    const query = e.target.value.trim();
+    if (!query) {
+        resultsContainer.innerHTML = '';
+        return;
+    }
+    debounceTimer = setTimeout(async () => {
+        const data = await searchSpotify(query);
+        displayResults(data);
+    }, 400);
+});
+</script>
+<script>
+async function fetchSpotifyPlaylists() {
+    const token = localStorage.getItem('spotifyToken');
+    if (!token) return console.error("No hay token de Spotify");
+
+    try {
+        // Usamos categoría "pop" como ejemplo
+        const res = await fetch('https://api.spotify.com/v1/browse/categories/pop/playlists?limit=8', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!res.ok) throw new Error(`Error al obtener playlists: ${res.status}`);
+        const data = await res.json();
+
+        const playlists = data.playlists.items.map(p => ({
+            name: p.name,
+            image: p.images[0]?.url || '',
+            link: p.external_urls.spotify
+        }));
+
+        const container = document.getElementById('spotifyPlaylistsContainer');
+        if (!container) return console.error("No existe el contenedor para playlists");
+
+        container.innerHTML = '';
+        playlists.forEach(pl => {
+            const col = document.createElement('div');
+            col.classList.add('col-6', 'col-md-3', 'text-center');
+            col.innerHTML = `
+                <a href="${pl.link}" target="_blank">
+                    <img src="${pl.image}" class="img-fluid rounded" alt="${pl.name}">
+                    <p>${pl.name}</p>
+                </a>
+            `;
+            container.appendChild(col);
+        });
+
+        console.log("Playlists cargadas:", playlists);
+
+    } catch (err) {
+        console.error("Error al obtener playlists", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchSpotifyPlaylists);
+</script>
+
+
 </body>
 </html>
