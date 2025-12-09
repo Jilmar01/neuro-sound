@@ -195,11 +195,11 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-window.onSpotifyWebPlaybackSDKReady = () => {
+        window.onSpotifyWebPlaybackSDKReady = () => {
     const token = localStorage.getItem('spotifyToken');
     if (!token) return console.error('No Spotify token found');
 
-    const player = new Spotify.Player({
+    player = new Spotify.Player({
         name: 'Neuro-Sound Player',
         getOAuthToken: cb => { cb(token); },
     });
@@ -218,62 +218,64 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         const progressPercent = (state.position / state.duration) * 100;
         const formattedCurrent = formatTime(state.position);
 
-        // Desktop
         const progressDesktop = document.getElementById('progressBarDesktop');
         const currentDesktop = document.getElementById('currentTimeDesktop');
         if (progressDesktop) progressDesktop.style.width = progressPercent + '%';
         if (currentDesktop) currentDesktop.innerText = formattedCurrent;
 
-        // Mobile
         const progressMobile = document.getElementById('progressBarMobile');
         if (progressMobile) progressMobile.style.width = progressPercent + '%';
     }
 
+    player.addListener('ready', ({ device_id }) => {
+        console.log("Player listo:", device_id);
+        playerDeviceId = device_id;
+    });
+
     player.addListener('player_state_changed', state => {
         if (!state) return;
-
-        // Actualiza UI principal
         updateProgressUI(state);
 
-        // Actualiza info del track si cambió
         const track = state.track_window.current_track;
+
         const coverDesktop = document.getElementById('trackCoverDesktop');
         const nameDesktop = document.getElementById('trackNameDesktop');
         const artistDesktop = document.getElementById('trackArtistDesktop');
         const totalDesktop = document.getElementById('totalTimeDesktop');
+
         const coverMobile = document.getElementById('trackCover');
         const nameMobile = document.getElementById('trackName');
         const artistMobile = document.getElementById('trackArtist');
 
         if (coverDesktop) coverDesktop.src = track.album.images[0].url;
         if (nameDesktop) nameDesktop.innerText = track.name;
-        if (artistDesktop) artistDesktop.innerText = track.artists.map(a=>a.name).join(', ');
+        if (artistDesktop) artistDesktop.innerText = track.artists.map(a => a.name).join(', ');
         if (totalDesktop) totalDesktop.innerText = formatTime(state.duration);
 
         if (coverMobile) coverMobile.src = track.album.images[0].url;
         if (nameMobile) nameMobile.innerText = track.name;
-        if (artistMobile) artistMobile.innerText = track.artists.map(a=>a.name).join(', ');
+        if (artistMobile) artistMobile.innerText = track.artists.map(a => a.name).join(', ');
     });
 
-    // Controles
     ['btnPlayDesktop','btnNextDesktop','btnPrevDesktop','btnPlay','btnNext','btnPrev'].forEach(id => {
         const btn = document.getElementById(id);
         if (!btn) return;
-        if (id.includes('Play')) btn.addEventListener('click', ()=>player.togglePlay());
-        if (id.includes('Next')) btn.addEventListener('click', ()=>player.nextTrack());
-        if (id.includes('Prev')) btn.addEventListener('click', ()=>player.previousTrack());
+
+        if (id.includes('Play')) btn.addEventListener('click', () => player.togglePlay());
+        if (id.includes('Next')) btn.addEventListener('click', () => player.nextTrack());
+        if (id.includes('Prev')) btn.addEventListener('click', () => player.previousTrack());
     });
 
     player.connect();
 
-    // Interval para actualizar barra continuamente
     setInterval(async () => {
         const state = await player.getCurrentState();
         if (!state) return;
         updateProgressUI(state);
-    }, 500); // Cada 0.5s
+    }, 500);
 };
-</script>
+
+    </script>
 <script>
 const searchInput = document.getElementById('spotifySearchInput');
 const resultsContainer = document.getElementById('spotifySearchResults');
@@ -332,170 +334,6 @@ searchInput.addEventListener('input', e => {
 });
 </script>
 
-<script>
-let playerDeviceId = null;
-
-// ============================
-// INICIALIZAR WEB PLAYBACK SDK
-// ============================
-window.onSpotifyWebPlaybackSDKReady = () => {
-    const player = new Spotify.Player({
-        name: "Neuro-Sound Player",
-        getOAuthToken: cb => cb(token)
-    });
-
-    player.addListener("ready", ({ device_id }) => {
-        console.log("Player listo:", device_id);
-        playerDeviceId = device_id;
-    });
-
-    player.connect();
-};
-
-// ============================
-// 1) OBTENER PLAYLISTS PÚBLICAS
-// ============================
-// ⚠ Cambiado a: /v1/browse/featured-playlists porque las de "spotify" NO son públicas vía API
-// ============================
-// 1) OBTENER UNA PLAYLIST PÚBLICA
-// ============================
-async function fetchSpotifyPlaylists() {
-    try {
-        const res = await fetch("https://api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M", {
-            headers: { "Authorization": "Bearer " + token }
-        });
-
-        if (!res.ok) throw new Error("Error: " + res.status);
-
-        const data = await res.json();
-
-        // data.tracks.items contiene las canciones
-        renderPlaylists([data]);
-
-    } catch (err) {
-        console.error("Error al cargar playlists:", err);
-    }
-}
-
-
-// ============================
-// 2) MOSTRAR PLAYLISTS EN EL PANEL
-// ============================
-function renderPlaylists(playlists) {
-    const panel = document.getElementById("mainPanel");
-    if (!panel) return console.error("mainPanel no encontrado");
-
-    panel.innerHTML = "<h4 class='text-white mb-3'>Playlists destacadas</h4><div class='row'>";
-
-    playlists.forEach(p => {
-        const img = p.images[0]?.url || "";
-        const id = p.id;
-
-        panel.innerHTML += `
-            <div class="col-6 col-md-3 text-center">
-                <div class="card bg-dark text-white p-2 playlist-card" data-id="${id}">
-                    <img src="${img}" class="img-fluid rounded mb-2">
-                    <p class="fw-bold">${p.name}</p>
-                </div>
-            </div>
-        `;
-    });
-
-    panel.innerHTML += "</div>";
-
-    document.querySelectorAll(".playlist-card").forEach(card => {
-        card.addEventListener("click", () => {
-            loadPlaylistTracks(card.dataset.id);
-        });
-    });
-}
-
-// ============================================
-// 3) AL CLIC → CARGAR CANCIONES EN EL PANEL
-// ============================================
-async function loadPlaylistTracks(playlistId) {
-    try {
-        const res = await fetch(
-            `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
-            { headers: { "Authorization": "Bearer " + token } }
-        );
-
-        if (!res.ok) throw new Error("No se pudieron cargar canciones");
-
-        const data = await res.json();
-        renderTracks(data.items);
-
-    } catch (err) {
-        console.error("Error:", err);
-    }
-}
-
-// ===============================
-// 4) MOSTRAR CANCIONES EN EL PANEL
-// ===============================
-function renderTracks(tracks) {
-    const panel = document.getElementById("mainPanel");
-    if (!panel) return console.error("mainPanel no encontrado");
-
-    panel.innerHTML = "<h4 class='text-white mb-3'>Canciones</h4><div class='row'>";
-
-    tracks.forEach(item => {
-        const t = item.track;
-        if (!t) return;
-
-        const img = t.album.images[0]?.url || "";
-        const name = t.name;
-        const artists = t.artists.map(a => a.name).join(", ");
-        const uri = t.uri;
-
-        panel.innerHTML += `
-            <div class="col-12 song-row d-flex align-items-center p-2 bg-dark mb-2 rounded"
-                 data-uri="${uri}" style="cursor:pointer;">
-                <img src="${img}" width="60" class="rounded me-3">
-                <div>
-                    <p class="m-0 fw-bold">${name}</p>
-                    <small class="text-secondary">${artists}</small>
-                </div>
-            </div>
-        `;
-    });
-
-    panel.innerHTML += "</div>";
-
-    document.querySelectorAll(".song-row").forEach(row => {
-        row.addEventListener("click", () => {
-            playSong(row.dataset.uri);
-        });
-    });
-}
-
-// ============================
-// 5) REPRODUCIR CANCIÓN
-// ============================
-function playSong(uri) {
-    if (!playerDeviceId) {
-        console.error("Device ID no listo todavía.");
-        return;
-    }
-
-    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${playerDeviceId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ uris: [uri] })
-    })
-    .then(res => {
-        if (!res.ok) console.error("No se pudo reproducir:", res.status);
-    });
-}
-
-// ============================
-// 6) INICIAR AUTOMÁTICAMENTE
-// ============================
-document.addEventListener("DOMContentLoaded", fetchSpotifyPlaylists);
-</script>
 
 </body>
 </html>
