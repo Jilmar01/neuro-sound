@@ -356,22 +356,27 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 // 1) OBTENER PLAYLISTS PÚBLICAS
 // ============================
 // ⚠ Cambiado a: /v1/browse/featured-playlists porque las de "spotify" NO son públicas vía API
+// ============================
+// 1) OBTENER UNA PLAYLIST PÚBLICA
+// ============================
 async function fetchSpotifyPlaylists() {
     try {
-        const res = await fetch(
-            "https://api.spotify.com/v1/browse/featured-playlists?limit=8",
-            { headers: { "Authorization": "Bearer " + token } }
-        );
+        const res = await fetch("https://api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M", {
+            headers: { "Authorization": "Bearer " + token }
+        });
 
         if (!res.ok) throw new Error("Error: " + res.status);
+
         const data = await res.json();
 
-        renderPlaylists(data.playlists.items);
+        // data.tracks.items contiene las canciones
+        renderPlaylists([data]);
 
     } catch (err) {
         console.error("Error al cargar playlists:", err);
     }
 }
+
 
 // ============================
 // 2) MOSTRAR PLAYLISTS EN EL PANEL
