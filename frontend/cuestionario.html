@@ -102,7 +102,7 @@
             <input id="artists" type="text">
         </div>
 
-        <button onclick="submitForm()">Finalizar</button>
+        <button onclick="sendData()">Finalizar</button>
     </div>
 
 </div>
@@ -124,28 +124,56 @@ function toggleSleepSeverity() {
     box.style.display = val === "Sí" ? "block" : "none";
 }
 
-function submitForm() {
-    const selectedGenres = [...document.querySelectorAll('.genreCheck:checked')].map(g => g.value);
+function sendData() {
+    // 1. Géneros seleccionados
+    const genres = Array.from(document.querySelectorAll('input[name="generos[]"]:checked'))
+                        .map(x => x.value);
 
-    const data = {
-        mood: document.getElementById("mood").value,
-        anxiety: Number(document.getElementById("anxiety").value),
-        stress: Number(document.getElementById("stress").value),
-        mainConcern: document.getElementById("mainConcern").value,
-        sleepIssues: {
+    // 2. JSON final (estructura EXACTA que pide el backend)
+    const body = {
+        mood: document.getElementById("mood").value.toLowerCase(),
+        anxiety: Number(document.getElementById("anxietyLevel").value),
+        stress: Number(document.getElementById("stressLevel").value),
+        energy: 0,  // no tienes energía en el formulario, puedes agregarlo luego
+        motivation: 0, // igual, puedes agregar input luego
+
+        sleepIssues: { 
             hasProblem: document.getElementById("sleepProblem").value === "Sí",
-            severity: document.getElementById("sleepProblem").value === "Sí" 
-                ? Number(document.getElementById("sleepSeverity").value) 
-                : 0
+            severity: Number(document.getElementById("disconnectDifficulty").value)
         },
-        rumination: Number(document.getElementById("rumination").value),
-        lowMood: Number(document.getElementById("lowMood").value),
-        genres: selectedGenres,
-        artists: document.getElementById("artists").value
+
+        genres: genres,
+
+        listenByGenre: {},  // de momento no tienes estos datos
+       
+        emotionalSensitivity: {
+            affectedWhenSad: Number(document.getElementById("lowSelfEsteem").value) >= 5,
+            avoidGenres: [],
+            noiseSensitivity: Number(document.getElementById("disconnectDifficulty").value),
+            lyricSensitivity: Number(document.getElementById("lowSelfEsteem").value)
+        },
+
+        activity: "relajarse", // fija por ahora
+        goal: ["dormir", "bajarAnsiedad"], // puedes convertir esto en inputs luego
+        duration: "1h"
     };
 
-    console.log("JSON enviado al backend:", data);
-    alert("Datos listos para enviar al backend. Revisa la consola.");
+    console.log("📤 Enviando JSON:", body);
+
+    // 3. Enviar al backend
+    fetch("http://localhost:5000/api/jilmar/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("📥 Respuesta del servidor:", data);
+        alert("Recomendación generada en consola");
+    })
+    .catch(err => {
+        console.error("❌ Error:", err);
+    });
 }
 </script>
 

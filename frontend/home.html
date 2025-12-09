@@ -90,7 +90,7 @@
                         <div class="space h-100 p-3 d-flex flex-column" style="padding-bottom: 100px;"> <div class="content-area glass-panel p-4 h-100 overflow-auto">
                                 <h2 class="mb-3">Explorar</h2>
                                 
-                                <div class="row g-3" id="spotifyPlaylistsContainer">
+                                <div class="row g-3" id="mainPanel">
 
                                 </div>
                                 <div id="spotifySearchResults" class="mt-4">
@@ -331,52 +331,166 @@ searchInput.addEventListener('input', e => {
     }, 400);
 });
 </script>
+
 <script>
+let playerDeviceId = null;
+
+// ============================
+// INICIALIZAR WEB PLAYBACK SDK
+// ============================
+window.onSpotifyWebPlaybackSDKReady = () => {
+    const player = new Spotify.Player({
+        name: "Neuro-Sound Player",
+        getOAuthToken: cb => cb(token)
+    });
+
+    player.addListener("ready", ({ device_id }) => {
+        console.log("Player listo:", device_id);
+        playerDeviceId = device_id;
+    });
+
+    player.connect();
+};
+
+// ============================
+// 1) OBTENER PLAYLISTS PÚBLICAS
+// ============================
+// ⚠ Cambiado a: /v1/browse/featured-playlists porque las de "spotify" NO son públicas vía API
 async function fetchSpotifyPlaylists() {
-    const token = localStorage.getItem('spotifyToken');
-    if (!token) return console.error("No hay token de Spotify");
-
     try {
-        // Usamos categoría "pop" como ejemplo
-        const res = await fetch('https://api.spotify.com/v1/browse/categories/pop/playlists?limit=8', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res = await fetch(
+            "https://api.spotify.com/v1/browse/featured-playlists?limit=8",
+            { headers: { "Authorization": "Bearer " + token } }
+        );
 
-        if (!res.ok) throw new Error(`Error al obtener playlists: ${res.status}`);
+        if (!res.ok) throw new Error("Error: " + res.status);
         const data = await res.json();
 
-        const playlists = data.playlists.items.map(p => ({
-            name: p.name,
-            image: p.images[0]?.url || '',
-            link: p.external_urls.spotify
-        }));
-
-        const container = document.getElementById('spotifyPlaylistsContainer');
-        if (!container) return console.error("No existe el contenedor para playlists");
-
-        container.innerHTML = '';
-        playlists.forEach(pl => {
-            const col = document.createElement('div');
-            col.classList.add('col-6', 'col-md-3', 'text-center');
-            col.innerHTML = `
-                <a href="${pl.link}" target="_blank">
-                    <img src="${pl.image}" class="img-fluid rounded" alt="${pl.name}">
-                    <p>${pl.name}</p>
-                </a>
-            `;
-            container.appendChild(col);
-        });
-
-        console.log("Playlists cargadas:", playlists);
+        renderPlaylists(data.playlists.items);
 
     } catch (err) {
-        console.error("Error al obtener playlists", err);
+        console.error("Error al cargar playlists:", err);
     }
 }
 
-document.addEventListener('DOMContentLoaded', fetchSpotifyPlaylists);
-</script>
+// ============================
+// 2) MOSTRAR PLAYLISTS EN EL PANEL
+// ============================
+function renderPlaylists(playlists) {
+    const panel = document.getElementById("mainPanel");
+    if (!panel) return console.error("mainPanel no encontrado");
 
+    panel.innerHTML = "<h4 class='text-white mb-3'>Playlists destacadas</h4><div class='row'>";
+
+    playlists.forEach(p => {
+        const img = p.images[0]?.url || "";
+        const id = p.id;
+
+        panel.innerHTML += `
+            <div class="col-6 col-md-3 text-center">
+                <div class="card bg-dark text-white p-2 playlist-card" data-id="${id}">
+                    <img src="${img}" class="img-fluid rounded mb-2">
+                    <p class="fw-bold">${p.name}</p>
+                </div>
+            </div>
+        `;
+    });
+
+    panel.innerHTML += "</div>";
+
+    document.querySelectorAll(".playlist-card").forEach(card => {
+        card.addEventListener("click", () => {
+            loadPlaylistTracks(card.dataset.id);
+        });
+    });
+}
+
+// ============================================
+// 3) AL CLIC → CARGAR CANCIONES EN EL PANEL
+// ============================================
+async function loadPlaylistTracks(playlistId) {
+    try {
+        const res = await fetch(
+            `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+            { headers: { "Authorization": "Bearer " + token } }
+        );
+
+        if (!res.ok) throw new Error("No se pudieron cargar canciones");
+
+        const data = await res.json();
+        renderTracks(data.items);
+
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
+
+// ===============================
+// 4) MOSTRAR CANCIONES EN EL PANEL
+// ===============================
+function renderTracks(tracks) {
+    const panel = document.getElementById("mainPanel");
+    if (!panel) return console.error("mainPanel no encontrado");
+
+    panel.innerHTML = "<h4 class='text-white mb-3'>Canciones</h4><div class='row'>";
+
+    tracks.forEach(item => {
+        const t = item.track;
+        if (!t) return;
+
+        const img = t.album.images[0]?.url || "";
+        const name = t.name;
+        const artists = t.artists.map(a => a.name).join(", ");
+        const uri = t.uri;
+
+        panel.innerHTML += `
+            <div class="col-12 song-row d-flex align-items-center p-2 bg-dark mb-2 rounded"
+                 data-uri="${uri}" style="cursor:pointer;">
+                <img src="${img}" width="60" class="rounded me-3">
+                <div>
+                    <p class="m-0 fw-bold">${name}</p>
+                    <small class="text-secondary">${artists}</small>
+                </div>
+            </div>
+        `;
+    });
+
+    panel.innerHTML += "</div>";
+
+    document.querySelectorAll(".song-row").forEach(row => {
+        row.addEventListener("click", () => {
+            playSong(row.dataset.uri);
+        });
+    });
+}
+
+// ============================
+// 5) REPRODUCIR CANCIÓN
+// ============================
+function playSong(uri) {
+    if (!playerDeviceId) {
+        console.error("Device ID no listo todavía.");
+        return;
+    }
+
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${playerDeviceId}`, {
+        method: "PUT",
+        headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ uris: [uri] })
+    })
+    .then(res => {
+        if (!res.ok) console.error("No se pudo reproducir:", res.status);
+    });
+}
+
+// ============================
+// 6) INICIAR AUTOMÁTICAMENTE
+// ============================
+document.addEventListener("DOMContentLoaded", fetchSpotifyPlaylists);
+</script>
 
 </body>
 </html>
