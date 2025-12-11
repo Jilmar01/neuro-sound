@@ -6,11 +6,11 @@
     <title>Neuro-Sound Responsive</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="Styles/commonelem.css">
     <link rel="stylesheet" href="Styles/home.css">
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    
 
-
-    <style>
+    <!--style>
         /* CSS INCRUSTADO POR SI NO CARGA EL ARCHIVO EXTERNO */
         /* (Solo para asegurar que se vea bien en esta vista previa) */
         body { height: 100vh; background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2); background-size: cover; overflow: hidden; }
@@ -23,7 +23,7 @@
         .mobile-navbar { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.2); z-index: 1050; }
         .offcanvas-glass { background: linear-gradient(135deg, #5b537a, #3e7cae); color: white; backdrop-filter: blur(10px); }
         .mobile-player { position: fixed; bottom: 75px; left: 10px; right: 10px; height: 65px; z-index: 1040; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
-    </style>
+    </style-->
     
 </head>
 <body>
@@ -36,7 +36,7 @@
                     <div class="mb-5 mt-3"><i class="bi bi-vinyl fs-1 text-white"></i></div>
                     <ul class="list-unstyled d-flex flex-column gap-3 w-100 align-items-center">
                         
-                        <li class="sidebar-item">
+                        <li class="sidebar-item active">
                             <i class="bi bi-house-door-fill fs-4 text-white"></i>
                             <span class="small mt-1 text-white">Home</span>
                         </li>
@@ -100,14 +100,25 @@
                         </div>
                     </div>
                     <div class="col-md-3 d-none d-md-flex flex-column gap-3 p-3 pt-0 h-100">
-                        <div class="glass-panel flex-grow-1 p-3 overflow-auto">
-                            <h5>Estadísticas</h5>
-                            <div class="d-flex align-items-center justify-content-center h-50 border border-light rounded opacity-50 mt-3">Gráfico</div>
+                        <div class="glass-panel flex-grow-1 p-3 d-flex flex-column" style="min-height: 400px;">
+    
+                            <h5 class="mb-3 font-weight-bold">Estadísticas</h5>
+                            
+                            <div class="flex-grow-1 w-100 border border-light border-opacity-25 rounded overflow-hidden position-relative" 
+                                style="background: rgba(255,255,255,0.05);">
+                                
+                                <iframe src="chartsiframe.html" 
+                                        class="w-100 h-100 border-0"
+                                        style="display: block;">
+                                </iframe>
+
+                            </div>
+
                         </div>
                         <div class="glass-panel p-3">
                         <!-- Desktop panel -->
                         <div class="d-flex align-items-center gap-3 mb-2">
-                            <img id="trackCoverDesktop" src="" style="width:50px; height:50px; border-radius:8px;" />
+                            <img id="trackCoverDesktop" src="img/defaultcover.png" style="width:50px; height:50px; border-radius:8px;" />
                             <div>
                                 <h6 id="trackNameDesktop" class="m-0">Track Name</h6>
                                 <small id="trackArtistDesktop" class="opacity-75">Artist</small>
@@ -193,146 +204,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        window.onSpotifyWebPlaybackSDKReady = () => {
-    const token = localStorage.getItem('spotifyToken');
-    if (!token) return console.error('No Spotify token found');
+    <script src="js/searchSpotify.js"></script>
+    <script src="js/uicontroller.js"></script>
+    <script src="js/localPlayer.js"></script>
+    <script src="js/spotifyPlayer.js"></script>
 
-    player = new Spotify.Player({
-        name: 'Neuro-Sound Player',
-        getOAuthToken: cb => { cb(token); },
-    });
+    <script src="js/playerEngine.js"></script> 
 
-    let progressInterval = null;
-
-    function formatTime(ms) {
-        const minutes = Math.floor(ms / 60000);
-        const seconds = Math.floor((ms % 60000) / 1000);
-        return `${minutes}:${seconds.toString().padStart(2,'0')}`;
-    }
-
-    function updateProgressUI(state) {
-        if (!state) return;
-        const track = state.track_window.current_track;
-        const progressPercent = (state.position / state.duration) * 100;
-        const formattedCurrent = formatTime(state.position);
-
-        const progressDesktop = document.getElementById('progressBarDesktop');
-        const currentDesktop = document.getElementById('currentTimeDesktop');
-        if (progressDesktop) progressDesktop.style.width = progressPercent + '%';
-        if (currentDesktop) currentDesktop.innerText = formattedCurrent;
-
-        const progressMobile = document.getElementById('progressBarMobile');
-        if (progressMobile) progressMobile.style.width = progressPercent + '%';
-    }
-
-    player.addListener('ready', ({ device_id }) => {
-        console.log("Player listo:", device_id);
-        playerDeviceId = device_id;
-    });
-
-    player.addListener('player_state_changed', state => {
-        if (!state) return;
-        updateProgressUI(state);
-
-        const track = state.track_window.current_track;
-
-        const coverDesktop = document.getElementById('trackCoverDesktop');
-        const nameDesktop = document.getElementById('trackNameDesktop');
-        const artistDesktop = document.getElementById('trackArtistDesktop');
-        const totalDesktop = document.getElementById('totalTimeDesktop');
-
-        const coverMobile = document.getElementById('trackCover');
-        const nameMobile = document.getElementById('trackName');
-        const artistMobile = document.getElementById('trackArtist');
-
-        if (coverDesktop) coverDesktop.src = track.album.images[0].url;
-        if (nameDesktop) nameDesktop.innerText = track.name;
-        if (artistDesktop) artistDesktop.innerText = track.artists.map(a => a.name).join(', ');
-        if (totalDesktop) totalDesktop.innerText = formatTime(state.duration);
-
-        if (coverMobile) coverMobile.src = track.album.images[0].url;
-        if (nameMobile) nameMobile.innerText = track.name;
-        if (artistMobile) artistMobile.innerText = track.artists.map(a => a.name).join(', ');
-    });
-
-    ['btnPlayDesktop','btnNextDesktop','btnPrevDesktop','btnPlay','btnNext','btnPrev'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-
-        if (id.includes('Play')) btn.addEventListener('click', () => player.togglePlay());
-        if (id.includes('Next')) btn.addEventListener('click', () => player.nextTrack());
-        if (id.includes('Prev')) btn.addEventListener('click', () => player.previousTrack());
-    });
-
-    player.connect();
-
-    setInterval(async () => {
-        const state = await player.getCurrentState();
-        if (!state) return;
-        updateProgressUI(state);
-    }, 500);
-};
-
-    </script>
-<script>
-const searchInput = document.getElementById('spotifySearchInput');
-const resultsContainer = document.getElementById('spotifySearchResults');
-const token = localStorage.getItem('spotifyToken');
-
-if (!token) console.error('No Spotify token found');
-
-// Función para buscar en Spotify
-async function searchSpotify(query) {
-    if (!query) return;
-    const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=8`;
-    const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await response.json();
-    return data;
-}
-
-// Mostrar resultados en el contenido
-function displayResults(data) {
-    if (!data || !data.tracks) return;
-    resultsContainer.innerHTML = ''; // Limpiar resultados anteriores
-
-    data.tracks.items.forEach(track => {
-        const trackDiv = document.createElement('div');
-        trackDiv.className = 'd-flex align-items-center mb-2 p-2 rounded hover-glass';
-        trackDiv.style.cursor = 'pointer';
-        trackDiv.innerHTML = `
-            <img src="${track.album.images[2]?.url || ''}" width="50" height="50" style="border-radius:5px; margin-right:10px;">
-            <div>
-                <strong>${track.name}</strong><br>
-                <small>${track.artists.map(a=>a.name).join(', ')}</small>
-            </div>
-        `;
-        trackDiv.addEventListener('click', () => {
-            // Reproducir canción en tu player
-            player.play({ uris: [track.uri] });
-        });
-        resultsContainer.appendChild(trackDiv);
-    });
-}
-
-// Escucha input con debounce
-let debounceTimer;
-searchInput.addEventListener('input', e => {
-    clearTimeout(debounceTimer);
-    const query = e.target.value.trim();
-    if (!query) {
-        resultsContainer.innerHTML = '';
-        return;
-    }
-    debounceTimer = setTimeout(async () => {
-        const data = await searchSpotify(query);
-        displayResults(data);
-    }, 400);
-});
-</script>
 
 
 </body>

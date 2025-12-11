@@ -106,6 +106,9 @@
                         <a href="#" class="sidebar-item active mt-auto mb-4">
                             <i class="bi bi-gear-fill fs-4"></i><span class="small mt-1">Ajustes</span>
                         </a>
+                        <a href="login.html" class="sidebar-item mt-auto mb-4">
+                            <i class="bi bi-box-arrow-left fs-4"></i><span class="small mt-1">Logout</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -136,8 +139,19 @@
                                             </h5>
                                             <div class="row align-items-center mb-4">
                                                 <div class="col-auto">
-                                                    <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                        <i class="bi bi-person-fill fs-1"></i>
+                                                    <div class="position-relative d-inline-block">
+                                                        
+                                                        <div id="avatarContainer" style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; background-size: cover; background-position: center;">
+                                                            <i id="defaultAvatarIcon" class="bi bi-person-fill fs-1"></i>
+                                                        </div>
+
+                                                        <button class="btn btn-sm btn-light rounded-circle position-absolute d-flex align-items-center justify-content-center p-0" 
+                                                                style="width: 28px; height: 28px; bottom: -2px; right: -2px; border: 2px solid #6c5ce7; z-index: 10;"
+                                                                onclick="document.getElementById('avatarUpload').click();">
+                                                            <i class="bi bi-pencil-fill text-dark" style="font-size: 0.7rem;"></i>
+                                                        </button>
+
+                                                        <input type="file" id="avatarUpload" accept="image/*" style="display: none;" onchange="previewImage(event)">
                                                     </div>
                                                 </div>
                                                 <div class="col">
@@ -147,15 +161,27 @@
                                             </div>
                                             <form class="row g-3">
                                                 <div class="col-md-6">
-                                                    <label class="small text-white-50">Usuario</label>
-                                                    <input type="text" class="form-control form-control-glass" value="Usuario Demo">
+                                                    <label class="small text-white-50">Nombre</label>
+                                                    <input type="text" id="inputName" class="form-control form-control-glass" placeholder="Tu nombre">
                                                 </div>
+
                                                 <div class="col-md-6">
-                                                    <label class="small text-white-50">Email</label>
-                                                    <input type="email" class="form-control form-control-glass" value="hola@neuro-sound.com">
+                                                    <label class="small text-white-50">Apellido</label>
+                                                    <input type="text" id="inputLastName" class="form-control form-control-glass" placeholder="Tu apellido">
                                                 </div>
+
+                                                <div class="col-12">
+                                                    <label class="small text-white-50">Email</label>
+                                                    <input type="email" id="inputEmail" class="form-control form-control-glass" readonly>
+                                                    <div class="form-text text-white-50 small" style="font-size: 0.7em;">
+                                                        * El email no se puede cambiar por seguridad.
+                                                    </div>
+                                                </div>
+
                                                 <div class="col-12 mt-4 text-end">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-primary">Guardar</button>
+                                                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-primary">
+                                                        Guardar Cambios
+                                                    </button>
                                                 </div>
                                             </form>
                                         </div>
@@ -213,7 +239,7 @@
     const token = urlParams.get('token');
     if(token) {
         localStorage.setItem('spotifyToken', token); // Guardar token
-        window.history.replaceState({}, document.title, '/settings.html'); // Limpiar URL
+        window.history.replaceState({}, document.title, '/frontend/settings.html'); // Limpiar URL
     }
 
     // 2. Verificar si hay token guardado
@@ -249,6 +275,48 @@
         }
     }
 </script>
+<script>
+    // ==========================================
+    //  LOGICA DE PREVISUALIZACIÓN DE IMAGEN
+    // ==========================================
+    function previewImage(event) {
+        const input = event.target;
+        const container = document.getElementById('avatarContainer');
+        const icon = document.getElementById('defaultAvatarIcon');
 
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                // 1. Ocultar el icono de "persona" por defecto
+                if(icon) icon.style.display = 'none';
+
+                // 2. Poner la imagen seleccionada como fondo
+                container.style.backgroundImage = `url('${e.target.result}')`;
+                
+                // Opcional: Añadir borde para que se vea mejor
+                container.style.border = '2px solid rgba(255,255,255,0.5)';
+            }
+
+            // Leer el archivo como URL de datos
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // MODIFICAR TU FUNCIÓN 'loadUserProfile' EXISTENTE
+    // Para que si el usuario YA tiene foto en la BD, la muestre al cargar.
+    
+    // ... Dentro de function loadUserProfile(user) ...
+    // Busca donde dice "// D. Manejo de Avatar" y pon esto:
+
+    if (user.photo) {
+        // Si hay foto en la BD (asumiendo que user.photo es una URL o base64)
+        const container = document.getElementById('avatarContainer');
+        const icon = document.getElementById('defaultAvatarIcon');
+        
+        if(icon) icon.style.display = 'none';
+        container.style.backgroundImage = `url('${user.photo}')`;
+    }
+</script>
 </body>
 </html>

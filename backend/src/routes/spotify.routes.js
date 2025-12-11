@@ -52,7 +52,7 @@ router.get("/callback", async (req, res) => {
         console.log("Spotify autenticado correctamente ✔️");
 
         // REDIRIGE AL PLAYER DEL FRONTEND (PUERTO 3000)
-        return res.redirect(`http://127.0.0.1:3000//frontend/settings.html?token=${accessToken}`);
+        return res.redirect(`http://127.0.0.1:3000/frontend/settings.html?token=${accessToken}`);
 
     } catch (error) {
         console.error("Error en autenticación:", error);

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Desktop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Tarjeta Principal (Más ancha para Desktop) */
+        .result-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            width: 900px; /* Ancho amplio */
+            max-width: 95%;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            padding: 40px;
+            position: relative;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Header */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .brand-text {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #1a1a1a;
+        }
+
+        /* Columna Izquierda: Gráfico */
+        .chart-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding-right: 20px;
+        }
+        .chart-container {
+            position: relative;
+            width: 280px; /* Un poco más grande que en mobile */
+            margin-bottom: 25px;
+        }
+
+        .objective-text {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #555;
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid #eee;
+        }
+        .objective-text strong {
+            color: #2c3e50;
+            text-transform: uppercase;
+        }
+
+        /* Columna Derecha: Frecuencias */
+        .right-panel {
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .freq-box {
+            background-color: #e9ecef; /* Gris suave */
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .freq-title {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        /* Badges */
+        .status-badges {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .badge-custom {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .bg-alta { background-color: #ef5350; }
+        .bg-media { background-color: #ffb74d; }
+        .bg-estable { background-color: #66ff66; color: #2c3e50; }
+
+        /* Barras */
+        .freq-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .freq-label {
+            width: 70px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #444;
+        }
+        .freq-label span {
+            display: block;
+            font-weight: 400;
+            font-size: 0.7rem;
+            color: #777;
+        }
+        .progress-container {
+            flex-grow: 1;
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .custom-bar {
+            height: 40px; /* Barras más gruesas para desktop */
+            border-radius: 10px;
+        }
+        
+        .bar-theta { background-color: #29b6f6; }
+        .bar-alpha { background-color: #66ff66; }
+        .bar-pink { background-color: #ffa726; }
+
+        /* Botón */
+        .btn-continue {
+            background-color: #212529;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-continue:hover {
+            background-color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="result-card">
+        
+        
+        <div class="brand-header">
+            <i class="bi bi-soundwave text-dark fs-3 me-2"></i> 
+            <span class="brand-text">Neuro-Sound</span>
+        </div>
+
+        <div class="row h-100">
+            
+            <div class="col-md-5">
+                <div class="chart-wrapper">
+                    <h4 class="text-center mb-4 fw-bold">Análisis Emocional</h4>
+                    
+                    <div class="chart-container">
+                        <canvas id="moodChart"></canvas>
+                    </div>
+
+                    <div class="objective-text mt-3">
+                        Tu objetivo es sentirte: <strong>FELIZ</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="right-panel">
+                    
+                    <div class="freq-box">
+                        <div class="freq-title">
+                            Frecuencias Recomendadas
+                        </div>
+
+                        <div class="status-badges">
+                            <div class="badge-custom bg-alta">Alta</div>
+                            <div class="badge-custom bg-media">Media</div>
+                            <div class="badge-custom bg-estable">Estable</div>
+                        </div>
+
+                        <div class="freq-row">
+                            <div class="freq-label">Theta <span>4-8 Hz</span></div>
+                            <div class="progress-container">
+                                <div class="custom-bar bar-theta" style="width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="freq-row">
+                            <div class="freq-label">Alpha <span>8-12 Hz</span></div>
+                            <div class="progress-container">
+                                <div class="custom-bar bar-alpha" style="width: 60%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="freq-row">
+                            <div class="freq-label">Pink N <span>4-8 Hz</span></div>
+                            <div class="progress-container">
+                                <div class="custom-bar bar-pink" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div> <button class="btn-continue" onclick="nextStep()">
+                        Continuar <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ansiedad', 'Estrés', 'Tristeza', 'Felicidad', 'Otro'],
+                datasets: [{
+                    data: [30, 15, 20, 30, 5],
+                    backgroundColor: [
+                        '#80cbc4', // Ansiedad
+                        '#f4a261', // Estrés
+                        '#e9c46a', // Tristeza
+                        '#264653', // Felicidad
+                        '#e76f51'  // Otro
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%', 
+                plugins: {
+                    legend: {
+                        display: true, // Mostramos leyenda en desktop
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: { enabled: true }
+                }
+            }
+        });
+
+        function nextStep() {
+            alert("Redirigiendo al reproductor...");
+            window.location.href = "home.html";
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Análisis Mobile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variables unificadas */
+        :root {
+            --accent-green: #69f0ae;
+            --accent-blue: #40c4ff;
+            --accent-orange: #ffb74d;
+            --text-dark: #1a1a1a;
+            --radius-card: 24px;
+        }
+
+        body {
+            /* Fondo blanco o transparente para que se mezcle con el iframe */
+            background-color: #ffffff00; 
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Importante para iframes móviles: permitir scroll vertical */
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+
+        /* Tarjeta ajustada para móvil/iframe */
+        .mobile-card {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .header-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            /* Sin borde inferior para look más limpio en móvil */
+        }
+
+        .brand-section { display: flex; align-items: center; gap: 8px; }
+        .brand-name { font-weight: 800; font-size: 1.1rem; color: var(--text-dark); }
+        .page-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 5px; color: #333; margin-bottom: 10px; width: 100%; }
+
+        /* Gráfico */
+        .chart-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 260px; /* Un poco más pequeño para asegurar que quepa en móviles angostos */
+            height: 260px;
+            margin-bottom: 15px;
+        }
+
+        .main-genre-text { text-align: center; font-size: 0.9rem; color: #555; }
+        .main-genre-text strong { display: block; font-size: 1.4rem; color: #2c3e50; margin-top: 2px; }
+
+        /* Sección de Datos */
+        .data-section { width: 100%; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background-color: #f1f3f5;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-label { font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; }
+        .stat-value { font-size: 1rem; color: #333; }
+        .text-success-custom { color: #00c853; font-weight: 800; font-size: 0.9rem; }
+
+        /* Frecuencias */
+        .freq-box {
+            background-color: #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .freq-title { text-align: center; font-weight: 700; margin-bottom: 12px; font-size: 0.9rem; }
+        
+        .freq-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .freq-label { width: 60px; font-size: 0.75rem; font-weight: 700; line-height: 1.1; }
+        .freq-label span { display: block; font-weight: 400; font-size: 0.65rem; color: #666; }
+        
+        .bar-container {
+            flex-grow: 1;
+            height: 25px; /* Barras un poco más finas en móvil */
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.5);
+        }
+        .bar-fill { height: 100%; border-radius: 6px; }
+        
+        /* Colores unificados */
+        .fill-theta { background-color: var(--accent-blue); width: 40%; }
+        .fill-alpha { background-color: var(--accent-green); width: 85%; }
+        .fill-pink { background-color: var(--accent-orange); width: 60%; }
+
+        /* Interpretación */
+        .interpret-box {
+            background-color: #dee2e6;
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: #444;
+            line-height: 1.4;
+            text-align: justify;
+        }
+        .interpret-title { font-weight: 800; margin-bottom: 3px; display: block; color: #333; }
+
+        .user-icon { font-size: 1.4rem; color: #333; }
+
+    </style>
+</head>
+<body>
+
+    <div class="mobile-card">
+        
+        <!--div class="header-row">
+            <div class="brand-section">
+                <i class="bi bi-soundwave fs-4"></i>
+                <span class="brand-name">Neuro-Sound</span>
+            </div>
+            <i class="bi bi-person user-icon"></i>
+        </div-->
+
+        <div class="page-title">
+            <!--i class="bi bi-chevron-left"></i--> 
+            Análisis de tu música
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-container">
+                <canvas id="genreChart"></canvas>
+            </div>
+            <div class="main-genre-text">
+                Tu género más escuchado fue
+                <strong>Lo-fi</strong>
+            </div>
+        </div>
+
+        <div class="data-section">
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Efecto Relajante</div>
+                    <div class="stat-value fw-bold">70/100</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Resumen Emocional</div>
+                    <div class="stat-value">Ansiedad <br><span class="text-success-custom">BAJA</span></div>
+                </div>
+            </div>
+
+            <div class="freq-box">
+                <div class="freq-title">Frecuencias Escuchadas</div>
+                
+                <div class="freq-row">
+                    <div class="freq-label">Theta <span>4-8 Hz</span></div>
+                    <div class="bar-container">
+                        <div class="bar-fill fill-theta"></div>
+                    </div>
+                </div>
+                <div class="freq-row">
+                    <div class="freq-label">Alpha <span>8-12 Hz</span></div>
+                    <div class="bar-container">
+                        <div class="bar-fill fill-alpha"></div>
+                    </div>
+                </div>
+                <div class="freq-row">
+                    <div class="freq-label">Pink N <span>4-8 Hz</span></div>
+                    <div class="bar-container">
+                        <div class="bar-fill fill-pink"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="interpret-box">
+                <span class="interpret-title">Interpretación</span>
+                Según tu género escuchado Lo-fi y las frecuencias que maneja, puede ayudarte a reducir tu ansiedad, el estrés y mejorar tu estado de ánimo.
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('genreChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: ['Lo-fi', 'Pop', 'Rock', 'Reggae', 'Rap'],
+                datasets: [{
+                    label: 'Nivel',
+                    data: [5, 3, 2, 2.5, 1.5],
+                    backgroundColor: [
+                        '#4db6ac', // Lo-fi
+                        '#546e7a', // Pop
+                        '#8d6e63', // Rock
+                        '#fff176', // Reggae
+                        '#ffcc80'  // Rap
+                    ],
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        ticks: { display: false },
+                        grid: { color: '#e0e0e0' },
+                        pointLabels: {
+                            display: true,
+                            centerPointLabels: true,
+                            font: { size: 10, weight: 'bold' } // Fuente más pequeña para móvil
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

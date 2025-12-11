@@ -128,3 +128,7 @@
         @media (max-width: 768px) {
             .profile .profile-link { width: 36px; height: 36px; }
         }
+
+        .sidebar-item:hover, .sidebar-item.active { 
+            background: rgba(255, 255, 255, 0.25); transform: scale(1.05); color: white; 
+        }
