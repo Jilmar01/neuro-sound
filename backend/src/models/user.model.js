@@ -42,6 +42,11 @@ const UserSchema = new mongoose.Schema(
       default: true,
     },
 
+    form: {
+      type: Boolean,
+      default: false,
+    },
+
     resetToken: String,
     resetExpires: Date,
   },
