@@ -24,7 +24,9 @@ export const getUserBy = async (id) => {
  * @throws {Error} Si validación falla o email ya existe.
  */
 export const registerUser = async (userData) => {
-    const { name, last_name, email, password } = userData;
+    const { name, last_name, email, password, form } = userData;
+
+    console.log("Se realizo una peticion");
 
     // Validar campos requeridos
     if (!name || !last_name || !email || !password) {
@@ -54,7 +56,7 @@ export const registerUser = async (userData) => {
 
     // Hashear contraseña
     const pwd = hashPassword(password);
-    const nuevoUsuario = new User({ name, last_name, email, password: pwd });
+    const nuevoUsuario = new User({ name, last_name, email, password: pwd, form });
     await nuevoUsuario.save();
 
     const userObj = nuevoUsuario.toObject ? nuevoUsuario.toObject() : { ...nuevoUsuario };
@@ -101,7 +103,7 @@ export const updateUser = async (id, updateData) => {
     }
 
     const updated = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
-    console.log(updated);
+    //console.log(updated);
     
     return updated;
 };
