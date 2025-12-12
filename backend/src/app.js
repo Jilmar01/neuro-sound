@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import surveyRoutes from './routes/survey.routes.js'
 
 const app = express();
 
@@ -20,6 +21,7 @@ dotenv.config();
 /* Rutas */
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/survey', surveyRoutes);
 
 /* Ruta para enviar un mensaje de prueba */
 app.get('/api/test', (req, res) => {
