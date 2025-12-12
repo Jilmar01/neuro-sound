@@ -1,15 +1,26 @@
         /* ================================
            ESTILOS BASE (Mismos de antes)
         ================================= */
-        body {
-            height: 100vh;
-            background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
-            background-size: cover;
-            background-attachment: fixed;
-            margin: 0; padding: 0;
-            font-family: Arial, sans-serif;
-            overflow: hidden; 
-        }
+        /* ================================
+   ESTILOS BASE CORREGIDOS
+================================= */
+html {
+    /* Pinta el fondo base de un color oscuro o similar al gradiente */
+    background-color: #7960a2; 
+    height: 100%;
+}
+
+body {
+    /* Cambia height por min-height y usa dvh (Dynamic Viewport Height) */
+    min-height: 100dvh; 
+    background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+    background-size: cover;
+    background-attachment: fixed;
+    margin: 0; padding: 0;
+    font-family: Arial, sans-serif;
+    /* overflow: hidden;  <-- OJO: A veces esto causa problemas en móvil, 
+                            si puedes, quítalo o déjalo solo si controlas el scroll interno muy bien */
+}
 
         /* Clases Glass Genéricas */
         .glass-panel {
@@ -132,3 +143,34 @@
         .sidebar-item:hover, .sidebar-item.active { 
             background: rgba(255, 255, 255, 0.25); transform: scale(1.05); color: white; 
         }
+
+        /* Estilo específico para el modal del reproductor */
+.glass-modal {
+    background: linear-gradient(180deg, rgba(62, 55, 90, 0.95), rgba(20, 20, 20, 0.98));
+    backdrop-filter: blur(20px);
+    border: none;
+    z-index: 2000; /* Por encima de todo, incluso del navbar */
+}
+
+/* Contenedor de la carátula para darle sombra y dimensión */
+.album-art-container {
+    width: 100%;
+    max-width: 320px; /* Que no sea gigante en tablets */
+    aspect-ratio: 1/1;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+/* Personalizar el Slider (Input Range) para que se vea blanco */
+.custom-range::-webkit-slider-thumb {
+    background: white;
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+.custom-range::-webkit-slider-runnable-track {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Animación suave al pulsar el botón play grande */
+.play-button-large:active {
+    transform: scale(0.95);
+}

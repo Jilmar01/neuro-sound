@@ -46,38 +46,51 @@
     </div>
 
     <script>
-        document.getElementById("loginForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
-            try {
-                const response = await fetch("http://localhost:5000/api/auth/login", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({ email, password })
-                });
+        try {
+            const response = await fetch("http://10.40.41.216:5000/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                // La propiedad "credentials: 'include'" es común, pero si estás trabajando con cookies
+                // de un dominio diferente (CORS), asegúrate de que el backend lo permita.
+                credentials: "include", 
+                body: JSON.stringify({ email, password})
+            });
 
-                const data = await response.json();
+            const data = await response.json();
+            // Asegúrate de que la ruta de la propiedad `form` sea correcta según la respuesta de tu API.
+            let formDo = data.data.user.form; 
 
-                if (!response.ok) {
-                    alert(data.message || "Credenciales inválidas");
-                    return;
-                }
-
-                alert("Inicio de sesión exitoso");
-                window.location.href = "home.html";
-
-            } catch (error) {
-                console.log(error);
-                alert("Error al conectar con el servidor");
+            if (!response.ok) {
+                // Muestra el mensaje de error del servidor o uno predeterminado
+                alert(data.message || "Credenciales inválidas"); 
+                return;
             }
-        });
-    </script>
+
+            alert("Inicio de sesión exitoso");
+            
+            // --- INICIO DE LA CORRECCIÓN ---
+            if(formDo){
+                window.location.href = "home.html";
+            }else{
+                // **CORRECCIÓN: Debe ser 'window.location.href'**
+                window.location.href = "cuestionario.html"; 
+            }
+            // --- FIN DE LA CORRECCIÓN ---
+            
+        } catch (error) {
+            console.error(error); // Es mejor usar console.error para errores
+            alert("Error al conectar con el servidor");
+        }
+    });
+</script>
 
 </body>
 </html>

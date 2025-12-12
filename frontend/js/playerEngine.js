@@ -9,7 +9,9 @@ const PlayerEngine = {
             this.activeInstance = await SpotifyPlayerWrapper.init(token);
         } else {
             // Cargar Local
-            this.activeInstance = await LocalPlayer.init();
+            const songs = await obtenerRecomendaciones(); // Asumo que esta función existe y devuelve las canciones
+            setOnContainer(songs); // Pintar la lista en el contenedor
+            this.activeInstance = await LocalPlayer.init(songs);
         }
         
         this.setupButtons();

@@ -44,16 +44,16 @@
         <div class="question mb-3">
             <label>2.1 ¿Cuál de estas emociones describe mejor cómo se siente ahora?</label>
             <select id="currentEmotion" class="form-select">
-                <option value="Tristeza">Tristeza</option>
-                <option value="Calma">Calma</option>
-                <option value="Felicidad">Felicidad</option>
-                <option value="Ira">Ira</option>
+                <option value="T">Tristeza</option>
+                <option value="C">Calma</option>
+                <option value="F">Felicidad</option>
+                <option value="I">Ira</option>
             </select>
         </div>
 
         <div class="question mb-3">
             <label>2.2 ¿Qué tan intensa es esta emoción? (1 = muy leve, 5 = muy fuerte)</label>
-            <input id="emotionIntensity" type="range" class="form-range" min="1" max="5" step="1" oninput="document.getElementById('intensityVal').innerText = this.value">
+            <input id="emotionIntensity" type="range" class="form-range" min="1" max="5" step="1" value="1" oninput="document.getElementById('intensityVal').innerText = this.value">
             <div class="text-center fw-bold" id="intensityVal">3</div>
         </div>
 
@@ -69,20 +69,19 @@
             <div class="mb-2">
                 <strong>Tono 1:</strong>
                 <audio controls>
-                    <source src="audios/tono1.mp3" type="audio/mpeg">
-                    Tu navegador no soporta audio.
+                    
                 </audio>
             </div>
             <div class="mb-2">
                 <strong>Tono 2:</strong>
                 <audio controls>
-                    <source src="audios/tono2.mp3" type="audio/mpeg">
+                    
                 </audio>
             </div>
             <div class="mb-2">
                 <strong>Tono 3:</strong>
                 <audio controls>
-                    <source src="audios/tono3.mp3" type="audio/mpeg">
+                    
                 </audio>
             </div>
         </div>
@@ -140,7 +139,7 @@
 
         <div class="question mb-3">
             <label>4.1 Artista actual de interés:</label>
-            <input type="text" id="currentArtist" class="form-control" placeholder="Escriba el artista...">
+            <input type="text" id="currentArtist" class="form-control" placeholder="Dua Lipa, The Weeknd, etc.">
         </div>
 
         <div class="question mb-3">
@@ -178,6 +177,167 @@
 </div>
 
 <script>
+        // Variable global o local para almacenar la emoción seleccionada actualmente
+    let currentEmotion = "T"; // Valor predeterminado (Tristeza)
+
+    /**
+     * Función auxiliar para extraer la letra de la emoción del nombre de archivo.
+     * @param {string} fileName - El nombre del archivo de audio (ej: 'tone_110hz_20s T.wav').
+     * @returns {string | null} - La letra de la emoción (T, C, F, I) o null si no se encuentra.
+     */
+    function getEmotionCodeFromFileName(fileName) {
+        // Definimos un patrón de expresión regular:
+        // \s: busca un espacio en blanco
+        // ([TCFI]): captura la letra de la emoción (T, C, F, I)
+        // \.: busca un punto (antes de la extensión .wav)
+        const regex = /\s([TCFI])\./;
+        const match = fileName.match(regex);
+
+        // Si se encuentra una coincidencia, devuelve el primer grupo capturado (la letra)
+        if (match && match.length > 1) {
+            return match[1];
+        }
+        return null;
+    }
+
+    /**
+     * Función principal que cambia la fuente (src) de los reproductores de audio
+     * basándose en la emoción seleccionada.
+     */
+    function putSoundEmotion() {
+        // 1. Obtener la emoción seleccionada del selector (ej: "T", "C", "F", "I")
+        const selector = document.getElementById("currentEmotion");
+        if (!selector) {
+            console.error("El selector de emoción (ID: currentEmotion) no se encontró.");
+            return;
+        }
+        // Asume que el valor de la opción es la letra de la emoción (T, C, F, I)
+        currentEmotion = selector.value; 
+
+        // 2. Obtener todos los elementos de audio
+        const audioPlayers = document.querySelectorAll("audio");
+        if (audioPlayers.length === 0) {
+            console.warn("No se encontraron elementos <audio> en la página.");
+            return;
+        }
+
+        // 3. Obtener la lista de todos los archivos de audio disponibles
+        // **Nota importante:** En un entorno real, no puedes leer el sistema de archivos del servidor
+        // o el cliente directamente con JavaScript. Debes tener una lista predefinida o
+        // cargarla a través de una API.
+        // Para el ejemplo, usaremos una lista simulada de archivos disponibles en la carpeta "frecuences":
+        const availableAudios = [
+            "frecuences/tone_110hz_20s T.wav", // Tristeza
+            "frecuences/tone_174hz_20s T.wav", // Tristeza
+            "frecuences/tone_210hz_20s T.wav", // Calma
+            "frecuences/tone_285hz_20s C.wav", // Calma
+            "frecuences/tone_396hz_20s C.wav", // Felicidad
+            "frecuences/tone_417hz_20s C.wav", // Ira
+            "frecuences/tone_440hz_20s F.wav", // Felicidad
+            "frecuences/tone_528hz_20s F.wav", // Ira
+            "frecuences/tone_639hz_20s F.wav", // Tristeza
+            "frecuences/tone_741hz_20s I.wav", // Calma
+            "frecuences/tone_852hz_20s I.wav", // Felicidad
+            "frecuences/tone_963hz_20s I.wav", // Ira
+        ];
+        
+        // 4. Filtrar los audios que coinciden con la emoción seleccionada
+        const matchingAudios = availableAudios.filter(audioPath => {
+            const emotionCode = getEmotionCodeFromFileName(audioPath);
+            return emotionCode === currentEmotion;
+        });
+
+        if (matchingAudios.length === 0) {
+            console.warn(`No se encontraron audios para la emoción: ${currentEmotion}`);
+            return;
+        }
+        
+        // 5. Asignar los archivos a los reproductores de audio
+        audioPlayers.forEach((audioElement, index) => {
+            // Usa el operador módulo (%) para repetir los archivos si hay más reproductores que archivos
+            const audioPath = matchingAudios[index % matchingAudios.length];
+            
+            // Asignar el nuevo src y recargar el audio
+            audioElement.src = audioPath;
+            audioElement.load(); // Es importante llamar a .load() para que el navegador cargue la nueva fuente
+            
+            console.log(`Reproductor ${index + 1} actualizado con: ${audioPath}`);
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+        const selector = document.getElementById("emotionSelector");
+        if (selector) {
+            selector.addEventListener("change", putSoundEmotion);
+            // Establecer los audios iniciales
+            putSoundEmotion();
+        }
+        
+        // AÑADIR ESTA LÍNEA para habilitar el control de reproducción única
+        handleSingleAudioPlay();
+    });
+    }
+
+    // 6. Configurar el Event Listener
+    // Escucha el evento 'change' en el selector para ejecutar la función automáticamente.
+    document.addEventListener("DOMContentLoaded", () => {
+        const selector = document.getElementById("currentEmotion");
+        if (selector) {
+            selector.addEventListener("change", putSoundEmotion);
+            // Opcional: Ejecutar una vez al cargar para establecer los audios por defecto
+            putSoundEmotion();
+        }
+    });
+
+        /**
+     * Configura todos los elementos <audio> para que solo uno pueda reproducirse a la vez.
+     * Cuando un audio comienza a sonar, pausa todos los demás.
+     */
+    function handleSingleAudioPlay() {
+        // 1. Obtener todos los elementos de audio en la página
+        const audioPlayers = document.querySelectorAll("audio");
+
+        // 2. Iterar sobre cada reproductor para asignarle un 'event listener'
+        audioPlayers.forEach(player => {
+            // Añadir el listener si no tiene uno para evitar duplicados
+            player.removeEventListener('play', pauseOtherAudios);
+            player.addEventListener('play', pauseOtherAudios);
+        });
+    }
+
+    /**
+     * Función que se ejecuta cuando un audio comienza a reproducirse.
+     * Pausa todos los demás elementos de audio.
+     * @param {Event} event - El evento 'play' que se disparó.
+     */
+    function pauseOtherAudios(event) {
+        // 1. Obtener el elemento que disparó el evento (el audio que acaba de empezar a sonar)
+        const currentPlayingAudio = event.target;
+        
+        // 2. Obtener todos los reproductores de audio
+        const allAudios = document.querySelectorAll("audio");
+
+        // 3. Iterar y pausar cualquier reproductor que NO sea el actual
+        allAudios.forEach(audio => {
+            // Comprobar si el audio actual en el loop NO es el que se está reproduciendo ahora
+            if (audio !== currentPlayingAudio) {
+                // Pausar si no es el reproductor actual
+                audio.pause();
+                // Opcional: Reiniciar la posición de reproducción al inicio
+                // audio.currentTime = 0; 
+            }
+        });
+    }
+
+
+    // --- Llama a esta función para aplicar la restricción ---
+    // Asegúrate de que esta función se ejecute después de que los elementos <audio>
+    // hayan sido cargados en el DOM, por ejemplo, dentro de 'DOMContentLoaded'.
+    document.addEventListener("DOMContentLoaded", () => {
+        // ... (Tu código existente, como putSoundEmotion, puede ir aquí) ...
+        
+        // Llama a la nueva función
+        handleSingleAudioPlay();
+    });
+    
     // Lógica para el consentimiento
     function handleConsent() {
         const val = document.getElementById("consent").value;
@@ -242,7 +402,7 @@
         console.log("📤 Enviando JSON:", body);
 
         // 3. Enviar al servidor (Asegúrate de que el servidor acepte esta estructura)
-        fetch("http://10.40.46.10:5000/api/jilmar/recommend", {
+        fetch("http://127.0.0.1:5000/api/survey/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
@@ -251,6 +411,7 @@
         .then(data => {
             console.log("📥 Respuesta del servidor:", data);
             alert("Datos enviados correctamente. Revisa la consola.");
+            window.locartion.href = "home.html";
         })
         .catch(err => {
             console.error("❌ Error:", err);

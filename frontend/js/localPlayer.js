@@ -3,37 +3,18 @@ const LocalPlayer = {
     currentIndex: 0,
     audio: new Audio(),
 
-    async init() {
-        console.log("Iniciando Modo Local...");
-        const apiUrl = 'https://8nlqb9lj-5001.use2.devtunnels.ms/get-songs';
-        const requestBody = { "songsRequested": ["Dos soledades", "Take Five", "Autumn Leaves"] };
+    init(songsData) {
+        console.log("Inicializando Player con datos recibidos...");
+        
+        // Guardamos la lista que nos envia recommendations.js
+        this.playlist = songsData;
 
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) throw new Error('Error servidor local');
-            const data = await response.json();
-
-            // Mapeamos tu respuesta a nuestro formato
-            this.playlist = data.files.map(song => ({
-                title: song.name,
-                src: song.url,
-                artist: "Biblioteca Local", 
-                cover: "img/defaultcover.png"
-            }));
-
-            if (this.playlist.length > 0) {
-                this.setupAudioEvents();
-                this.loadTrack(0);
-                return this; // Retornamos la instancia para que el Engine la use
-            }
-
-        } catch (error) {
-            console.error("Fallo LocalPlayer:", error);
+        if (this.playlist.length > 0) {
+            this.setupAudioEvents();
+            this.loadTrack(0); // Carga la primera, pero espera al play
+            console.log("Player listo con " + this.playlist.length + " canciones.");
+        } else {
+            console.warn("La lista de reproducción está vacía.");
         }
     },
 
