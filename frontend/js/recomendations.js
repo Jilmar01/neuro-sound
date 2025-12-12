@@ -1,48 +1,39 @@
 async function obtenerRecomendaciones() {
-    console.log("📡 Conectando con el servidor...");
+    console.log("📡 Conectando al servidor (IP Local)...");
+
+    // USAMOS TU URL QUE SI FUNCIONA
+    const apiUrl = 'http://10.40.36.219:5000/api/recommend/music';
     
-    const url = 'https://8nlqb9lj-5001.use2.devtunnels.ms/get-songs';
-    
-    // El cuerpo de la petición que mostraste anteriormente
-    const requestBody = {};
+    // USAMOS TU BODY QUE SI FUNCIONA
+    const requestBody ={};
 
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json' 
-            },
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestBody)
         });
 
-        if (!response.ok) {
-            throw new Error(`Error del servidor: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Error servidor: ${response.status}`);
+        
         const data = await response.json();
 
-        // VALIDACIÓN: Verificamos dónde viene la lista de canciones.
-        // En tu código de LocalPlayer usabas 'data.files'. 
-        // Si el servidor cambió y usa 'data.songs', el '||' lo manejará.
-        const rawSongs = data.files || data.data?.songs || [];
-
-        // MAPEO: Convertimos lo que llega del servidor al formato estándar de tu App
-        const formattedPlaylist = rawSongs.map(song => ({
-            id: song._id || song.name, // Un identificador único
-            title: song.name,
-            // Si el artista viene en array lo unimos, si no, ponemos un default
-            artist: Array.isArray(song.artists) ? song.artists.join(", ") : (song.artist || "Artista Desconocido"),
-            src: song.url, // IMPORTANTE: El servidor debe devolver la URL del audio
-            cover: song.cover || "img/defaultcover.png",
-            bpm: song.bpm || 0
+        // --- EL PUNTO CLAVE: EL MAPEO EXACTO ---
+        // Usamos data.files como en tu ejemplo funcional
+        const formattedPlaylist = data.files.map(song => ({
+            // Mapeamos al formato que tu LocalPlayer espera (title, src, artist, cover)
+            title: song.name,             
+            src: song.url,                
+            artist: "Biblioteca Local",   
+            cover: "img/defaultcover.png" 
         }));
 
-        console.log(`✅ Se obtuvieron ${formattedPlaylist.length} canciones.`);
-        return formattedPlaylist; // Retornamos la lista al PlayerEngine
+        console.log(`✅ Datos recibidos y formateados: ${formattedPlaylist.length} canciones.`);
+        return formattedPlaylist; // Devolvemos la lista limpia al Engine
 
     } catch (error) {
-        console.error("❌ Fallo en la petición de recomendaciones:", error);
-        return []; // Retornamos arreglo vacío para no romper el programa
+        console.error("❌ Fallo obteniendo recomendaciones:", error);
+        return [];
     }
 }
 
@@ -98,8 +89,8 @@ function setOnContainer(songsList) {
     // Artista (Recuerda que en el JSON 'artists' es un array)
     let songArtist = document.createElement("p");
     songArtist.className = "card-text text-muted";
-    songArtist.innerText = song.artists.join(", "); 
-
+    //songArtist.innerText = song.artists.join(", "); 
+    songArtist.innerText = song.artist || "Artista Desconocido";
     // Score o BPM (Datos extra del JSON)
     let songMeta = document.createElement("small");
     songMeta.className = "text-primary";

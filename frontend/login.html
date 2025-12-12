@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    <script>
+<script>
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -53,40 +53,40 @@
         const password = document.getElementById("password").value;
 
         try {
-            const response = await fetch("http://10.40.41.216:5000/api/auth/login", {
+            const response = await fetch("http://10.40.36.219:5000/api/auth/login", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                // La propiedad "credentials: 'include'" es común, pero si estás trabajando con cookies
-                // de un dominio diferente (CORS), asegúrate de que el backend lo permita.
+                headers: { "Content-Type": "application/json" },
+                // IMPORTANTE: Esto permite que el navegador acepte y guarde la cookie que manda el servidor
                 credentials: "include", 
                 body: JSON.stringify({ email, password})
             });
 
             const data = await response.json();
-            // Asegúrate de que la ruta de la propiedad `form` sea correcta según la respuesta de tu API.
-            let formDo = data.data.user.form; 
 
+            // 1. Verificar errores
             if (!response.ok) {
-                // Muestra el mensaje de error del servidor o uno predeterminado
                 alert(data.message || "Credenciales inválidas"); 
                 return;
             }
 
+            // 2. ¿Token? ¡El navegador ya lo guardó solo!
+            // Si ves la cookie en F12 -> Application, ya ganaste. 
+            // No hace falta guardarla manualmente.
+            console.log("✅ Login exitoso. Cookie gestionada por el navegador.");
+
+            // 3. Verificar redirección
+            let formDo = data.data?.user?.form; 
+
             alert("Inicio de sesión exitoso");
             
-            // --- INICIO DE LA CORRECCIÓN ---
-            if(formDo){
+            if (formDo) {
                 window.location.href = "home.html";
-            }else{
-                // **CORRECCIÓN: Debe ser 'window.location.href'**
+            } else {
                 window.location.href = "cuestionario.html"; 
             }
-            // --- FIN DE LA CORRECCIÓN ---
             
         } catch (error) {
-            console.error(error); // Es mejor usar console.error para errores
+            console.error(error); 
             alert("Error al conectar con el servidor");
         }
     });

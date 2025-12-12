@@ -179,7 +179,7 @@
 <script>
         // Variable global o local para almacenar la emoción seleccionada actualmente
     let currentEmotion = "T"; // Valor predeterminado (Tristeza)
-
+    const tempToken = "";
     /**
      * Función auxiliar para extraer la letra de la emoción del nombre de archivo.
      * @param {string} fileName - El nombre del archivo de audio (ej: 'tone_110hz_20s T.wav').
@@ -374,50 +374,73 @@
         }
     }
 
-    function sendData() {
-        // 1. Recopilar Géneros
-        const genres = Array.from(
-            document.querySelectorAll('.genreCheck:checked')
-        ).map(x => x.value);
+async function sendData() {
+    // 1. Recuperar el token (Asegúrate de haberlo guardado en el Login)
+    // Si en tu login usaste: localStorage.setItem('token', data.token);
+    const token = localStorage.getItem('token'); 
 
-        // 2. Construir el objeto JSON con la NUEVA estructura
-        const body = {
-            consent: document.getElementById("consent").value === "Si",
-            emotionalState: {
-                emotion: document.getElementById("currentEmotion").value,
-                intensity: Number(document.getElementById("emotionIntensity").value)
-            },
-            toneTest: {
-                preferred: document.getElementById("likedTone").value,
-                disliked: document.getElementById("dislikedTone").value
-            },
-            musicPreferences: {
-                genres: genres,
-                currentArtist: document.getElementById("currentArtist").value,
-                tempoPreference: document.getElementById("tempoPref").value
-            },
-            intention: document.getElementById("emotionalGoal").value
-        };
-
-        console.log("📤 Enviando JSON:", body);
-
-        // 3. Enviar al servidor (Asegúrate de que el servidor acepte esta estructura)
-        fetch("http://127.0.0.1:5000/api/survey/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log("📥 Respuesta del servidor:", data);
-            alert("Datos enviados correctamente. Revisa la consola.");
-            window.locartion.href = "home.html";
-        })
-        .catch(err => {
-            console.error("❌ Error:", err);
-            alert("Error al conectar con el servidor.");
-        });
+    if (!token) {
+        alert("Error: No has iniciado sesión (Falta token).");
+        window.location.href = "index.html"; // Redirigir al login si no hay token
+        return;
     }
+
+    // 2. Recopilar Géneros
+    const genres = Array.from(
+        document.querySelectorAll('.genreCheck:checked')
+    ).map(x => x.value);
+
+    // 3. Construir el objeto JSON
+    const body = {
+        consent: document.getElementById("consent").value === "Si",
+        emotionalState: {
+            emotion: document.getElementById("currentEmotion").value,
+            intensity: Number(document.getElementById("emotionIntensity").value)
+        },
+        toneTest: {
+            preferred: document.getElementById("likedTone").value,
+            disliked: document.getElementById("dislikedTone").value
+        },
+        musicPreferences: {
+            genres: genres,
+            currentArtist: document.getElementById("currentArtist").value,
+            tempoPreference: document.getElementById("tempoPref").value
+        },
+        intention: document.getElementById("emotionalGoal").value
+    };
+
+    console.log("📤 Enviando JSON:", body);
+
+    try {
+        // 4. Enviar al servidor (Uso tu IP local y puerto del backend)
+        // Asumo que la ruta es /api/users/form o similar
+        const response = await fetch("http://10.40.36.219:5000/api/users/form", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // CORRECCIÓN CRÍTICA: Uso de backticks (`) para interpolar la variable
+                "Authorization": `Bearer ${tempToken}` 
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "Error al guardar el formulario");
+        }
+
+        console.log("✅ Respuesta exitosa:", data);
+        alert("Preferencias guardadas correctamente");
+        
+        // 5. Redirigir al Home (Reproductor)
+        window.location.href = "home.html";
+
+    } catch (err) {
+        console.error("❌ Error en fetch:", err);
+        alert("Hubo un error al guardar tus datos: " + err.message);
+    }
+}
 </script>
 
 </body>

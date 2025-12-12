@@ -3,19 +3,24 @@ const LocalPlayer = {
     currentIndex: 0,
     audio: new Audio(),
 
-    init(songsData) {
-        console.log("Inicializando Player con datos recibidos...");
-        
-        // Guardamos la lista que nos envia recommendations.js
-        this.playlist = songsData;
+    async init(songsData) {
+        console.log("🛠️ Inicializando LocalPlayer...");
 
-        if (this.playlist.length > 0) {
-            this.setupAudioEvents();
-            this.loadTrack(0); // Carga la primera, pero espera al play
-            console.log("Player listo con " + this.playlist.length + " canciones.");
-        } else {
-            console.warn("La lista de reproducción está vacía.");
+        if (!songsData || !Array.isArray(songsData) || songsData.length === 0) {
+            console.error("❌ Error: LocalPlayer recibió una lista vacía.");
+            return;
         }
+
+        // 1. Guardamos la lista
+        this.playlist = songsData;
+        console.log("✅ Playlist cargada correctamente en el reproductor.");
+
+        // 2. Configuramos eventos
+        this.setupAudioEvents();
+
+        // 3. Cargamos la primera canción (track 0)
+        this.loadTrack(0);
+        return this; // Devolvemos la instancia para que PlayerEngine la use
     },
 
     setupAudioEvents() {
