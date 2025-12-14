@@ -28,7 +28,8 @@ export const login = async (req, res) => {
 
 		return sendSuccess(res, { user }, 'Login exitoso', 200);
 	} catch (error) {
-		return sendError(res, 'Error al iniciar sesión', 500, error.message);
+		console.error("ERRORES DEL LOGIN:", error); // <--- AGREGA ESTA LÍNEA
+		res.status(500).json({ message: "Error en el servidor" });
 	}
 };
 

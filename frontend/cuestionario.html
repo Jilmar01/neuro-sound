@@ -44,10 +44,10 @@
         <div class="question mb-3">
             <label>2.1 ¿Cuál de estas emociones describe mejor cómo se siente ahora?</label>
             <select id="currentEmotion" class="form-select">
-                <option value="T">Tristeza</option>
-                <option value="C">Calma</option>
-                <option value="F">Felicidad</option>
-                <option value="I">Ira</option>
+                <option value="tristeza">Tristeza</option>
+                <option value="calma">Calma</option>
+                <option value="felicidad">Felicidad</option>
+                <option value="ira">Ira</option>
             </select>
         </div>
 
@@ -60,47 +60,68 @@
         <button class="btn btn-primary" onclick="nextSection(2)">Siguiente</button>
     </div>
 
-    <div id="section3" class="section" style="display:none;">
+<div id="section3" class="section" style="display:none;">
         <button class="btn btn-outline-secondary mb-3" onclick="previousSection(3)"><i class="bi bi-arrow-left"></i> Atrás</button>
         <h2>3. Test de Tonos Puros</h2>
 
         <div class="question mb-4">
-            <label>3.1 Escuche los siguientes tonos:</label>
-            <div class="mb-2">
+            <label>3.1 Escuche los siguientes tonos y califique cuánto le molestan (1 = Nada, 5 = Mucho):</label>
+            
+            <div class="mb-3 p-3 border rounded">
                 <strong>Tono 1:</strong>
-                <audio controls>
-                    
-                </audio>
+                <audio controls class="w-100 mb-2"></audio>
+                <label class="form-label">Nivel de molestia:</label>
+                <select id="molestia1" class="form-select">
+                    <option value="1">1 - Nada molesto</option>
+                    <option value="2">2 - Poco molesto</option>
+                    <option value="3">3 - Moderado</option>
+                    <option value="4">4 - Molesto</option>
+                    <option value="5">5 - Muy molesto</option>
+                </select>
             </div>
-            <div class="mb-2">
+
+            <div class="mb-3 p-3 border rounded">
                 <strong>Tono 2:</strong>
-                <audio controls>
-                    
-                </audio>
+                <audio controls class="w-100 mb-2"></audio>
+                <label class="form-label">Nivel de molestia:</label>
+                <select id="molestia2" class="form-select">
+                    <option value="1">1 - Nada molesto</option>
+                    <option value="2">2 - Poco molesto</option>
+                    <option value="3">3 - Moderado</option>
+                    <option value="4">4 - Molesto</option>
+                    <option value="5">5 - Muy molesto</option>
+                </select>
             </div>
-            <div class="mb-2">
+
+            <div class="mb-3 p-3 border rounded">
                 <strong>Tono 3:</strong>
-                <audio controls>
-                    
-                </audio>
+                <audio controls class="w-100 mb-2"></audio>
+                <label class="form-label">Nivel de molestia:</label>
+                <select id="molestia3" class="form-select">
+                    <option value="1">1 - Nada molesto</option>
+                    <option value="2">2 - Poco molesto</option>
+                    <option value="3">3 - Moderado</option>
+                    <option value="4">4 - Molesto</option>
+                    <option value="5">5 - Muy molesto</option>
+                </select>
             </div>
         </div>
 
         <div class="question mb-3">
             <label>3.2 ¿Qué tono le agradó más?</label>
             <select id="likedTone" class="form-select">
-                <option value="Tono 1">Tono 1</option>
-                <option value="Tono 2">Tono 2</option>
-                <option value="Tono 3">Tono 3</option>
+                <option value="tone1">Tono 1</option>
+                <option value="tone2">Tono 2</option>
+                <option value="tone3">Tono 3</option>
             </select>
         </div>
 
         <div class="question mb-3">
             <label>3.3 ¿Qué tono le desagradó más?</label>
             <select id="dislikedTone" class="form-select">
-                <option value="Tono 1">Tono 1</option>
-                <option value="Tono 2">Tono 2</option>
-                <option value="Tono 3">Tono 3</option>
+                <option value="tone4">Tono 1</option>
+                <option value="tone5">Tono 2</option>
+                <option value="tone6">Tono 3</option>
             </select>
         </div>
 
@@ -145,11 +166,11 @@
         <div class="question mb-3">
             <label>4.2 Preferencia de tipo de canción:</label>
             <select id="tempoPref" class="form-select">
-                <option value="Muy lentas y solemnes">Muy lentas y solemnes</option>
-                <option value="Lentas y tranquilas">Lentas y tranquilas</option>
-                <option value="Ritmo moderado">Ritmo moderado</option>
-                <option value="Rápidas y animadas">Rápidas y animadas</option>
-                <option value="Muy rápidas e intensas">Muy rápidas e intensas</option>
+                <option value="muy lentas y solemnes">Muy lentas y solemnes</option>
+                <option value="lentas y tranquilas">Lentas y tranquilas</option>
+                <option value="ritmo moderado">Ritmo moderado</option>
+                <option value="rapidas y animadas">Rápidas y animadas</option>
+                <option value="muy rápidas e intensas">Muy rápidas e intensas</option>
             </select>
         </div>
 
@@ -163,11 +184,11 @@
         <div class="question mb-3">
             <label>Seleccione lo que desea que la música haga por usted:</label>
             <select id="emotionalGoal" class="form-select">
-                <option value="Mantener cómo me siento">Mantener cómo me siento</option>
-                <option value="Sentirme más feliz">Sentirme más feliz</option>
-                <option value="Relajarme">Relajarme</option>
-                <option value="Aumentar mi energía">Aumentar mi energía</option>
-                <option value="Ayudarme a concentrarme">Ayudarme a concentrarme</option>
+                <option value="1">Mantener cómo me siento</option>
+                <option value="2">Sentirme más feliz</option>
+                <option value="3">Relajarme</option>
+                <option value="4">Aumentar mi energía</option>
+                <option value="5">Ayudarme a concentrarme</option>
             </select>
         </div>
 
@@ -177,168 +198,113 @@
 </div>
 
 <script>
-        // Variable global o local para almacenar la emoción seleccionada actualmente
-    let currentEmotion = "T"; // Valor predeterminado (Tristeza)
-    const tempToken = "";
-    /**
-     * Función auxiliar para extraer la letra de la emoción del nombre de archivo.
-     * @param {string} fileName - El nombre del archivo de audio (ej: 'tone_110hz_20s T.wav').
-     * @returns {string | null} - La letra de la emoción (T, C, F, I) o null si no se encuentra.
-     */
+    // Variable global para almacenar la emoción seleccionada
+let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
+
+    // Mapa para traducir la letra del archivo a la palabra completa
+    const emotionMap = {
+        'T': 'tristeza',
+        'C': 'calma',
+        'F': 'felicidad',
+        'I': 'ira'
+    };
+    
+    // 1. Lógica de Audio y Reproductor -----------------------------------------
+    
     function getEmotionCodeFromFileName(fileName) {
-        // Definimos un patrón de expresión regular:
-        // \s: busca un espacio en blanco
-        // ([TCFI]): captura la letra de la emoción (T, C, F, I)
-        // \.: busca un punto (antes de la extensión .wav)
+        // 1. Buscamos la letra Mayúscula (T, C, F, I) antes del punto (.wav)
+        // La regex busca: un espacio (\s), seguido de una letra T,C,F o I, seguido de un punto
         const regex = /\s([TCFI])\./;
         const match = fileName.match(regex);
 
-        // Si se encuentra una coincidencia, devuelve el primer grupo capturado (la letra)
+        // 2. Si encontramos la letra (ej: "T"), devolvemos la palabra completa ("tristeza")
         if (match && match.length > 1) {
-            return match[1];
+            const letraEncontrada = match[1]; // "T"
+            return emotionMap[letraEncontrada]; // Devuelve "tristeza"
         }
+        
         return null;
     }
 
-    /**
-     * Función principal que cambia la fuente (src) de los reproductores de audio
-     * basándose en la emoción seleccionada.
-     */
+    // --- Asegúrate de actualizar también la función de filtrado ---
+    
     function putSoundEmotion() {
-        // 1. Obtener la emoción seleccionada del selector (ej: "T", "C", "F", "I")
         const selector = document.getElementById("currentEmotion");
-        if (!selector) {
-            console.error("El selector de emoción (ID: currentEmotion) no se encontró.");
-            return;
-        }
-        // Asume que el valor de la opción es la letra de la emoción (T, C, F, I)
+        if (!selector) return;
+        
+        // Asegúrate de que los <option> en tu HTML tengan value="tristeza", value="calma", etc.
         currentEmotion = selector.value; 
+        console.log("Emoción seleccionada:", currentEmotion);
 
-        // 2. Obtener todos los elementos de audio
         const audioPlayers = document.querySelectorAll("audio");
-        if (audioPlayers.length === 0) {
-            console.warn("No se encontraron elementos <audio> en la página.");
-            return;
-        }
+        if (audioPlayers.length === 0) return;
 
-        // 3. Obtener la lista de todos los archivos de audio disponibles
-        // **Nota importante:** En un entorno real, no puedes leer el sistema de archivos del servidor
-        // o el cliente directamente con JavaScript. Debes tener una lista predefinida o
-        // cargarla a través de una API.
-        // Para el ejemplo, usaremos una lista simulada de archivos disponibles en la carpeta "frecuences":
+        // Lista de archivos (Siguen teniendo la letra T, C, F, I en el nombre)
         const availableAudios = [
-            "frecuences/tone_110hz_20s T.wav", // Tristeza
-            "frecuences/tone_174hz_20s T.wav", // Tristeza
-            "frecuences/tone_210hz_20s T.wav", // Calma
-            "frecuences/tone_285hz_20s C.wav", // Calma
-            "frecuences/tone_396hz_20s C.wav", // Felicidad
-            "frecuences/tone_417hz_20s C.wav", // Ira
-            "frecuences/tone_440hz_20s F.wav", // Felicidad
-            "frecuences/tone_528hz_20s F.wav", // Ira
-            "frecuences/tone_639hz_20s F.wav", // Tristeza
-            "frecuences/tone_741hz_20s I.wav", // Calma
-            "frecuences/tone_852hz_20s I.wav", // Felicidad
-            "frecuences/tone_963hz_20s I.wav", // Ira
+            "frecuences/tone_110hz_20s T.wav", 
+            "frecuences/tone_174hz_20s T.wav", 
+            "frecuences/tone_210hz_20s T.wav", 
+            "frecuences/tone_285hz_20s C.wav", 
+            "frecuences/tone_396hz_20s C.wav", 
+            "frecuences/tone_417hz_20s C.wav", 
+            "frecuences/tone_440hz_20s F.wav", 
+            "frecuences/tone_528hz_20s F.wav", 
+            "frecuences/tone_639hz_20s F.wav", 
+            "frecuences/tone_741hz_20s I.wav", 
+            "frecuences/tone_852hz_20s I.wav", 
+            "frecuences/tone_963hz_20s I.wav", 
         ];
         
-        // 4. Filtrar los audios que coinciden con la emoción seleccionada
         const matchingAudios = availableAudios.filter(audioPath => {
-            const emotionCode = getEmotionCodeFromFileName(audioPath);
-            return emotionCode === currentEmotion;
+            // Aquí la función ya nos devuelve "tristeza", "calma", etc.
+            const emotionWord = getEmotionCodeFromFileName(audioPath);
+            
+            // Comparamos "tristeza" === "tristeza"
+            return emotionWord === currentEmotion;
         });
 
         if (matchingAudios.length === 0) {
-            console.warn(`No se encontraron audios para la emoción: ${currentEmotion}`);
+            console.warn("No hay audios para:", currentEmotion);
             return;
         }
         
-        // 5. Asignar los archivos a los reproductores de audio
         audioPlayers.forEach((audioElement, index) => {
-            // Usa el operador módulo (%) para repetir los archivos si hay más reproductores que archivos
             const audioPath = matchingAudios[index % matchingAudios.length];
-            
-            // Asignar el nuevo src y recargar el audio
             audioElement.src = audioPath;
-            audioElement.load(); // Es importante llamar a .load() para que el navegador cargue la nueva fuente
-            
-            console.log(`Reproductor ${index + 1} actualizado con: ${audioPath}`);
+            audioElement.load(); 
         });
-        document.addEventListener("DOMContentLoaded", () => {
-        const selector = document.getElementById("emotionSelector");
-        if (selector) {
-            selector.addEventListener("change", putSoundEmotion);
-            // Establecer los audios iniciales
-            putSoundEmotion();
-        }
-        
-        // AÑADIR ESTA LÍNEA para habilitar el control de reproducción única
-        handleSingleAudioPlay();
-    });
     }
 
-    // 6. Configurar el Event Listener
-    // Escucha el evento 'change' en el selector para ejecutar la función automáticamente.
-    document.addEventListener("DOMContentLoaded", () => {
-        const selector = document.getElementById("currentEmotion");
-        if (selector) {
-            selector.addEventListener("change", putSoundEmotion);
-            // Opcional: Ejecutar una vez al cargar para establecer los audios por defecto
-            putSoundEmotion();
-        }
-    });
-
-        /**
-     * Configura todos los elementos <audio> para que solo uno pueda reproducirse a la vez.
-     * Cuando un audio comienza a sonar, pausa todos los demás.
-     */
     function handleSingleAudioPlay() {
-        // 1. Obtener todos los elementos de audio en la página
         const audioPlayers = document.querySelectorAll("audio");
-
-        // 2. Iterar sobre cada reproductor para asignarle un 'event listener'
         audioPlayers.forEach(player => {
-            // Añadir el listener si no tiene uno para evitar duplicados
             player.removeEventListener('play', pauseOtherAudios);
             player.addEventListener('play', pauseOtherAudios);
         });
     }
 
-    /**
-     * Función que se ejecuta cuando un audio comienza a reproducirse.
-     * Pausa todos los demás elementos de audio.
-     * @param {Event} event - El evento 'play' que se disparó.
-     */
     function pauseOtherAudios(event) {
-        // 1. Obtener el elemento que disparó el evento (el audio que acaba de empezar a sonar)
         const currentPlayingAudio = event.target;
-        
-        // 2. Obtener todos los reproductores de audio
         const allAudios = document.querySelectorAll("audio");
-
-        // 3. Iterar y pausar cualquier reproductor que NO sea el actual
         allAudios.forEach(audio => {
-            // Comprobar si el audio actual en el loop NO es el que se está reproduciendo ahora
             if (audio !== currentPlayingAudio) {
-                // Pausar si no es el reproductor actual
                 audio.pause();
-                // Opcional: Reiniciar la posición de reproducción al inicio
-                // audio.currentTime = 0; 
             }
         });
     }
 
-
-    // --- Llama a esta función para aplicar la restricción ---
-    // Asegúrate de que esta función se ejecute después de que los elementos <audio>
-    // hayan sido cargados en el DOM, por ejemplo, dentro de 'DOMContentLoaded'.
+    // Inicialización de audios al cargar
     document.addEventListener("DOMContentLoaded", () => {
-        // ... (Tu código existente, como putSoundEmotion, puede ir aquí) ...
-        
-        // Llama a la nueva función
+        const selector = document.getElementById("currentEmotion");
+        if (selector) {
+            selector.addEventListener("change", putSoundEmotion);
+            putSoundEmotion(); // Carga inicial
+        }
         handleSingleAudioPlay();
     });
-    
-    // Lógica para el consentimiento
+
+    // 2. Navegación del Formulario (Siguiente / Atrás) -----------------------
+
     function handleConsent() {
         const val = document.getElementById("consent").value;
         if (val === "No") {
@@ -349,11 +315,9 @@
     }
 
     function nextSection(current) {
-        // Ocultar actual
         document.getElementById("section" + current).style.display = "none";
         document.getElementById("section" + current).classList.remove("active");
         
-        // Mostrar siguiente
         const next = document.getElementById("section" + (current + 1));
         if(next) {
             next.style.display = "block";
@@ -362,11 +326,9 @@
     }
 
     function previousSection(current) {
-        // Ocultar actual
         document.getElementById("section" + current).style.display = "none";
         document.getElementById("section" + current).classList.remove("active");
 
-        // Mostrar anterior
         const prev = document.getElementById("section" + (current - 1));
         if(prev) {
             prev.style.display = "block";
@@ -374,73 +336,100 @@
         }
     }
 
-async function sendData() {
-    // 1. Recuperar el token (Asegúrate de haberlo guardado en el Login)
-    // Si en tu login usaste: localStorage.setItem('token', data.token);
-    const token = localStorage.getItem('token'); 
+    // 3. Envío de Datos (AQUÍ ESTÁ LA CORRECCIÓN CLAVE) ----------------------
 
-    if (!token) {
-        alert("Error: No has iniciado sesión (Falta token).");
-        window.location.href = "index.html"; // Redirigir al login si no hay token
-        return;
-    }
-
-    // 2. Recopilar Géneros
-    const genres = Array.from(
-        document.querySelectorAll('.genreCheck:checked')
-    ).map(x => x.value);
-
-    // 3. Construir el objeto JSON
-    const body = {
-        consent: document.getElementById("consent").value === "Si",
-        emotionalState: {
-            emotion: document.getElementById("currentEmotion").value,
-            intensity: Number(document.getElementById("emotionIntensity").value)
-        },
-        toneTest: {
-            preferred: document.getElementById("likedTone").value,
-            disliked: document.getElementById("dislikedTone").value
-        },
-        musicPreferences: {
-            genres: genres,
-            currentArtist: document.getElementById("currentArtist").value,
-            tempoPreference: document.getElementById("tempoPref").value
-        },
-        intention: document.getElementById("emotionalGoal").value
-    };
-
-    console.log("📤 Enviando JSON:", body);
-
-    try {
-        // 4. Enviar al servidor (Uso tu IP local y puerto del backend)
-        // Asumo que la ruta es /api/users/form o similar
-        const response = await fetch("http://10.40.36.219:5000/api/users/form", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                // CORRECCIÓN CRÍTICA: Uso de backticks (`) para interpolar la variable
-                "Authorization": `Bearer ${tempToken}` 
-            },
-            body: JSON.stringify(body)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || "Error al guardar el formulario");
+    async function sendData() {
+        //emociones a enviar por su frecuencia
+        const EMOTION_FREQUENCIES = {
+            tristeza: [110, 174, 210],
+            calma: [285, 396, 417],
+            felicidad: [440, 528, 639],
+            ira: [741, 852, 963]
+        };
+        // A. Token
+        const token = localStorage.getItem('token'); 
+        if (!token) {
+            alert("⚠️ Error: Sesión no iniciada.");
+            // window.location.href = "index.html"; // Descomenta esto en producción
+            return;
         }
-
-        console.log("✅ Respuesta exitosa:", data);
-        alert("Preferencias guardadas correctamente");
+        // --- 2. OBTENER LA EMOCIÓN ACTUAL ---
+        const selectedEmotion = document.getElementById("currentEmotion").value; // ej: "tristeza"
         
-        // 5. Redirigir al Home (Reproductor)
-        window.location.href = "home.html";
+        // Buscamos el array correspondiente. Si por error no existe, enviamos un array vacío []
+        const frequenciesToSend = EMOTION_FREQUENCIES[selectedEmotion] || [];
+        // B. Recopilar Géneros
+        const genres = Array.from(
+            document.querySelectorAll('.genreCheck:checked')
+        ).map(x => x.value);
 
-    } catch (err) {
-        console.error("❌ Error en fetch:", err);
-        alert("Hubo un error al guardar tus datos: " + err.message);
+        const rawArtists = document.getElementById("currentArtist").value;
+        
+        // 2. Procesar: Cortar por comas -> Limpiar espacios -> Quitar vacíos
+        const artistArray = rawArtists
+            .split(',')                    // Crea el array
+            .map(artist => artist.trim())  // Quita espacios extra: " dua lipa " -> "dua lipa"
+            .filter(artist => artist !== "");
+        
+        const body = {
+            // -- Campos Raíz (Root) --
+            emotion: document.getElementById("currentEmotion").value,
+            intensity: Number(document.getElementById("emotionIntensity").value),
+            
+            // -- Objeto Tones (Este sí coincide con la BD) --
+            tones: {
+                group: frequenciesToSend,
+                molestias: {
+                    tone1: Number(document.getElementById("molestia1").value),
+                    tone2: Number(document.getElementById("molestia2").value),
+                    tone3: Number(document.getElementById("molestia3").value)
+                },
+                favorite: document.getElementById("likedTone").value,
+                least_favorite: document.getElementById("dislikedTone").value
+            },
+
+            // -- CORRECCIÓN: Campos sacados de "musicPreferences" a la raíz --
+            genres: genres,
+            artist_interest: artistArray,
+            tempo_preference: document.getElementById("tempoPref").value,
+            
+            // -- CORRECCIÓN: intent --
+            // Asegúrate de modificar el HTML (Paso 2 abajo) para que esto sea un número
+            intent: Number(document.getElementById("emotionalGoal").value),
+            
+            // Nota: 'consent' no aparece en tu ejemplo de BD. 
+            // Si el esquema de Mongoose lo permite, déjalo; si no, bórralo.
+            consent: document.getElementById("consent").value === "Si"
+        };
+
+        console.log("📤 Enviando JSON Estructurado:", body);
+
+        try {
+            const response = await fetch("https://8nlqb9lj-5000.use2.devtunnels.ms/api/survey/register", { // REVISA QUE ESTA RUTA SEA LA CORRECTA EN TU BACKEND
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Muestra el mensaje exacto del servidor para depurar
+                throw new Error(data.message || JSON.stringify(data));
+            }
+
+            console.log("✅ Guardado exitoso:", data);
+            alert("Preferencias guardadas correctamente!");
+            window.location.href = "home.html";
+
+        } catch (err) {
+            console.error("❌ Error al guardar:", err);
+            alert("Error al guardar: " + err.message);
+        }
     }
-}
 </script>
 
 </body>

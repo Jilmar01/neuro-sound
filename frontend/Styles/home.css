@@ -174,3 +174,50 @@ body {
 .play-button-large:active {
     transform: scale(0.95);
 }
+
+/* ================================
+   AJUSTES TARJETA CANCIÓN (Fixed Layout)
+================================= */
+
+.song-card {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s;
+    /* Altura fija opcional para uniformidad, quítalo si prefieres altura automática */
+    min-height: 80px; 
+}
+
+.song-card:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: scale(1.02);
+}
+
+.song-card img {
+    /* Forzamos que la imagen sea cuadrada y llene su columna */
+    width: 60px;  /* Tamaño fijo para móvil y escritorio */
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px; /* Bordes un poco más cuadrados como en tu foto */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.song-card .card-body {
+    /* Alineación vertical del texto */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Ajuste específico para móviles muy pequeños */
+@media (max-width: 400px) {
+    .song-card img {
+        width: 50px;
+        height: 50px;
+    }
+    .song-card .card-title {
+        font-size: 0.9rem;
+    }
+}

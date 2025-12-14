@@ -11,6 +11,9 @@ const UIController = {
             container: document.getElementById('progressContainerDesktop')
         }
         // Agrega aquí referencias mobile si las necesitas
+        mobile:{
+            
+        }
     },
 
     formatTime(ms) {
