@@ -14,10 +14,14 @@ export const login = async (req, res) => {
 		const { user, token } = await authService(email, password);
 
 		// Opciones de cookie
+		const isProduction = process.env.NODE_ENV === "production";
+
 		const cookieOptions = {
 			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			sameSite: 'lax',
+			secure: isProduction,                    
+			sameSite: isProduction ? "none" : "lax",
+			path: "/",
+			maxAge: 7 * 24 * 60 * 60 * 1000
 		};
 
 		// Intentar usar JWT_EXPIRE para maxAge si está disponible; si no, usar valor por defecto.
@@ -26,7 +30,7 @@ export const login = async (req, res) => {
 
 		res.cookie('token', token, cookieOptions);
 
-		return sendSuccess(res, { user }, 'Login exitoso', 200);
+		return sendSuccess(res, { token , user: { form: user.form } }, 'Login exitoso', 200);
 	} catch (error) {
 		return sendError(res, 'Error al iniciar sesión', 500, error.message);
 	}
