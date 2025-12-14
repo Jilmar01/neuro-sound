@@ -5,7 +5,10 @@ export const loginSpotify = (req, res) => {
         "user-read-private",
         "user-read-email",
         "user-read-playback-state",
-        "user-modify-playback-state"
+        "user-modify-playback-state",
+        "streaming",
+        "user-read-currently-playing",
+        "user-library-read"
     ];
 
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");

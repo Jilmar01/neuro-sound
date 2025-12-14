@@ -234,44 +234,70 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 1. Capturar token desde la URL (si viene de la autorización)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if(token) {
-        localStorage.setItem('spotifyToken', token); // Guardar token
-        window.history.replaceState({}, document.title, '/frontend/settings.html'); // Limpiar URL
+    // --- PARTE A: AL CARGAR LA PÁGINA ---
+    document.addEventListener("DOMContentLoaded", () => {
+        // 1. ¿Venimos de Spotify con un token nuevo?
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenUrl = urlParams.get('token');
+        const errorUrl = urlParams.get('error');
+
+        if (tokenUrl) {
+            console.log("✅ Token recibido de Spotify");
+            localStorage.setItem('spotifyToken', tokenUrl);
+            
+            // Limpiamos la URL para que se vea bonita
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if (errorUrl) {
+            alert("Error al conectar con Spotify.");
+        }
+
+        // 2. Verificar estado actual para pintar el botón
+        checkSpotifyStatus();
+    });
+
+    function checkSpotifyStatus() {
+        const savedToken = localStorage.getItem('spotifyToken');
+        
+        // Referencias a tus elementos del DOM
+        const btn = document.getElementById('btn-spotify-connect'); // Tu botón principal
+        const statusText = document.getElementById('spotify-status-text'); // Texto de estado
+        
+        // NOTA: Ajusta estos IDs si en tu HTML se llaman diferente
+        if (!btn) return;
+
+        if (savedToken) {
+            // ESTADO: CONECTADO
+            btn.classList.add('connected');
+            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Desconectar';
+            btn.style.color = "#1DB954"; // Verde Spotify
+            if(statusText) statusText.innerText = "Conectado";
+        } else {
+            // ESTADO: DESCONECTADO
+            btn.classList.remove('connected');
+            btn.innerHTML = '<i class="bi bi-spotify"></i> Conectar Spotify';
+            btn.style.color = ""; // Color original
+            if(statusText) statusText.innerText = "Desconectado";
+        }
     }
 
-    // 2. Verificar si hay token guardado
-    const savedToken = localStorage.getItem('spotifyToken');
-    if(savedToken) {
-        // Actualizar UI a "conectado"
-        const btn = document.getElementById('btn-spotify-connect');
-        const statusText = document.getElementById('spotify-status-text');
-        const indicator = document.getElementById('status-indicator');
-        const icon = btn.querySelector('i');
-        const span = btn.querySelector('span');
-
-        btn.classList.add('connected');
-        span.innerText = "Desconectar";
-        statusText.innerText = "Conectado";
-        indicator.style.backgroundColor = "#198754";
-        indicator.style.boxShadow = "0 0 5px #198754";
-        btn.style.backgroundColor = "transparent";
-        btn.style.color = "#1DB954";
-        icon.className = "bi bi-check-circle-fill";
-    }
-
-    // 3. Función para toggle (conectar / desconectar)
+    // --- PARTE B: AL HACER CLIC EN EL BOTÓN ---
     function toggleSpotify() {
         const btn = document.getElementById('btn-spotify-connect');
-        if(btn.classList.contains('connected')) {
-            // Desconectar
-            localStorage.removeItem('spotifyToken'); // Borrar token
-            window.location.reload(); // Refresca para actualizar UI
+        
+        if (btn.classList.contains('connected')) {
+            // 1. Si ya está conectado -> Desconectar
+            localStorage.removeItem('spotifyToken');
+            checkSpotifyStatus(); // Actualizar UI
+            alert("Has desconectado Spotify.");
         } else {
-            // Redirigir a login de Spotify
-            window.location.href = "http://localhost:5000/api/spotify/login";
+            // 2. Si no está conectado -> Iniciar Login
+            // IMPORTANTE: Redirigimos al BACKEND, no a Spotify directo
+            
+            // Si usas config.js: window.location.href = `${API_BASE_URL}/api/spotify/login`;
+            // Si no, directo:
+            window.location.href = "http://127.0.0.1:5000/api/spotify/login";
         }
     }
 </script>
