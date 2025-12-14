@@ -9,23 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="Styles/commonelem.css">
     <link rel="stylesheet" href="Styles/home.css">
-    
-
-    <!--style>
-        /* CSS INCRUSTADO POR SI NO CARGA EL ARCHIVO EXTERNO */
-        /* (Solo para asegurar que se vea bien en esta vista previa) */
-        body { height: 100vh; background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2); background-size: cover; overflow: hidden; }
-        .glass-panel { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 15px; color: white; }
-        .sidebar-container { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px); border-right: 1px solid rgba(255, 255, 255, 0.2); display: flex; flex-direction: column; align-items: center; padding-top: 20px; height: 100%; }
-        .sidebar-item { padding: 15px 0; cursor: pointer; border-radius: 10px; transition: 0.2s; width: 80%; display: flex; flex-direction: column; align-items: center; }
-        .sidebar-item:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
-        .header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 15px; padding: 15px 25px; margin: 15px; }
-        .searchfield input { background: rgba(255, 255, 255, 0.2); border: none; color: white; border-radius: 20px; }
-        .mobile-navbar { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.2); z-index: 1050; }
-        .offcanvas-glass { background: linear-gradient(135deg, #5b537a, #3e7cae); color: white; backdrop-filter: blur(10px); }
-        .mobile-player { position: fixed; bottom: 75px; left: 10px; right: 10px; height: 65px; z-index: 1040; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
-    </style-->
-    
 </head>
 <body>
 
@@ -36,24 +19,20 @@
                 <div class="sidebar-container">
                     <div class="mb-5 mt-3"><i class="bi bi-vinyl fs-1 text-white"></i></div>
                     <ul class="list-unstyled d-flex flex-column gap-3 w-100 align-items-center">
-                        
                         <li class="sidebar-item active">
                             <i class="bi bi-house-door-fill fs-4 text-white"></i>
                             <span class="small mt-1 text-white">Home</span>
                         </li>
-                        
                         <li class="sidebar-item">
                             <i class="bi bi-music-note-list fs-4 text-white"></i>
                             <span class="small mt-1 text-white">Playlists</span>
                         </li>
-
                         <li class="sidebar-item">
                             <a href="settings.html" style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; width: 100%;">
                                 <i class="bi bi-gear-fill fs-4"></i>
                                 <span class="small mt-1">Ajustes</span>
                             </a>
                         </li>
-
                         <li class="sidebar-item mt-auto mb-4">
                             <a href="login.html" style="text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; width: 100%;">
                                 <i class="bi bi-box-arrow-left fs-4"></i>
@@ -73,7 +52,7 @@
                             <h1 class="mb-0 fs-5 fw-bold text-white d-none d-sm-block">Neuro-Sound</h1>
                         </div>
                         <div class="searchfield position-relative flex-grow-1 mx-3" style="max-width: 400px;">
-                            <input id="spotifySearchInput"type="text" class="form-control ps-5 py-2" placeholder="Buscar...">
+                            <input id="spotifySearchInput" type="text" class="form-control ps-5 py-2" placeholder="Buscar...">
                             <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-white"></i>
                         </div>
                         
@@ -88,49 +67,45 @@
                 <div class="row flex-grow-1 m-0 overflow-hidden">
                     
                     <div class="col-12 col-md-9 h-100 p-0">
-                        <div class="space h-100 p-3 d-flex flex-column" style="padding-bottom: 100px;"> <div class="content-area glass-panel p-4 h-100 overflow-auto">
+                        <div class="space h-100 p-3 d-flex flex-column" style="padding-bottom: 100px;"> 
+                            <div class="content-area glass-panel p-4 h-100 overflow-auto">
                                 <h2 class="mb-3">Explorar</h2>
-                                
-                                <div class="row g-3" id="mainPanel">
-
-                                </div>
-                                <div id="spotifySearchResults" class="mt-4">
-
-                                </div>
+                                <div class="row g-3" id="mainPanel"></div>
+                                <div id="spotifySearchResults" class="mt-4"></div>
                             </div>
                         </div>
                     </div>
+
                     <div class="col-md-3 d-none d-md-flex flex-column gap-3 p-3 pt-0 h-100">
                         <div class="glass-panel flex-grow-1 p-3 d-flex flex-column" style="min-height: 300px;">
-                            <iframe src="chartsiframe.html" 
-                                        class="w-100 h-100 border-0"
-                                        style="display: block;">
-                                </iframe>
+                            <iframe src="chartsiframe.html" class="w-100 h-100 border-0" style="display: block;"></iframe>
                         </div>
+                        
                         <div class="glass-panel p-3">
-                        <!-- Desktop panel -->
-                        <div class="d-flex align-items-center gap-3 mb-2">
-                            <img id="trackCoverDesktop" src="img/defaultcover.png" style="width:50px; height:50px; border-radius:8px;" />
-                            <div>
-                                <h6 id="trackNameDesktop" class="m-0">Track Name</h6>
-                                <small id="trackArtistDesktop" class="opacity-75">Artist</small>
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <img class="ui-track-cover" src="img/defaultcover.png" style="width:50px; height:50px; border-radius:8px;" />
+                                <div>
+                                    <h6 class="ui-track-name m-0">Track Name</h6>
+                                    <small class="ui-track-artist opacity-75">Artist</small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="d-flex justify-content-center gap-3 fs-4 my-2">
-                            <i id="btnPrevDesktop" class="bi bi-skip-backward-fill"></i>
-                            <i id="btnPlayDesktop" class="bi bi-play-circle-fill"></i>
-                            <i id="btnNextDesktop" class="bi bi-skip-forward-fill"></i>
-                        </div>
-                        <div class="mt-3">
-                            <div class="progress" id="progressContainerDesktop" style="height: 6px; background: rgba(255,255,255,0.2); cursor: pointer;">
-                                <div class="progress-bar" id="progressBarDesktop" style="width:0%; background: rgba(255,255,255,0.8); transition: width 0.1s linear;"></div>
+                            
+                            <div class="d-flex justify-content-center gap-3 fs-4 my-2">
+                                <i class="bi bi-skip-backward-fill" onclick="LocalPlayer.prev()"></i>
+                                <i class="bi bi-play-circle-fill ui-play-btn" onclick="LocalPlayer.togglePlay()"></i>
+                                <i class="bi bi-skip-forward-fill" onclick="LocalPlayer.next()"></i>
                             </div>
-                            <div class="d-flex justify-content-between mt-2 small opacity-75">
-                                <span id="currentTimeDesktop">0:00</span>
-                                <span id="totalTimeDesktop">0:00</span>
+                            
+                            <div class="mt-3">
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.2); cursor: pointer;" 
+                                     onclick="if(LocalPlayer.audio.duration){LocalPlayer.seek(event.offsetX / this.offsetWidth * 100)}">
+                                    <div class="progress-bar ui-track-progress" style="width:0%; background: rgba(255,255,255,0.8); transition: width 0.1s linear;"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2 small opacity-75">
+                                    <span class="ui-current-time">0:00</span>
+                                    <span class="ui-total-time">0:00</span>
+                                </div>
                             </div>
-                        </div>
-
                         </div>
                     </div>
 
@@ -146,20 +121,20 @@
         style="cursor: pointer;">
         
         <div class="d-flex align-items-center gap-2">
-            <img id="miniPlayerCover" src="img/defaultcover.png" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"> 
+            <img class="ui-track-cover" src="img/defaultcover.png" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"> 
             <div class="lh-1">
-                <p id="miniPlayerTitle" class="m-0 fw-bold small text-white">Die For You</p>
-                <small id="miniPlayerArtist" class="m-0 text-white-50" style="font-size: 0.7rem;">The Weeknd</small>
+                <p class="ui-track-name m-0 fw-bold small text-white">Track Name</p>
+                <small class="ui-track-artist m-0 text-white-50" style="font-size: 0.7rem;">Artist</small>
             </div>
         </div>
         
         <div class="d-flex align-items-center gap-3 fs-3 z-index-high">
-            <i class="bi bi-play-fill text-white" onclick="event.stopPropagation(); togglePlay()"></i>
-            <i class="bi bi-skip-forward-fill text-white" onclick="event.stopPropagation(); nextTrack()"></i>
+            <i class="bi bi-play-fill text-white ui-play-btn" onclick="event.stopPropagation(); LocalPlayer.togglePlay()"></i>
+            <i class="bi bi-skip-forward-fill text-white" onclick="event.stopPropagation(); LocalPlayer.next()"></i>
         </div>
         
         <div style="position:absolute; bottom:0; left:15px; right:15px; height:2px; background:rgba(255,255,255,0.3);">
-            <div id="miniProgressBar" style="width:40%; height:100%; background:white;"></div>
+            <div class="ui-track-progress" style="width:0%; height:100%; background:white;"></div>
         </div>
     </div>
 
@@ -168,17 +143,14 @@
             <i class="bi bi-house-door-fill fs-4"></i>
             <div style="font-size: 0.7rem;">Home</div>
         </div>
-        
         <div class="text-center text-white" data-bs-toggle="offcanvas" data-bs-target="#mobileCharts">
             <i class="bi bi-bar-chart-fill fs-4 text-info"></i>
             <div style="font-size: 0.7rem;">Charts</div>
         </div>
-
         <div class="text-center text-white">
             <i class="bi bi-music-note-list fs-4"></i>
             <div style="font-size: 0.7rem;">Playlist</div>
         </div>
-        
         <a href="settings.html" class="text-center text-white text-decoration-none">
             <i class="bi bi-person fs-4"></i>
             <div style="font-size: 0.7rem;">Perfil</div>
@@ -202,63 +174,61 @@
             <p>Aquí va todo el contenido de los gráficos.</p>
         </div>
     </div>
+
     <div class="offcanvas offcanvas-bottom h-100 glass-modal" tabindex="-1" id="fullScreenPlayer">
-    
-    <div class="offcanvas-header justify-content-center pb-0">
-        <div class="d-flex flex-column align-items-center w-100" data-bs-dismiss="offcanvas" style="cursor: pointer;">
-            <div style="width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 10px; margin-bottom: 10px;"></div>
-            <i class="bi bi-chevron-down text-white fs-4"></i>
+        <div class="offcanvas-header justify-content-center pb-0">
+            <div class="d-flex flex-column align-items-center w-100" data-bs-dismiss="offcanvas" style="cursor: pointer;">
+                <div style="width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 10px; margin-bottom: 10px;"></div>
+                <i class="bi bi-chevron-down text-white fs-4"></i>
+            </div>
+        </div>
+
+        <div class="offcanvas-body d-flex flex-column justify-content-center px-4">
+            
+            <div class="flex-grow-1 d-flex align-items-center justify-content-center py-3">
+                <div class="album-art-container shadow-lg">
+                    <img class="img-fluid rounded-4 w-100 ui-track-cover" src="img/defaultcover.png" alt="Album Art">
+                </div>
+            </div>
+
+            <div class="mb-4 mt-2">
+                <h2 class="text-white fw-bold mb-1 ui-track-name">Track Name</h2>
+                <p class="text-white-50 fs-5 mb-0 ui-track-artist">Artist</p>
+            </div>
+
+            <div class="mb-4">
+                <input type="range" class="form-range custom-range ui-track-range" value="0" 
+                       oninput="LocalPlayer.seek(this.value)">
+                
+                <div class="d-flex justify-content-between text-white-50 small mt-1">
+                    <span class="ui-current-time">0:00</span>
+                    <span class="ui-total-time">0:00</span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-5 px-3">
+                <i class="bi bi-shuffle fs-3 text-secondary"></i>
+                <i class="bi bi-skip-backward-fill fs-1 text-white" onclick="LocalPlayer.prev()"></i>
+                
+                <div class="play-button-large bg-white rounded-circle d-flex align-items-center justify-content-center text-dark" 
+                     style="width: 70px; height: 70px;" onclick="LocalPlayer.togglePlay()">
+                    <i class="bi bi-play-fill fs-1 ms-1 ui-play-btn"></i>
+                </div>
+                
+                <i class="bi bi-skip-forward-fill fs-1 text-white" onclick="LocalPlayer.next()"></i>
+                <i class="bi bi-repeat fs-3 text-secondary"></i>
+            </div>
+            
+            <div style="height: 30px;"></div>
         </div>
     </div>
 
-    <div class="offcanvas-body d-flex flex-column justify-content-center px-4">
-        
-        <div class="flex-grow-1 d-flex align-items-center justify-content-center py-3">
-            <div class="album-art-container shadow-lg">
-                <img id="fullPlayerCover" src="img/defaultcover.png" class="img-fluid rounded-4 w-100" alt="Album Art">
-            </div>
-        </div>
-
-        <div class="mb-4 mt-2">
-            <h2 id="fullPlayerTitle" class="text-white fw-bold mb-1">Die For You</h2>
-            <p id="fullPlayerArtist" class="text-white-50 fs-5 mb-0">The Weeknd</p>
-        </div>
-
-        <div class="mb-4">
-            <input type="range" class="form-range custom-range" id="fullPlayerSeek" value="40">
-            <div class="d-flex justify-content-between text-white-50 small mt-1">
-                <span id="fullPlayerCurrentTime">1:24</span>
-                <span id="fullPlayerTotalTime">3:50</span>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-5 px-3">
-            <i class="bi bi-shuffle fs-3 text-secondary"></i>
-            <i class="bi bi-skip-backward-fill fs-1 text-white" onclick="prevTrack()"></i>
-            
-            <div class="play-button-large bg-white rounded-circle d-flex align-items-center justify-content-center text-dark" 
-                 style="width: 70px; height: 70px;" onclick="togglePlay()">
-                <i id="fullPlayerPlayBtn" class="bi bi-play-fill fs-1 ms-1"></i>
-            </div>
-            
-            <i class="bi bi-skip-forward-fill fs-1 text-white" onclick="nextTrack()"></i>
-            <i class="bi bi-repeat fs-3 text-secondary"></i>
-        </div>
-        
-        <div style="height: 30px;"></div>
-    </div>
-</div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/searchSpotify.js"></script>
     <script src="js/uicontroller.js"></script>
     <script src="js/recomendations.js"></script>
     <script src="js/localPlayer.js"></script>
     <script src="js/spotifyPlayer.js"></script>
-    
-    <script src="js/playerEngine.js"></script> 
-
-
-
-</body>
+    <script src="js/playerEngine.js"></script>
+    </body>
 </html>

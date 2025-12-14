@@ -1,21 +1,5 @@
 const UIController = {
-    // Referencias a elementos
-    elements: {
-        desktop: {
-            cover: document.getElementById('trackCoverDesktop'),
-            name: document.getElementById('trackNameDesktop'),
-            artist: document.getElementById('trackArtistDesktop'),
-            total: document.getElementById('totalTimeDesktop'),
-            current: document.getElementById('currentTimeDesktop'),
-            progress: document.getElementById('progressBarDesktop'),
-            container: document.getElementById('progressContainerDesktop')
-        }
-        // Agrega aquí referencias mobile si las necesitas
-        mobile:{
-            
-        }
-    },
-
+    // 1. Utilidad de formateo de tiempo (ms -> mm:ss)
     formatTime(ms) {
         if (!ms && ms !== 0) return '0:00';
         const minutes = Math.floor(ms / 60000);
@@ -23,36 +7,68 @@ const UIController = {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     },
 
+    // 2. Actualizar textos e imágenes (Se ejecuta al cargar canción o cambiar metadatos)
     updateMetadata(title, artist, coverUrl, durationMs) {
-        const d = this.elements.desktop;
-        if (d.name) d.name.innerText = title || 'Desconocido';
-        if (d.artist) d.artist.innerText = artist || 'Artista';
-        if (d.cover) d.cover.src = coverUrl || 'img/defaultcover.png';
-        if (d.total) d.total.innerText = this.formatTime(durationMs);
+        // A. Actualizar TODOS los títulos (Desktop, Mini, Full)
+        document.querySelectorAll('.ui-track-name').forEach(el => {
+            el.innerText = title || 'Desconocido';
+        });
+
+        // B. Actualizar TODOS los artistas
+        document.querySelectorAll('.ui-track-artist').forEach(el => {
+            el.innerText = artist || 'Artista Desconocido';
+        });
+
+        // C. Actualizar TODAS las portadas
+        document.querySelectorAll('.ui-track-cover').forEach(el => {
+            // Si hay URL usa esa, si no, usa la default
+            el.src = coverUrl || 'img/defaultcover.png';
+        });
+
+        // D. Actualizar tiempo total (si el elemento existe en esa vista)
+        document.querySelectorAll('.ui-total-time').forEach(el => {
+            el.innerText = this.formatTime(durationMs);
+        });
     },
 
+    // 3. Actualizar Barras de Progreso (Se ejecuta cada segundo)
     updateProgress(currentMs, totalMs) {
-        const d = this.elements.desktop;
         const progressPercent = totalMs > 0 ? (currentMs / totalMs) * 100 : 0;
-        
-        if (d.progress) d.progress.style.width = `${progressPercent}%`;
-        if (d.current) d.current.innerText = this.formatTime(currentMs);
+        const formattedTime = this.formatTime(currentMs);
+
+        // A. Actualizar ancho de las barras (divs estilo Bootstrap)
+        document.querySelectorAll('.ui-track-progress').forEach(el => {
+            el.style.width = `${progressPercent}%`;
+            // Para accesibilidad (opcional)
+            el.setAttribute('aria-valuenow', progressPercent);
+        });
+
+        // B. Actualizar inputs tipo rango (si usas sliders en móvil)
+        document.querySelectorAll('.ui-track-range').forEach(el => {
+            el.value = progressPercent;
+        });
+
+        // C. Actualizar texto del tiempo actual
+        document.querySelectorAll('.ui-current-time').forEach(el => {
+            el.innerText = formattedTime;
+        });
     },
-    
+
+    // 4. Sincronizar Botones Play/Pause
     updatePlayIcon(isPlaying) {
-        const btnDesktop = document.getElementById('btnPlayDesktop');
-        // Si tienes botón móvil, agrégalo aquí también: const btnMobile = document.getElementById('btnPlay');
+        // Buscamos TODOS los botones con la clase .ui-play-btn
+        const allPlayBtns = document.querySelectorAll('.ui-play-btn');
         
-        if (btnDesktop) {
+        allPlayBtns.forEach(btn => {
             if (isPlaying) {
-                // Si la música suena, mostramos el botón de PAUSA
-                btnDesktop.classList.remove('bi-play-circle-fill');
-                btnDesktop.classList.add('bi-pause-circle-fill');
+                // Estado: SONANDO -> Mostrar icono PAUSA
+                btn.classList.remove('bi-play-circle-fill', 'bi-play-fill'); // Quita versiones de Play
+                btn.classList.add('bi-pause-circle-fill'); // Pone Pausa
             } else {
-                // Si la música está parada, mostramos el botón de PLAY
-                btnDesktop.classList.remove('bi-pause-circle-fill');
-                btnDesktop.classList.add('bi-play-circle-fill');
+                // Estado: PAUSADO -> Mostrar icono PLAY
+                btn.classList.remove('bi-pause-circle-fill', 'bi-pause-fill'); // Quita versiones de Pausa
+                btn.classList.add('bi-play-circle-fill'); // Pone Play
             }
-        }
+        });
     }
 };
