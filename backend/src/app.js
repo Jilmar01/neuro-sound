@@ -27,7 +27,7 @@ app.use('/api/recommend', recommendRoutes);
 
 /* Ruta para enviar un mensaje de prueba */
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API de NeuroSound funcionando correctamente' });
+  res.send('<h1>API de NeuroSound funcionando correctamente</h1>')
 });
 
 export default app;
