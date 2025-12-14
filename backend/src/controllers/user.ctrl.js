@@ -41,7 +41,8 @@ const createUser = async (req, res) => {
  */
 const getUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+
+        const id = req.user?._id;
         const usuario = await getUserBy(id);
 
         if (!usuario) {
@@ -60,7 +61,7 @@ const getUserId = async (req, res) => {
  */
 const updateUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.user?._id;
         const updateData = { ...req.body };
 
         const updated = await updateUser(id, updateData);
@@ -81,7 +82,7 @@ const updateUserId = async (req, res) => {
  */
 const deleteUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.user?._id;
         const deleted = await deleteUser(id);
 
         if (!deleted) {
