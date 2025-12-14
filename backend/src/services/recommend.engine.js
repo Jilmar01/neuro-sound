@@ -262,6 +262,8 @@ export const getRecommendationsFromSongs = (survey, songs = [], options = {}) =>
         };
     });
 
+    
+
     const filtered = scored
         .filter(r => r.score >= minScoreThreshold)
         .sort((a, b) => b.score - a.score);
@@ -288,3 +290,29 @@ export const getRecommendationsFromSongs = (survey, songs = [], options = {}) =>
         }))
     };
 };
+
+// Obtener las portadas de múltiples canciones por su nombre
+/*export const getImageSongs = async (songNames = []) => {
+  try {
+    const results = [];
+
+    for (const name of songNames) {
+      const tracks = await searchTracks(`track:${name} artist:${artist}`, 'track', 1);
+      
+      if (tracks.length > 0) {
+        const track = tracks[0];
+        results.push({
+          artist: track.artists.map(a => a.name).join(', '),
+          image: track.album.images?.[0]?.url || null,
+          spotifyId: track.id
+        });
+      }
+    }
+
+    return results;
+
+  } catch (error) {
+    console.error("Error en getImageSongs:", error);
+    throw error;
+  }
+};*/
