@@ -8,6 +8,7 @@ import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import surveyRoutes from './routes/survey.routes.js'
 import recommendRoutes from './routes/recommend.routes.js'
+import spotifyRoutes from './routes/spotify.routes.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/survey', surveyRoutes);
 app.use('/api/recommend', recommendRoutes);
+app.use('/api/spotify', spotifyRoutes);
 
 /* Ruta para enviar un mensaje de prueba */
 app.get('/api/test', (req, res) => {

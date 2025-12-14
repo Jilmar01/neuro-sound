@@ -103,7 +103,6 @@ export const updateUser = async (id, updateData) => {
     }
 
     const updated = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
-    //console.log(updated);
     
     return updated;
 };

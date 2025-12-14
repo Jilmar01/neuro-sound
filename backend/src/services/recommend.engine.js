@@ -1,5 +1,4 @@
-// services/recommend.engine.js
-// Motor de recomendación para NeuroSound – versión ES Modules con funciones flecha
+// Motor de recomendación para NeuroSound
 
 export const EMOTION_FREQUENCIES = {
     tristeza: [110, 174, 210],
@@ -38,11 +37,11 @@ export const DEFAULT_WEIGHTS = {
     }
 };
 
-// Utils
+// Utilitarios
 export const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 export const safeLower = s => (s && typeof s === 'string') ? s.toLowerCase() : s;
 
-// INTERPRET TEMPO
+// INTERPRETACION DE TEMPO
 export const interpretTempoPreference = (text = '') => {
     const t = safeLower(text);
     for (const key of Object.keys(TEMPO_RANGES)) {
@@ -55,13 +54,13 @@ export const interpretTempoPreference = (text = '') => {
     return { min: 50, max: 110 };
 };
 
-// INTENSITY → ENERGY TARGET
+// INTENSIDAD → OBJETIVO ENERGETICO
 export const intensityToEnergyTarget = (intensity = 3) => {
     const i = clamp(Number(intensity) || 3, 1, 5);
     return Math.round(((i - 1) / 4) * (8 - 2) + 2);
 };
 
-// SCORES
+// PUNTAJES
 export const genreScore = (songGenre, preferredGenres = []) => {
     if (!songGenre || !preferredGenres.length) return 0;
     return preferredGenres.includes(safeLower(songGenre)) ? 1 : 0;
@@ -99,7 +98,7 @@ export const energyScore = (songEnergy, surveyIntensity) => {
     return clamp(1 - diff / 10, 0, 1);
 };
 
-// TONE COMPATIBILITY
+// TONOS COMPATIBLES
 export const toneCompatibility = (song, survey) => {
     if (!survey?.tones?.group) return 0.5;
     const prefGroup = survey.tones.group;
@@ -129,7 +128,7 @@ export const toneCompatibility = (song, survey) => {
     return 0.5;
 };
 
-// PENALTIES
+// PANALIZACION
 export const tonePenalties = (song, survey, penalties) => {
     if (!survey?.tones) return 0;
     let penalty = 0;
@@ -160,7 +159,7 @@ export const tonePenalties = (song, survey, penalties) => {
     return clamp(penalty, 0, 1);
 };
 
-// BUILD MONGO FILTER
+// CONSTRUCCION DE FILTRO PARA MONGODB
 export const buildMongoFilterFromSurvey = (survey, opts = {}) => {
     const tempoRange = interpretTempoPreference(survey.tempo_preference);
     const genres = (survey.genres || []).map(g => safeLower(g));
@@ -186,22 +185,22 @@ export const buildMongoFilterFromSurvey = (survey, opts = {}) => {
 export const normalizeArtistInterest = (artist_interest) => {
     if (!artist_interest) return null;
 
-    // Si viene un string → lo convertimos a array
+    // Si viene un string lo convertimos a array
     if (typeof artist_interest === "string") {
         const cleaned = artist_interest.trim();
         return cleaned ? [cleaned] : null;
     }
 
-    // Si viene un array → validamos que no esté vacío
+    // Si viene un array validamos que no esté vacío
     if (Array.isArray(artist_interest) && artist_interest.length > 0) {
         return artist_interest;
     }
 
-    return null; // array vacío o dato inválido → no filtrar artistas
+    return null;
 };
 
 
-// MAIN RECOMMENDER
+// RECOMENDADOR PRINCIPAL
 export const getRecommendationsFromSongs = (survey, songs = [], options = {}) => {
     const weights = { ...DEFAULT_WEIGHTS, ...(options.weights || {}) };
     const tempoRange = interpretTempoPreference(survey.tempo_preference);
@@ -262,8 +261,6 @@ export const getRecommendationsFromSongs = (survey, songs = [], options = {}) =>
         };
     });
 
-    
-
     const filtered = scored
         .filter(r => r.score >= minScoreThreshold)
         .sort((a, b) => b.score - a.score);
@@ -290,29 +287,3 @@ export const getRecommendationsFromSongs = (survey, songs = [], options = {}) =>
         }))
     };
 };
-
-// Obtener las portadas de múltiples canciones por su nombre
-/*export const getImageSongs = async (songNames = []) => {
-  try {
-    const results = [];
-
-    for (const name of songNames) {
-      const tracks = await searchTracks(`track:${name} artist:${artist}`, 'track', 1);
-      
-      if (tracks.length > 0) {
-        const track = tracks[0];
-        results.push({
-          artist: track.artists.map(a => a.name).join(', '),
-          image: track.album.images?.[0]?.url || null,
-          spotifyId: track.id
-        });
-      }
-    }
-
-    return results;
-
-  } catch (error) {
-    console.error("Error en getImageSongs:", error);
-    throw error;
-  }
-};*/
