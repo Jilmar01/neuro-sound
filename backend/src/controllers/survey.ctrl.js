@@ -1,4 +1,4 @@
-import { processSurvey } from "../services/survey.service.js";
+import { getProfileUser, processSurvey } from "../services/survey.service.js";
 import { sendError, sendSuccess } from "../utils/response.util.js";
 
 export const survey = async (req, res) => {
@@ -21,5 +21,23 @@ export const survey = async (req, res) => {
     return sendError(res, error.message || "Error interno del servidor", 500);
   }
 };
+
+export const getSurvey = async(req, res)  => {
+  try {
+    const userId = req.user?._id;
+    
+    const survey = await getProfileUser(userId);
+
+    if (!survey) {
+      return sendError(res, "El usuario no tiene encuestas registradas", 404);
+    }
+
+    return sendSuccess(res, survey, "Encuesta del usuario", 200);
+
+  } catch (error) {
+    return sendError(res, error.message || "Error interno del servidor", 500);
+  
+  }
+}
 
 

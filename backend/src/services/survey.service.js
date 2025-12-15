@@ -13,7 +13,7 @@ export const processSurvey = async (userId, surveyData) => {
         }
 
         const sanitizedData = { userId, ...surveyData };
-        
+
 
         const surveyDoc = new Survey(sanitizedData);
         const savedSurvey = await surveyDoc.save();
@@ -39,10 +39,13 @@ export const getProfileUser = async (userId) => {
     }
 
     try {
-        const survey = await Survey.findOne({ userId }).lean();
+        const survey = await Survey
+            .findOne({ userId })
+            .sort({ createdAt: -1 })
+            .lean();
 
         return survey;
-        
+
     } catch (err) {
         throw new Error("No se pudo obtener el perfil del usuario.");
     }
