@@ -7,6 +7,6 @@ const router = Router();
 //Registro de la Encuesta
 router.post("/register", authMiddleware, survey);
 //Obtiene el registro de la Encuesta
-//router.get("/get-register", authMiddleware, getProfileUser);
+router.get("/get-register", authMiddleware, getProfileUser);
 
 export default router;
