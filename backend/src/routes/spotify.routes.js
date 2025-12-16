@@ -58,12 +58,12 @@ router.get("/callback", async (req, res) => {
         // "Vete a tu localhost con este token".
         
         // Usamos la ruta exacta que me pediste:
-        return res.redirect(`https://neuro-sound.web.app/settings.html?token=${accessToken}`);
+        return res.redirect(`https://neuro-sound.web.app/home.html?token=${accessToken}`);
 
     } catch (error) {
         console.error("Error en autenticación:", error);
         // En caso de error, también te devolvemos a local
-        return res.redirect(`https://neuro-sound.web.app/settings.html?error=auth_failed`);
+        return res.redirect(`https://neuro-sound.web.app/home.html?error=auth_failed`);
     }
 });
 
