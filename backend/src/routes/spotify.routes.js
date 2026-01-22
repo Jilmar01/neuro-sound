@@ -1,4 +1,3 @@
-// routes/spotify.routes.js
 import express from "express";
 import SpotifyWebApi from "spotify-web-api-node";
 import dotenv from "dotenv";
@@ -8,8 +7,6 @@ dotenv.config();
 const router = express.Router();
 
 // 1. CONFIGURACIÓN DEL CLIENTE
-// Aquí usamos la URL de RENDER porque es la que está autorizada en el Dashboard de Spotify.
-// El backend de Render es quien recibe el código de Spotify.
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
@@ -17,7 +14,7 @@ const spotifyApi = new SpotifyWebApi({
 });
 
 // ------------------------------------
-// LOGIN
+// 1. LOGIN
 // ------------------------------------
 router.get("/login", (req, res) => {
     const scopes = [
@@ -29,12 +26,13 @@ router.get("/login", (req, res) => {
         "playlist-read-private",
         "user-read-currently-playing"
     ];
+    // Agregamos show_dialog: true para forzar que pida login si es necesario (opcional)
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
     return res.redirect(authorizeURL);
 });
 
 // ------------------------------------
-// CALLBACK
+// 2. CALLBACK (CORREGIDO)
 // ------------------------------------
 router.get("/callback", async (req, res) => {
     const code = req.query.code;
@@ -42,28 +40,58 @@ router.get("/callback", async (req, res) => {
     if (!code) return res.status(400).send("Error: No code provided");
 
     try {
-        // Render canjea el código por el token
         const data = await spotifyApi.authorizationCodeGrant(code);
         const accessToken = data.body.access_token;
         const refreshToken = data.body.refresh_token;
 
-        // (Opcional) Guardar en memoria del backend
-        spotifyApi.setAccessToken(accessToken);
-        spotifyApi.setRefreshToken(refreshToken);
-
-        console.log("✅ Spotify autenticado en el servidor.");
-
-        // 👇 AQUÍ ESTÁ LA CLAVE 👇
-        // El servidor (en la nube) le dice a tu navegador: 
-        // "Vete a tu localhost con este token".
+        // 👇 CAMBIO IMPORTANTE 👇
+        // Enviamos AMBOS tokens al frontend.
+        // El frontend debe guardar el refreshToken en localStorage para usarlo en 1 hora.
+        const frontendUrl = `https://neuro-sound.web.app/home.html?access_token=${accessToken}&refresh_token=${refreshToken}`;
         
-        // Usamos la ruta exacta que me pediste:
-        return res.redirect(`http://127.0.0.1:3000/neuro-sound/frontend/home.html?token=${accessToken}`);
+        return res.redirect(frontendUrl);
 
     } catch (error) {
         console.error("Error en autenticación:", error);
-        // En caso de error, también te devolvemos a local
-        return res.redirect(`http://127.0.0.1:3000/neuro-sound/frontend/home.html?error=auth_failed`);
+        return res.redirect(`https://neuro-sound.web.app/home.html?error=auth_failed`);
+    }
+});
+
+// ------------------------------------
+// 3. REFRESH TOKEN (NUEVO)
+// ------------------------------------
+// Esta es la ruta que llamará tu 'api.js' cuando reciba un 401
+router.post("/refresh", async (req, res) => {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+        return res.status(400).json({ error: "Falta el refresh token" });
+    }
+
+    try {
+        // Configuramos el refresh token en la instancia
+        spotifyApi.setRefreshToken(refresh_token);
+
+        // Spotify nos da un nuevo access token
+        const data = await spotifyApi.refreshAccessToken();
+        
+        const newAccessToken = data.body.access_token;
+        
+        // A veces Spotify rota el refresh token también, si viene nuevo, lo enviamos
+        // si no, enviamos el mismo que recibimos.
+        const newRefreshToken = data.body.refresh_token || refresh_token;
+
+        console.log("🔄 Token de Spotify renovado exitosamente");
+
+        res.json({
+            access_token: newAccessToken,
+            refresh_token: newRefreshToken,
+            expires_in: data.body.expires_in
+        });
+
+    } catch (error) {
+        console.error("❌ Error renovando token:", error);
+        res.status(400).json({ error: "No se pudo renovar el token", details: error });
     }
 });
 
