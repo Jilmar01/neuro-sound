@@ -2,36 +2,85 @@ import mongoose from "mongoose";
 
 const SongSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    artists: { type: [String], required: true },  // varios artistas ✔
-    genre: { type: String, required: true },
-    mood: { type: String }, // calm, energetic, sad, uplifting...
+    track_id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
+    },
 
-    // Intensidad acústica
-    energy: { type: Number, min: 1, max: 10 },
+    name: {
+      type: String,
+      required: true
+    },
 
-    // BPM y duración (obligatorios)
-    bpm: { type: Number, required: true },
-    duration: { type: Number }, // en segundos
+    artists: {
+      type: [String],
+      required: true
+    },
 
-    // Para recomendaciones 
-    recommendedFor: { type: [String] }, // relax, focus, sleep, etc.
+    genre: {
+      type: String,
+      required: true
+    },
 
-    // Tags de afinidad
-    tags: { type: [String], default: [] },
+    energy: {
+      type: Number,
+      min: 1,
+      max: 10
+    },
 
-    // Nuevos campos para compatibilidad con datos externos
-    popularity: { type: Number },  // 0-100
-    key: { type: String },         
-    camelot: { type: String },
-    timbre: { type: Number },
-    drop_time: { type: Number },
-    danceability: { type: Number },
-    vocal_presence: { type: Number },
+    bpm: {
+      type: Number,
+      required: true
+    },
 
-    // Frecuencia dominante detectada
-    freq_class: { type: String }, // opcional (ej: Medios-Bajos)
+    duration: {
+      type: Number
+    },
 
+    tags: {
+      type: [String],
+      default: []
+    },
+
+    popularity: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+
+    key: {
+      type: String
+    },
+
+    camelot: {
+      type: String
+    },
+
+    timbre: {
+      type: Number
+    },
+
+    drop_time: {
+      type: Number
+    },
+
+    danceability: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    vocal_presence: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    freq_class: {
+      type: String
+    }
   },
   { timestamps: true }
 );
