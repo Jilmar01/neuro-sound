@@ -6,7 +6,7 @@
     <title>Formulario Musical Personalizado</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="Styles/form.css">
+    <link rel="stylesheet" href="/css/form.css">
     <style>
         /* Estilos adicionales para los reproductores de audio */
         audio {
@@ -196,7 +196,7 @@
     </div>
 
 </div>
-
+<script src="/js/config.js"></script>
 <script>
     // Variable global para almacenar la emoción seleccionada
 let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
@@ -241,18 +241,18 @@ let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
 
         // Lista de archivos (Siguen teniendo la letra T, C, F, I en el nombre)
         const availableAudios = [
-            "frecuences/tone_110hz_20s T.wav", 
-            "frecuences/tone_174hz_20s T.wav", 
-            "frecuences/tone_210hz_20s T.wav", 
-            "frecuences/tone_285hz_20s C.wav", 
-            "frecuences/tone_396hz_20s C.wav", 
-            "frecuences/tone_417hz_20s C.wav", 
-            "frecuences/tone_440hz_20s F.wav", 
-            "frecuences/tone_528hz_20s F.wav", 
-            "frecuences/tone_639hz_20s F.wav", 
-            "frecuences/tone_741hz_20s I.wav", 
-            "frecuences/tone_852hz_20s I.wav", 
-            "frecuences/tone_963hz_20s I.wav", 
+            "/assets/frecuences/tone_110hz_20s T.wav", 
+            "/assets/frecuences/tone_174hz_20s T.wav", 
+            "/assets/frecuences/tone_210hz_20s T.wav", 
+            "/assets/frecuences/tone_285hz_20s C.wav", 
+            "/assets/frecuences/tone_396hz_20s C.wav", 
+            "/assets/frecuences/tone_417hz_20s C.wav", 
+            "/assets/frecuences/tone_440hz_20s F.wav", 
+            "/assets/frecuences/tone_528hz_20s F.wav", 
+            "/assets/frecuences/tone_639hz_20s F.wav", 
+            "/assets/frecuences/tone_741hz_20s I.wav", 
+            "/assets/frecuences/tone_852hz_20s I.wav", 
+            "/assets/frecuences/tone_963hz_20s I.wav", 
         ];
         
         const matchingAudios = availableAudios.filter(audioPath => {
@@ -405,7 +405,7 @@ let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
         console.log("📤 Enviando JSON Estructurado:", body);
 
         try {
-            const response = await fetch("https://8nlqb9lj-5000.use2.devtunnels.ms/api/survey/register", { // REVISA QUE ESTA RUTA SEA LA CORRECTA EN TU BACKEND
+            const response = await fetch(`${API_BASE_URL}/api/survey/register`, { // REVISA QUE ESTA RUTA SEA LA CORRECTA EN TU BACKEND
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -423,7 +423,8 @@ let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
 
             console.log("✅ Guardado exitoso:", data);
             alert("Preferencias guardadas correctamente!");
-            window.location.href = "home.html";
+            window.location.href = "results.html";
+            
 
         } catch (err) {
             console.error("❌ Error al guardar:", err);

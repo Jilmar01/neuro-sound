@@ -7,15 +7,17 @@ dotenv.config();
 
 const router = express.Router();
 
-// Inicializar cliente de Spotify
+// 1. CONFIGURACIÓN DEL CLIENTE
+// Aquí usamos la URL de RENDER porque es la que está autorizada en el Dashboard de Spotify.
+// El backend de Render es quien recibe el código de Spotify.
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    redirectUri: "http://127.0.0.1:5000/api/spotify/callback"
+    redirectUri: "https://neuro-sound.onrender.com/api/spotify/callback" 
 });
 
 // ------------------------------------
-// LOGIN - Genera URL de autorización
+// LOGIN
 // ------------------------------------
 router.get("/login", (req, res) => {
     const scopes = [
@@ -27,38 +29,42 @@ router.get("/login", (req, res) => {
         "playlist-read-private",
         "user-read-currently-playing"
     ];
-
     const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
-
     return res.redirect(authorizeURL);
 });
 
 // ------------------------------------
-// CALLBACK - Recibe ?code y obtiene token
+// CALLBACK
 // ------------------------------------
 router.get("/callback", async (req, res) => {
     const code = req.query.code;
 
-    try {
-        const data = await spotifyApi.authorizationCodeGrant(code);
+    if (!code) return res.status(400).send("Error: No code provided");
 
+    try {
+        // Render canjea el código por el token
+        const data = await spotifyApi.authorizationCodeGrant(code);
         const accessToken = data.body.access_token;
         const refreshToken = data.body.refresh_token;
 
-        // Guardar tokens
+        // (Opcional) Guardar en memoria del backend
         spotifyApi.setAccessToken(accessToken);
         spotifyApi.setRefreshToken(refreshToken);
 
-        console.log("Spotify autenticado correctamente ✔️");
+        console.log("✅ Spotify autenticado en el servidor.");
 
-        // REDIRIGE AL PLAYER DEL FRONTEND (PUERTO 3000)
-        return res.redirect(`http://127.0.0.1:3000/neuro-sound/frontend/settings.html?token=${accessToken}`);
+        // 👇 AQUÍ ESTÁ LA CLAVE 👇
+        // El servidor (en la nube) le dice a tu navegador: 
+        // "Vete a tu localhost con este token".
+        
+        // Usamos la ruta exacta que me pediste:
+        return res.redirect(`http://127.0.0.1:3000/neuro-sound/frontend/home.html?token=${accessToken}`);
 
     } catch (error) {
         console.error("Error en autenticación:", error);
-        return res.send("Error autenticando con Spotify");
+        // En caso de error, también te devolvemos a local
+        return res.redirect(`http://127.0.0.1:3000/neuro-sound/frontend/home.html?error=auth_failed`);
     }
 });
 
-// Exportar rutas
 export default router;

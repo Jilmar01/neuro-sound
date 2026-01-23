@@ -22,7 +22,7 @@ const UIController = {
         // C. Actualizar TODAS las portadas
         document.querySelectorAll('.ui-track-cover').forEach(el => {
             // Si hay URL usa esa, si no, usa la default
-            el.src = coverUrl || 'img/defaultcover.png';
+            el.src = coverUrl || '/assets/img/defaultcover.png';
         });
 
         // D. Actualizar tiempo total (si el elemento existe en esa vista)

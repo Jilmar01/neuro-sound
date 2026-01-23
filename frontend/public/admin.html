@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Stream</title>
+</head>
+<body>
+    
+    <h2>Configuración de Admin</h2>
+
+    <div>
+        <label for="urlupdate">
+            URL de stream para musica:
+        </label>
+        <input type="url" id="urlupdate" style="width: 100%; margin-bottom: 10px;" placeholder="Ej: https://tutunnel.devtunnels.ms">
+        
+        <br>
+        
+        <input type="button" value="Actualizar URL" onclick="updateStreamURL()">
+        <input type="button" value="Resetear al Default" onclick="resetStreamURL()">
+    </div>
+
+    <script src="/js/config.js"></script>
+
+    <!--script>
+        // Poner el valor actual en el input para saber qué estamos usando
+        document.getElementById("urlupdate").value = STREAM_BASE_URL;
+        function isAdmin(){
+            fetch(`${API_BASE_URL}/user/me`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.data.isAdmin) {
+                    alert("No tienes permisos de administrador.");
+                    window.location.href = "/index.html";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script-->
+    
+</body>
+</html>

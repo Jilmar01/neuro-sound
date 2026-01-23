@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Desktop | Análisis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #4c92cd, #7f72a6, #7960a2);
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Tarjeta Principal */
+        .result-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            width: 900px;
+            max-width: 95%;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            padding: 40px;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Header */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 15px;
+        }
+        .brand-text {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #fff; /* Ajustado para mejor contraste con fondo oscuro */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .bi-soundwave { color: #fff !important; }
+
+        /* Columna Izquierda: Gráfico */
+        .chart-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding-right: 20px;
+        }
+        .chart-container {
+            position: relative;
+            width: 280px;
+            margin-bottom: 25px;
+        }
+        h4 { color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .objective-text {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #333;
+            background: rgba(248, 249, 250, 0.9);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .objective-text strong {
+            color: #7960a2;
+            text-transform: uppercase;
+        }
+
+        /* Columna Derecha: Frecuencias */
+        .right-panel {
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .freq-box {
+            background-color: rgba(233, 236, 239, 0.95);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .freq-title {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        /* Badges */
+        .status-badges {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .badge-custom {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-transform: capitalize;
+        }
+        /* Colores dinámicos */
+        .bg-tag-1 { background-color: #7f72a6; }
+        .bg-tag-2 { background-color: #4c92cd; }
+        .bg-tag-3 { background-color: #ef5350; }
+
+        /* Barras */
+        .freq-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .freq-label {
+            width: 80px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #444;
+        }
+        .freq-label span {
+            display: block;
+            font-weight: 500;
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        .progress-container {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 40px;
+        }
+        .custom-bar {
+            height: 100%;
+            border-radius: 10px;
+            /* Animación de carga */
+            width: 0%; 
+            transition: width 1.5s ease-out;
+        }
+        
+        .bar-tone-0 { background: linear-gradient(90deg, #29b6f6, #4fc3f7); }
+        .bar-tone-1 { background: linear-gradient(90deg, #66ff66, #99ff99); }
+        .bar-tone-2 { background: linear-gradient(90deg, #ffa726, #ffb74d); }
+
+        /* Botón */
+        .btn-continue {
+            background-color: #212529;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-continue:hover {
+            background-color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="result-card">
+        
+        <div class="brand-header">
+            <i class="bi bi-soundwave fs-3 me-2"></i> 
+            <span class="brand-text">Neuro-Sound</span>
+        </div>
+
+        <div class="row h-100">
+            
+            <div class="col-md-5">
+                <div class="chart-wrapper">
+                    <h4 class="text-center mb-4 fw-bold">Perfil Emocional</h4>
+                    
+                    <div class="chart-container">
+                        <canvas id="moodChart"></canvas>
+                    </div>
+
+                    <div class="objective-text mt-3">
+                        Tu objetivo es sentir: <strong id="dynamic-emotion">...</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="right-panel">
+                    
+                    <div class="freq-box">
+                        <div class="freq-title">
+                            Frecuencias Isocrónicas Activas
+                        </div>
+
+                        <div class="status-badges" id="badges-container">
+                            </div>
+
+                        <div id="bars-container">
+                            </div>
+
+                    </div> 
+                    
+                    <button class="btn-continue" onclick="nextStep()">
+                        Continuar <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/config.js"></script>
+<script>
+    // 1. Declaramos la variable globalmente para que 'initDashboard' y 'nextStep' la vean
+    let userData = null;
+    console.log("deploy de la ruta recomendationSpotify.js en results.html");
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            console.log("🔄 Obteniendo datos del usuario...");
+            
+            // 2. LLAMADA AL OTRO ARCHIVO
+            // Asumimos que fetchUserSurvey() existe en recomendationsSpotify.js
+            // y devuelve la estructura JSON que tenías hardcodeada.
+            userData = await fetchUserSurvey(); 
+
+            // Verificamos que llegaron datos antes de pintar nada
+            if (userData && userData.tones) {
+                console.log("✅ Datos cargados:", userData);
+                initDashboard();
+            } else {
+                console.warn("⚠️ No se encontró perfil, usando valores por defecto o redirigiendo...");
+                // Opcional: manejar el caso vacío
+            }
+
+        } catch (error) {
+            console.error("❌ Error al traer la survey:", error);
+        }
+    });
+
+    function initDashboard() {
+        // Aseguramos que userData no sea null (doble chequeo)
+        if (!userData) return;
+
+        // A. Actualizar Texto de Objetivo
+        // Usamos optional chaining (?.) por seguridad si algún campo falta
+        const emotionText = (userData.emotion || "Neutro").charAt(0).toUpperCase() + userData.emotion.slice(1);
+        document.getElementById('dynamic-emotion').innerText = emotionText;
+
+        // B. Actualizar Badges
+        const badgesContainer = document.getElementById('badges-container');
+        // Mapeamos datos reales. Si es array vacío, prevenimos errores
+        const genre = userData.genres?.[0] || "General";
+        const artist = userData.artist_interest?.[0] || "Varios";
+        
+        badgesContainer.innerHTML = `
+            <div class="badge-custom bg-tag-1">${genre}</div>
+            <div class="badge-custom bg-tag-2">Intensidad: ${userData.intensity}/10</div>
+            <div class="badge-custom bg-tag-3">${artist}</div>
+        `;
+
+        // C. Generar Barras de Frecuencia
+        const barsContainer = document.getElementById('bars-container');
+        barsContainer.innerHTML = ''; 
+
+        // Validamos que exista el grupo de tonos
+        const tones = userData.tones?.group || [];
+        
+        tones.forEach((hz, index) => {
+            let widthPercentage = 85 - (index * 10); 
+
+            let label = "Tono " + (index + 1);
+            if(hz === 285) label = "Sanación";
+            if(hz === 396) label = "Liberación";
+            if(hz === 417) label = "Cambio";
+            // ... puedes agregar más lógica para otros Hz si la DB trae otros valores
+
+            const htmlBar = `
+                <div class="freq-row">
+                    <div class="freq-label">${label} <span>${hz} Hz</span></div>
+                    <div class="progress-container">
+                        <div class="custom-bar bar-tone-${index}" style="width: ${widthPercentage}%;"></div>
+                    </div>
+                </div>
+            `;
+            barsContainer.innerHTML += htmlBar;
+        });
+
+        // D. Renderizar Gráfico
+        renderChart(emotionText);
+    }
+
+    // Saqué la lógica del gráfico a una función aparte para mantener el orden
+    function renderChart(emotionText) {
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        
+        let mainColor = '#264653'; 
+        if(userData.emotion === 'calma') mainColor = '#80cbc4';
+        // Puedes agregar más colores según la emoción que venga de la DB
+        if(userData.emotion === 'ansiedad') mainColor = '#e76f51'; 
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [emotionText, 'Otros', 'Equilibrio'],
+                datasets: [{
+                    data: [60, 20, 20],
+                    backgroundColor: [mainColor, '#e9ecef', '#b0bec5'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%', 
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: { usePointStyle: true, color: 'white', padding: 20, font: { size: 12 } }
+                    },
+                    tooltip: { enabled: true }
+                }
+            }
+        });
+    }
+
+    function nextStep() {
+        if (!userData) return;
+        console.log("Enviando configuración:", userData);
+        alert(`Iniciando sesión de ${userData.emotion} con frecuencias ${userData.tones.group.join(', ')} Hz`);
+        window.location.href = "home.html";
+    }
+async function fetchUserSurvey() {
+    try {
+        const localToken = localStorage.getItem('token');
+        // Endpoint real
+        const url = `${API_BASE_URL}/api/survey/get-register`;
+        
+        console.log("📡 Obteniendo preferencias del usuario...");
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localToken}`
+            }
+        });
+
+        if (!response.ok) {
+             // Lanza un error con más detalle si es posible
+             const errorBody = await response.text();
+             throw new Error(`Error ${response.status} conectando con API de encuestas: ${errorBody.substring(0, 100)}`);
+        }
+
+        const json = await response.json();
+        
+        // Si viene envuelto en { data: ... } lo extraemos, si no, usamos el json directo
+        const surveyData = json.data || json;
+        
+        console.log("📊 Perfil cargado:", surveyData.emotion, surveyData.genres);
+        return surveyData;
+
+    } catch (e) {
+        console.error("⚠️ Error fetchUserSurvey:", e);
+        // Retorna un objeto seguro si falla la carga para no romper el dashboard
+        return {
+             emotion: "Neutro",
+             intensity: 5,
+             genres: ["Predeterminado"],
+             artist_interest: ["Default"],
+             tones: { group: [432] } // Tono predeterminado
+        };
+    }
+}
+</script>
+
+</body>
+</html>

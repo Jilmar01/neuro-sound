@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Análisis Mobile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variables unificadas */
+        
+        :root {
+            --accent-green: #69f0ae;
+            --accent-blue: #40c4ff;
+            --accent-orange: #ffb74d;
+            --text-dark: #1a1a1a;
+            --radius-card: 24px;
+        }
+
+        body {
+            /* Fondo blanco o transparente para que se mezcle con el iframe */
+            background-color: #ffffff00; 
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Importante para iframes móviles: permitir scroll vertical */
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+
+        /* Tarjeta ajustada para móvil/iframe */
+        .mobile-card {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header */
+        .header-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            /* Sin borde inferior para look más limpio en móvil */
+        }
+
+        .brand-section { display: flex; align-items: center; gap: 8px; }
+        .brand-name { font-weight: 800; font-size: 1.1rem; color: var(--text-dark); }
+        .page-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 5px; color: #333; margin-bottom: 10px; width: 100%; }
+
+        /* Gráfico */
+        .chart-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 260px; /* Un poco más pequeño para asegurar que quepa en móviles angostos */
+            height: 260px;
+            margin-bottom: 15px;
+        }
+
+        .main-genre-text { text-align: center; font-size: 0.9rem; color: #555; }
+        .main-genre-text strong { display: block; font-size: 1.4rem; color: #2c3e50; margin-top: 2px; }
+
+        /* Sección de Datos */
+        .data-section { width: 100%; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background-color: #f1f3f5;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-label { font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; }
+        .stat-value { font-size: 1rem; color: #333; }
+        .text-success-custom { color: #00c853; font-weight: 800; font-size: 0.9rem; }
+
+        /* Frecuencias */
+        .freq-box {
+            background-color: #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .freq-title { text-align: center; font-weight: 700; margin-bottom: 12px; font-size: 0.9rem; }
+        
+        .freq-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .freq-label { width: 60px; font-size: 0.75rem; font-weight: 700; line-height: 1.1; }
+        .freq-label span { display: block; font-weight: 400; font-size: 0.65rem; color: #666; }
+        
+        .bar-container {
+            flex-grow: 1;
+            height: 25px; /* Barras un poco más finas en móvil */
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.5);
+        }
+        .bar-fill { height: 100%; border-radius: 6px; }
+        
+        /* Colores unificados */
+        .fill-theta { background-color: var(--accent-blue); width: 40%; }
+        .fill-alpha { background-color: var(--accent-green); width: 85%; }
+        .fill-pink { background-color: var(--accent-orange); width: 60%; }
+
+        /* Interpretación */
+        .interpret-box {
+            background-color: #dee2e6;
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: #444;
+            line-height: 1.4;
+            text-align: justify;
+        }
+        .interpret-title { font-weight: 800; margin-bottom: 3px; display: block; color: #333; }
+
+        .user-icon { font-size: 1.4rem; color: #333; }
+
+    </style>
+</head>
+<body>
+<div class="mobile-card">
+    
+    <div class="page-title">
+        Análisis de tu música
+    </div>
+
+    <div class="chart-section">
+        <div class="chart-container">
+            <canvas id="genreChart"></canvas>
+        </div>
+        <div class="main-genre-text">
+            Tu género más escuchado fue
+            <strong id="main-genre-display">Lo-fi</strong>
+        </div>
+    </div>
+
+    <div class="data-section">
+        
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Efecto Relajante</div>
+                <div class="stat-value fw-bold" id="relax-score">70/100</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Resumen Emocional</div>
+                <div class="stat-value">
+                    <span id="main-emotion">Ansiedad</span> <br>
+                    <span class="text-success-custom" id="emotion-intensity">BAJA</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="freq-box">
+            <div class="freq-title">Frecuencias Escuchadas</div>
+            
+            <div id="freq-bars-container">
+                </div>
+            
+        </div>
+
+        <div class="interpret-box">
+            <span class="interpret-title">Interpretación</span>
+            <span id="interpretation-text">Según tu género escuchado Lo-fi y las frecuencias que maneja, puede ayudarte a reducir tu ansiedad, el estrés y mejorar tu estado de ánimo.</span>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 1. Configuración de API (¡IMPORTANTE! Reemplaza con tu URL real)
+    const API_BASE_URL = "https://neuro-sound.onrender.com"; 
+    let userAnalysisData = null; 
+
+    // 2. ADAPTACIÓN DE LA FUNCIÓN DE FETCH (USA TU LÓGICA DE SURVEY)
+    async function fetchAnalysisData() {
+        const dummyData = {
+            main_genre: "Lofi Hip-Hop",
+            relax_score: 85,
+            emotion: "Concentración",
+            intensity_level: "ALTA", 
+            genres_data: [
+                { name: 'Lo-fi', value: 5, color: '#4db6ac' },
+                { name: 'Clásica', value: 3.5, color: '#546e7a' },
+                { name: 'Ambient', value: 2.5, color: '#8d6e63' },
+                { name: 'Pop', value: 1.5, color: '#ffcc80' }
+            ],
+            tones_data: [
+                { name: 'Alpha', range: '8-12 Hz', level: 90 },
+                { name: 'Gamma', range: '30-100 Hz', level: 65 },
+                { name: 'Theta', range: '4-8 Hz', level: 40 }
+            ],
+            interpretation: "Tu tendencia a escuchar música con altas frecuencias Alpha y Gamma indica una búsqueda activa de la concentración y el enfoque mental. La música Lofi Hip-Hop refuerza este estado al proporcionar un ruido de fondo constante y poco intrusivo."
+        };
+
+        try {
+            const localToken = localStorage.getItem('token');
+            const url = `${API_BASE_URL}/api/survey/get-register`;
+            
+            console.log("📡 Obteniendo preferencias del usuario...");
+
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localToken}`
+                }
+            });
+
+            if (!response.ok) {
+                 console.warn(`API Falló (Status: ${response.status}). Usando datos dummy.`);
+                 return dummyData;
+            }
+
+            const json = await response.json();
+            const surveyData = json.data || json;
+            
+            console.log("📊 Perfil cargado:", surveyData.emotion, surveyData.genres);
+            
+            // ** 🔑 Mapeo de datos para la vista de Análisis **
+            // Aquí transformamos los datos planos de 'survey' a la estructura que necesita la UI
+            const analysisResult = {
+                // Datos principales (Ej: Mapeo directo de survey)
+                main_genre: surveyData.genres?.[0] || 'Desconocido',
+                emotion: surveyData.emotion || 'Neutro',
+                // Simulamos un score y nivel basados en la intensidad de la encuesta
+                relax_score: 100 - (surveyData.intensity * 5) || 50, // Ejemplo de score
+                intensity_level: surveyData.intensity > 7 ? 'ALTA' : (surveyData.intensity > 4 ? 'MEDIA' : 'BAJA'),
+                
+                // Datos para Gráfico Polar (genres_data)
+                genres_data: (surveyData.genres || []).map((genre, index) => ({
+                    name: genre,
+                    value: 5 - (index * 0.5), // Simular peso
+                    color: ['#4db6ac', '#546e7a', '#8d6e63', '#ffcc80'][index % 4] 
+                })),
+
+                // Datos para Barras de Frecuencia (tones_data)
+                tones_data: (surveyData.tones?.group || []).map((hz, index) => ({
+                    name: hz >= 40 ? 'Beta' : (hz >= 12 ? 'Alpha' : 'Theta'), // Mapeo de ejemplo HZ -> Banda
+                    range: `${hz} Hz`,
+                    level: 95 - (index * 15) // Simular nivel
+                })),
+                
+                // Interpretación de ejemplo (Debería venir de la API si es compleja)
+                interpretation: `Según tu objetivo de sentir **${surveyData.emotion}** y la preferencia por el género **${surveyData.genres?.[0]}**, el sistema ha activado las frecuencias ${surveyData.tones.group.join(', ')} Hz para ayudarte a conseguir tu estado mental deseado.`
+            };
+
+            return analysisResult;
+
+        } catch (e) {
+            console.error("⚠️ Error fetchAnalysisData:", e);
+            console.log("Fallback: Usando datos dummy.");
+            return dummyData;
+        }
+    }
+
+    // 3. Función de Inicialización del Dashboard
+    function initMobileDashboard() {
+        if (!userAnalysisData) return;
+
+        // A. Actualizar Datos Principales
+        document.getElementById('main-genre-display').innerText = userAnalysisData.main_genre || "N/A";
+        document.getElementById('relax-score').innerText = `${userAnalysisData.relax_score || '--'}/100`;
+        document.getElementById('main-emotion').innerText = userAnalysisData.emotion || "Neutro";
+        
+        const intensitySpan = document.getElementById('emotion-intensity');
+        intensitySpan.innerText = userAnalysisData.intensity_level || "--";
+        
+        intensitySpan.className = userAnalysisData.intensity_level === 'ALTA' 
+                                  ? 'text-danger fw-bold' 
+                                  : 'text-success-custom';
+        
+        document.getElementById('interpretation-text').innerText = userAnalysisData.interpretation || "No hay interpretación disponible.";
+
+        // B. Generar Barras de Frecuencia
+        const barsContainer = document.getElementById('freq-bars-container');
+        barsContainer.innerHTML = ''; 
+        
+        const tones = userAnalysisData.tones_data || [];
+        
+        tones.forEach((tone, index) => {
+            const colorClass = `fill-tone-${index}`; 
+
+            const htmlBar = `
+                <div class="freq-row">
+                    <div class="freq-label">${tone.name} <span>${tone.range}</span></div>
+                    <div class="bar-container">
+                        <div class="bar-fill ${colorClass}" style="width: ${tone.level || 0}%;"></div>
+                    </div>
+                </div>
+            `;
+            barsContainer.innerHTML += htmlBar;
+        });
+
+        // C. Renderizar Gráfico (Polar Area)
+        renderGenreChart(userAnalysisData.genres_data || []);
+    }
+
+    // 4. Función para Renderizar el Gráfico
+    function renderGenreChart(dataArray) {
+        const labels = dataArray.map(item => item.name);
+        const data = dataArray.map(item => item.value);
+        const colors = dataArray.map(item => item.color);
+        
+        let chartStatus = Chart.getChart("genreChart");
+        if (chartStatus != undefined) {
+            chartStatus.destroy();
+        }
+
+        const ctx = document.getElementById('genreChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nivel',
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        ticks: { display: false },
+                        grid: { color: '#e0e0e0' },
+                        pointLabels: {
+                            display: true,
+                            centerPointLabels: true,
+                            font: { size: 10, weight: 'bold' }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    
+    // 5. Arranque del Script (al cargar el DOM)
+    document.addEventListener('DOMContentLoaded', async () => {
+        console.log("🔄 Obteniendo análisis de música...");
+        
+        userAnalysisData = await fetchAnalysisData(); // Renombrado a fetchAnalysisData
+
+        if (userAnalysisData) {
+            console.log("✅ Datos de análisis cargados.");
+            initMobileDashboard();
+        } else {
+            console.warn("⚠️ No se pudieron cargar los datos.");
+        }
+    });
+
+</script>
+
+</body>
+</html>
