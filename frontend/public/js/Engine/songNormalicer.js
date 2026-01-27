@@ -3,7 +3,7 @@
  * Transforma la salida del script Python a vectores normalizados (0.0 - 1.0).
  */
 
-exports.mapSongToVector = (songData) => {
+export const mapSongToVector = (songData) => {
     // Accedemos a 'data' porque tu respuesta JSON tiene formato { success: true, data: {...} }
     const raw = songData.data; 
 

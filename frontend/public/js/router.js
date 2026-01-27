@@ -2,6 +2,7 @@
    ROUTER.JS
    Maneja la navegación sin recargar la página (SPA)
    ====================================================== */
+   import {obtenerRecomendaciones, setOnContainer} from "/js/recomendations.js"
 
 // 1. DEFINICIÓN DE LAS VISTAS (HTML EN STRING)
 const VISTAS = {
@@ -110,7 +111,7 @@ const VISTAS = {
 
 // ... (Tus vistas VISTAS se quedan igual) ...
 
-async function cargarVista(nombreVista) {
+export async function cargarVista(nombreVista) {
     const contenedor = document.getElementById('app-content');
     if (!VISTAS[nombreVista]) return;
 
@@ -278,3 +279,4 @@ document.addEventListener("DOMContentLoaded", () => {
         cargarVista('home');
     }
 });
+window.cargarVista = cargarVista;

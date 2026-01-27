@@ -104,7 +104,7 @@
         style="cursor: pointer;">
         
         <div class="d-flex align-items-center gap-2">
-            <img class="ui-track-cover" src="img/defaultcover.png" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"> 
+            <img class="ui-track-cover" src="/assets/img/defaultcover.png" style="width:40px; height:40px; border-radius:5px; object-fit:cover;"> 
             <div class="lh-1">
                 <p class="ui-track-name m-0 fw-bold small text-white">Track Name</p>
                 <small class="ui-track-artist m-0 text-white-50" style="font-size: 0.7rem;">Artist</small>
@@ -156,7 +156,7 @@
         <div class="offcanvas-body d-flex flex-column justify-content-center px-4">
             <div class="flex-grow-1 d-flex align-items-center justify-content-center py-3">
                 <div class="album-art-container shadow-lg">
-                    <img class="img-fluid rounded-4 w-100 ui-track-cover" src="img/defaultcover.png" alt="Album Art">
+                    <img class="img-fluid rounded-4 w-100 ui-track-cover" src="/assets/img/defaultcover.png" alt="Album Art">
                 </div>
             </div>
 
@@ -190,14 +190,15 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/js/recomendationSpotify.js"></script>
+    <script type="module">import { generateHybridPlaylist } from '/js/Engine/neuroEngineController.js';</script>
+    <!--script src="/js/recomendationSpotify.js"></script-->
     <script src="/js/config.js"></script>
-    <script src="/js/router.js"></script>
+    <script type="module" src="/js/router.js"></script>
     <script src="/js/settingsLogic.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/searchSpotify.js"></script>
     <script src="/js/uicontroller.js"></script>
-    <script src="/js/recomendations.js"></script>
+    <script type="module" src="/js/recomendations.js"></script>
     <script src="/js/localPlayer.js"></script>
     <script src="/js/spotifyPlayer.js"></script>
     <script src="/js/playerEngine.js"></script>

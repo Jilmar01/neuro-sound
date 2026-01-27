@@ -1,59 +1,98 @@
+// public/js/recomendationSpotify.js
 
-const SpotifyRecommender = {
+/**
+ * FASE 1: RECLUTADOR (Legacy Engine)
+ * Se encarga de buscar en Spotify y traer candidatos con Audio e Imagen.
+ */
 
-    async getRecommendations(token) {
-        console.log("Motor Spotify iniciado (modo playlists → tracks)");
+/* public/js/Engine/recomendationSpotify.js */
 
-        try {
-            // 1. Obtener datos de api
-            const survey = await this.fetchUserSurvey();
-            
-            if (!survey || !survey.genres) {
-                console.warn("No se pudo obtener la encuesta o géneros.");
-                return [];
+export async function getSpotifyCandidates(token, survey) {
+    console.log("🕵️ SpotifySource: Validando datos de encuesta...", survey);
+
+    // 1. SANITIZACIÓN DE DATOS (El paso clave)
+    // Extraemos la emoción y los géneros, sin importar si vienen como array o string
+    const emotion = survey.emotion || "calma";
+    
+    let genresStr = "";
+    if (Array.isArray(survey.genres)) {
+        // Si es un array (como viene de tu BD), tomamos los 2 primeros
+        genresStr = survey.genres.slice(0, 2).join(" ");
+    } else if (typeof survey.genres === 'string') {
+        genresStr = survey.genres;
+    } else if (survey.genre) {
+        // Soporte retrocompatible por si acaso
+        genresStr = survey.genre;
+    } else {
+        // Fallback si no hay géneros
+        genresStr = "Pop Ambient";
+    }
+
+    // 2. VALIDACIÓN RELAJADA
+    // Si tenemos al menos una emoción O un género, procedemos.
+    if (!emotion && !genresStr) {
+        console.warn("⚠️ Datos insuficientes. Se requiere emoción o género.");
+        return [];
+    }
+
+    // 3. CONSTRUCCIÓN DE LA QUERY
+    // Ejemplo: "calma Classical Pop mix"
+    const query = `${emotion} ${genresStr} mix`;
+    
+    // Aleatoriedad para que no salgan siempre las mismas
+    const randomOffset = Math.floor(Math.random() * 5); 
+
+    console.log(`🔎 Query Generada: "${query}" | Offset: ${randomOffset}`);
+
+    try {
+        const response = await fetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=50&offset=${randomOffset}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }
+        );
 
-            // 2. Buscar playlists (Con factor ALEATORIO)
-            const playlists = await this.searchPlaylists(token, survey);
-            if (playlists.length === 0) return [];
+        const data = await response.json();
 
-            // 3. Extraer canciones únicas
-            const tracks = await this.extractTracks(token, playlists);
-            if (tracks.length === 0) return [];
-
-            // 4. Rankear y mezclar
-            const ranked = this.rankTracks(tracks, survey);
-
-            console.log(`${ranked.length} canciones recomendadas`);
-            return ranked;
-
-        } catch (err) {
-            console.error("Error en motor Spotify:", err);
+        if (!data.tracks || !data.tracks.items) {
+            console.warn("⚠️ Spotify no devolvió canciones.");
             return [];
         }
-    },
 
-
-    async searchPlaylists(token, survey) {
-
-        const shuffledGenres = (survey.genres || [])
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 2);
-
-        const keywords = [
-            survey.emotion,     
-            ...shuffledGenres,  
-            "mix"               
-        ].filter(Boolean);
-
-        const query = keywords.join(" ");
+        const candidates = data.tracks.items;
+        console.log(`✅ SpotifySource: ${candidates.length} candidatos encontrados.`);
         
-        // B. Generar un OFFSET aleatorio (0 a 10)
-        const randomOffset = Math.floor(Math.random() * 10);
+        // Retornamos el array de canciones crudas de Spotify
+        return candidates;
 
-        console.log(`Buscando playlists: "${query}" (Offset: ${randomOffset})`);
+    } catch (e) {
+        console.error("❌ Error conectando con Spotify Search:", e);
+        return [];
+    }
+}
 
-        // Usamos el endpoint de búsqueda (Search API)
+// Función interna exportada (por si acaso)
+export async function searchPlaylists(token, survey) {
+    const shuffledGenres = (survey.genres || [])
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 2);
+
+    const keywords = [
+        survey.emotion,     
+        ...shuffledGenres,  
+        "mix"               
+    ].filter(Boolean);
+
+    const query = keywords.join(" ");
+    
+    // Offset aleatorio para variedad
+    const randomOffset = Math.floor(Math.random() * 5);
+
+    console.log(`🔎 Query: "${query}" | Offset: ${randomOffset}`);
+
+    try {
         const url = `https://api.spotify.com/v1/search` +
             `?q=${encodeURIComponent(query)}` +
             `&type=playlist` +
@@ -68,17 +107,21 @@ const SpotifyRecommender = {
 
         const data = await res.json();
         return (data.playlists?.items || []).filter(Boolean);
-    },
+    } catch (e) {
+        console.error("Error buscando playlists:", e);
+        return [];
+    }
+}
 
-    async extractTracks(token, playlists) {
-        let tracks = [];
-        const seen = new Set();
+// Función interna
+async function extractTracks(token, playlists) {
+    let tracks = [];
+    const seen = new Set();
+    const shuffledPlaylists = playlists.sort(() => 0.5 - Math.random());
 
-        // Mezclamos el orden de las playlists para no priorizar siempre la primera
-        const shuffledPlaylists = playlists.sort(() => 0.5 - Math.random());
-
-        for (const pl of shuffledPlaylists) {
-            // Pedimos tracks de la playlist
+    // Limitamos a 3 playlists para no saturar
+    for (const pl of shuffledPlaylists.slice(0, 3)) {
+        try {
             const res = await fetch(`${pl.tracks.href}?limit=20`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -88,94 +131,26 @@ const SpotifyRecommender = {
             const data = await res.json();
 
             data.items.forEach(item => {
-                const track = item.track;
-                // Filtramos que tenga ID, que no sea local y que tenga preview o uri válida
-                if (track && track.id && !seen.has(track.id) && !track.is_local) {
-                    seen.add(track.id);
-                    tracks.push(track);
+                const t = item.track;
+                // Filtros de calidad: ID, No Local, PREVIEW_URL (Vital)
+                if (t && t.id && !seen.has(t.id) && !t.is_local) {
+                    seen.add(t.id);
+                    
+                    // Normalizamos la estructura para el siguiente paso
+                    tracks.push({
+                        id: t.id,
+                        name: t.name,
+                        artists: t.artists, // Array de objetos
+                        album: t.album,     // Objeto con images
+                        preview_url: t.preview_url, // EL AUDIO
+                        uri: t.uri,
+                        external_url: t.external_urls.spotify
+                    });
                 }
             });
-        }
-
-        return tracks;
-    },
-
-    rankTracks(tracks, survey) {
-        tracks.forEach(t => {
-            t.__score = 0;
-
-            if (survey.artist_interest?.some(a =>
-                t.artists.some(ar =>
-                    ar.name.toLowerCase().includes(a.toLowerCase())
-                )
-            )) {
-                t.__score += 5;
-            }
-
-            const albumName = t.album?.name?.toLowerCase() || "";
-            survey.genres?.forEach(g => {
-                if (albumName.includes(g.toLowerCase())) {
-                    t.__score += 1;
-                }
-            });
-
-            if (survey.emotion === "calma") {
-                t.__score += 1;
-            }
-
-            t.__score += Math.random() * 2;
-        });
-
-        return tracks
-            .sort((a, b) => b.__score - a.__score)
-            .slice(0, 20)
-            .map(t => this.formatTrack(t));
-    },
-
-
-    formatTrack(track) {
-        const image = (track.album && track.album.images && track.album.images.length > 0)
-            ? track.album.images[0].url 
-            : "/assets/img/defaultcover.png";
-
-        return {
-            title: track.name,
-            artist: track.artists.map(a => a.name).join(", "),
-            album: track.album?.name || "",
-            cover: image,
-            uri: track.uri,
-            type: "spotify",
-            details: "Recomendado para ti"
-        };
-    },
-
-    async fetchUserSurvey() {
-        try {
-            const localToken = localStorage.getItem('token');
-            // Endpoint real
-            const url = `${API_BASE_URL}/api/survey/get-register`;
-            
-            console.log("📡 Obteniendo preferencias del usuario...");
-
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localToken}`
-                }
-            });
-
-            if (!response.ok) throw new Error("Error conectando con API de encuestas");
-
-            const json = await response.json();
-            const surveyData = json.data || json;
-            
-            console.log("Perfil cargado:", surveyData.emotion, surveyData.genres);
-            return surveyData;
-
         } catch (e) {
-            console.error("Error fetchUserSurvey:", e);
-            return null;
+            console.warn("Error leyendo tracks de playlist:", e);
         }
     }
-};
+    return tracks;
+}

@@ -27,7 +27,7 @@ const MIN_THRESHOLD = 60; // Puntuación mínima para entrar en la playlist.
  * @param {Object} userFilters - Gustos conscientes { genres, artists }
  * @param {Array} candidateSongs - Lista de vectores de canciones candidatas
  */
-exports.rankCandidates = (targetVector, userFilters, candidateSongs) => {
+export const rankCandidates = (targetVector, userFilters, candidateSongs) => {
 
     // Procesamos cada canción individualmente
     const scoredTracks = candidateSongs.map(song => {

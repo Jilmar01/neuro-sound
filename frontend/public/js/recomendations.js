@@ -1,167 +1,127 @@
 /* ==========================================
    js/recommendations.js
-   Maneja la visualización (MODO EXCLUSIVO: Spotify O Local)
+   Controlador de Vista: Conecta el Neuro-Engine con el HTML
    ========================================== */
+   import { getSurvey } from '/js/Engine/getData.js';
+   import { generateHybridPlaylist } from '/js/Engine/NECv2.js'
+   import { apiCall } from '/js/refactored/fetch.js';
 
-async function obtenerRecomendaciones() {
-    const spotifyToken = localStorage.getItem('spotifyToken');
+console.log("📄 recommendations.js cargado correctamente.");
+
+// 1. IMPORTAMOS EL CEREBRO HÍBRIDO
+//import { generateHybridPlaylist } from './Engine/neuroEngineController.js';
+
+// Función principal
+/*export async function obtenerRecomendaciones() {
+    
+    const spotifyToken = localStorage.getItem('spotifyToken') || localStorage.getItem('access_token');
+    // Intentamos obtener la encuesta del localStorage
+    let userSurvey = await getSurvey();
+    console.log("encuesta obtenida", userSurvey);
+
+    // Si no hay encuesta guardada, usamos un default temporal para que no rompa
+    if (!userSurvey) {
+        console.warn("⚠️ No se encontró encuesta en localStorage. Usando perfil default 'Calma'.");
+        userSurvey = { emotion: "calma", genres: ["Pop", "Ambient"], intent: 3 };
+    }
 
     // ------------------------------------------------------
-    // 1. MODO SPOTIFY (Prioridad Absoluta)
+    // 1. MODO NEURO-HÍBRIDO
     // ------------------------------------------------------
     if (spotifyToken) {
-        console.log("🟢 Modo Spotify detectado. Omitiendo biblioteca local.");
+        console.log("🟢 Token encontrado. Iniciando Motor Neuro-Híbrido...");
         
-        if (typeof SpotifyRecommender !== 'undefined') {
-            try {
-                // Solo devolvemos lo que traiga Spotify
-                return await SpotifyRecommender.getRecommendations(spotifyToken);
-            } catch (e) {
-                console.error("Error crítico Spotify:", e);
-                return []; 
+        try {
+            const hybridResults = await generateHybridPlaylist(spotifyToken, userSurvey);
+
+            if (hybridResults && hybridResults.length > 0) {
+                console.log(`🧠 Motor generó ${hybridResults.length} recomendaciones.`);
+                
+                // Adaptamos los datos para la vista
+                return hybridResults.map(item => ({
+                    title: item.display_data.title,
+                    artist: item.display_data.artist,
+                    cover: item.display_data.cover,
+                    uri: item.display_data.uri,
+                    preview_url: item.display_data.preview_url,
+                    score: item.neuro_score, 
+                    type: 'spotify',
+                    details: `Match: ${item.neuro_score}%`
+                }));
             }
+        } catch (e) {
+            console.error("❌ Error en Neuro-Engine:", e);
         }
     }
 
     // ------------------------------------------------------
-    // 2. MODO LOCAL (Solo si NO hay token de Spotify)
+    // 2. MODO LOCAL (Fallback)
     // ------------------------------------------------------
-    console.log("🟠 No hay token Spotify. Cargando biblioteca local...");
+    console.log("🟠 Fallback a biblioteca local...");
+    return []; // Aquí iría tu lógica local si la necesitas
+}*/
+export async function obtenerRecomendaciones() {
     
-    let localResults = [];
-    try {
-        const localToken = localStorage.getItem('token');
-        if (localToken) {
-            const apiUrl = `${API_BASE_URL}/api/recommend/music`;
-            
-            // A. Pedir recomendación teórica al backend
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localToken}` 
-                }
-            });
+    const spotifyToken = localStorage.getItem('spotifyToken') || localStorage.getItem('access_token');
 
-            if (response.ok) {
-                const json = await response.json();
-                const rawSongs = json.data?.songs || [];
-
-                if (rawSongs.length > 0) {
-                    // B. Verificar archivos físicos (Puerto 5001)
-                    const songTitles = rawSongs.map(s => s.name);
-                    const validSongs = await filtrarCancionesDisponibles(songTitles);
-
-                    // C. Formatear
-                    rawSongs.forEach(originalSong => {
-                        const match = validSongs.find(v => v.name.toLowerCase() === originalSong.name.toLowerCase());
-                        if (match) {
-                            localResults.push({
-                                title: originalSong.name,             
-                                src: match.url || match.link, 
-                                artist: (originalSong.artists && originalSong.artists.length > 0) ? originalSong.artists[0] : "Artista Desconocido",
-                                cover: "/assets/img/defaultcover.png",
-                                genre: originalSong.genre,
-                                bpm: originalSong.bpm,
-                                type: 'local', 
-                                details: "Tu Biblioteca"
-                            });
-                        }
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        console.error("❌ Error en recomendaciones locales:", error);
+    if (!spotifyToken) {
+        console.error("🔴 Falta Token. No se puede iniciar.");
+        return [];
     }
 
-    return localResults;
-}
-
-// --- Helper para filtrar locales ---
-async function filtrarCancionesDisponibles(titlesArray) {
     try {
-        const apiUrlStream = `${STREAM_BASE_URL}/get-songs`;
-        const response = await fetch(apiUrlStream, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ "songsRequested": titlesArray })
-        });
-        if (!response.ok) return [];
-        const data = await response.json();
-        return data.files || []; 
-    } catch (error) { return []; }
+        console.log("⏳ Pidiendo playlist al Controlador...");
+        
+        // 🚀 EL CAMBIO CLAVE:
+        // dbSource.js YA nos devuelve la lista con { title, artist, cover, score }.
+        // Así que NO hacemos .map() aquí. Lo tomamos tal cual.
+        const finalList = await generateHybridPlaylist(spotifyToken);
+        
+        // Pasamos la lista limpia directamente al pintor
+        return finalList;
+
+    } catch (error) {
+        console.error("❌ Error obteniendo recomendaciones:", error);
+        return [];
+    }
 }
 
-
-/* ------------------------------------------------------
-   FUNCIÓN DE RENDERIZADO
-   ------------------------------------------------------ */
-function setOnContainer(songsList) {
+// Función de Renderizado (Pintar en HTML)
+/*export function setOnContainer(songsList) {
+    console.log("🎨 setOnContainer: Intentando pintar en el DOM...", songsList);
     const mainContainer = document.getElementById("mainPanel");
-    if (!mainContainer) return;
+    if (!mainContainer) {
+        console.error("❌ Error: No existe el div con id='mainPanel' en el HTML.");
+        return;
+    }
     
     mainContainer.innerHTML = ""; 
 
     if (!songsList || songsList.length === 0) {
-        const isSpotifyMode = localStorage.getItem('spotifyToken');
-        const msg = isSpotifyMode 
-            ? "No se encontraron recomendaciones en Spotify para tu perfil." 
-            : "No se encontraron canciones locales disponibles.";
-            
-        mainContainer.innerHTML = `<div class="text-white-50 text-center mt-5 p-4 glass-panel">${msg}</div>`;
+        mainContainer.innerHTML = `<div class="text-white-50 text-center mt-5 p-4">No se encontraron recomendaciones.</div>`;
         return;
     }
 
-    // Detectamos el tipo de la primera canción para poner el título correcto
-    const isSpotify = songsList[0].type === 'spotify';
-    
-    // Renderizamos la sección única
-    const title = isSpotify ? "Recomendado para ti (Spotify)" : "Tu Biblioteca Local";
-    const icon = isSpotify ? "bi-spotify text-success" : "bi-hdd-network text-primary";
-    
-    renderSection(mainContainer, title, icon, songsList, isSpotify);
-}
-
-// --- Helper para pintar la lista ---
-function renderSection(container, title, iconClass, songs, isSpotify) {
-    // Título
+    // Header
     const header = document.createElement('h4');
     header.className = "text-white mb-3 d-flex align-items-center gap-2 mt-2";
-    header.innerHTML = `<i class="bi ${iconClass}"></i> ${title}`;
-    container.appendChild(header);
+    header.innerHTML = `<i class="bi bi-cpu text-info"></i> Selección Neuro-Acústica`;
+    mainContainer.appendChild(header);
 
-    // Grid de canciones
-    songs.forEach((song, index) => {
+    // Cards
+    songsList.forEach((song) => {
         let card = document.createElement("div");
-        card.className = "card mb-3 shadow-sm song-card glass-hover"; 
-        card.style.cursor = "pointer";
+        card.className = "card mb-3 shadow-sm song-card"; 
         card.style.background = "rgba(255,255,255,0.05)";
-        card.style.border = "1px solid rgba(255,255,255,0.05)";
+        card.style.cursor = "pointer";
 
-        card.onclick = async () => {
-            console.log(`⚡ Reproduciendo: ${song.title}`);
-
-            if (isSpotify) {
-                // --- MODO SPOTIFY ---
-                const token = localStorage.getItem('spotifyToken');
-                await playSpotifyUri(song.uri, token);
-            } else {
-                // --- MODO LOCAL ---
-                if (typeof LocalPlayer !== 'undefined') {
-                    // 1. Inyectamos la lista actual al reproductor para que sepa qué sigue
-                    LocalPlayer.playlist = songs;
-                    
-                    // 2. Actualizamos UI Controller si existe
-                    if (typeof uicontroller !== 'undefined') {
-                        uicontroller.songs = songs;
-                    }
-
-                    // 3. Cargamos y reproducimos
-                    await LocalPlayer.loadTrack(index, true);
-                }
-            }
+        // Click para reproducir
+        card.onclick = () => {
+            console.log(`⚡ Play: ${song.title}`);
+            playSpotifyUri(song.uri, localStorage.getItem('spotifyToken'));
         };
+
+        const scoreBadge = song.score ? `<span class="badge bg-info text-dark float-end">${song.score}%</span>` : '';
 
         card.innerHTML = `
             <div class="row g-0 align-items-center">
@@ -170,38 +130,127 @@ function renderSection(container, title, iconClass, songs, isSpotify) {
                 </div>
                 <div class="col-8 col-md-9">
                     <div class="card-body py-2 ps-0">
-                        <h6 class="card-title fw-bold text-white mb-0 text-truncate">${song.title}</h6>
-                        <p class="card-text text-white-50 small mb-0 text-truncate">${song.artist}</p>
-                        ${song.details ? `<small class="text-white-50" style="font-size: 0.65rem">${song.details}</small>` : ''}
+                        <div class="d-flex justify-content-between">
+                            <h6 class="card-title fw-bold text-white mb-0 text-truncate">${song.title}</h6>
+                            ${scoreBadge}
+                        </div>
+                        <p class="card-text text-white-50 small mb-0">${song.artist}</p>
                     </div>
-                </div>
-                <div class="col-1 text-center">
-                     ${isSpotify ? '<i class="bi bi-play-circle-fill text-success fs-4"></i>' : '<i class="bi bi-play-circle text-white-50 fs-4"></i>'}
                 </div>
             </div>
         `;
-        container.appendChild(card);
+        mainContainer.appendChild(card);
+    });
+}*/
+
+/* public/js/recommendations.js */
+
+export function setOnContainer(songsList) {
+    // 🛡️ BLINDAJE
+    if (!songsList) {
+        console.warn("⚠️ setOnContainer recibió 'undefined'. Ignorando.");
+        return; 
+    }
+
+    console.log("🎨 setOnContainer: Recibido:", songsList);
+
+    const mainContainer = document.getElementById("mainPanel");
+    if (!mainContainer) return;
+    
+    mainContainer.innerHTML = ""; 
+
+    if (songsList.length === 0) {
+        mainContainer.innerHTML = `
+            <div class="d-flex flex-column align-items-center justify-content-center text-white-50 mt-5 fade-in">
+                <i class="bi bi-disc fs-1 mb-3 opacity-50"></i>
+                <p>No se encontraron recomendaciones.</p>
+            </div>`;
+        return;
+    }
+
+    // Header
+    const header = document.createElement('div');
+    header.className = "d-flex justify-content-between align-items-center mb-3 px-2 fade-in";
+    header.innerHTML = `
+        <h5 class="text-white mb-0"><i class="bi bi-soundwave text-info me-2"></i>Tu Selección</h5>
+        <span class="badge bg-dark border border-secondary text-white-50">${songsList.length}</span>
+    `;
+    mainContainer.appendChild(header);
+
+    // Cards
+    songsList.forEach((song, index) => {
+        let card = document.createElement("div");
+        card.className = "card mb-3 shadow-sm border-0 fade-in"; 
+        card.style.background = "rgba(255, 255, 255, 0.05)"; 
+        card.style.backdropFilter = "blur(12px)";
+        card.style.cursor = "pointer";
+        card.style.animation = `fadeIn 0.5s ease forwards ${index * 0.1}s`;
+
+        card.onclick = () => {
+            console.log(`▶️ Play: ${song.title}`);
+            playSpotifyUri(song.uri);
+        };
+
+        // NOTA: Aquí usamos song.score directamente porque dbSource ya lo puso ahí.
+        // No buscamos song.neuro_score ni song.display_data
+        const scoreVal = song.score || 0;
+        const scoreBadge = scoreVal > 0
+            ? `<span class="badge bg-success bg-opacity-75 ms-auto">${Math.round(scoreVal)}%</span>` 
+            : '';
+
+        card.innerHTML = `
+            <div class="row g-0 align-items-center p-2">
+                <div class="col-3 col-sm-2 text-center">
+                    <img src="${song.cover || '/img/default-cover.png'}" 
+                         class="img-fluid rounded shadow-sm" 
+                         style="width: 55px; height: 55px; object-fit: cover;"
+                         loading="lazy"
+                         onerror="this.src='/img/default-cover.png'"
+                         alt="${song.title}">
+                </div>
+                <div class="col-9 col-sm-10">
+                    <div class="card-body py-1 px-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <h6 class="card-title fw-bold text-white mb-0 text-truncate w-75">${song.title}</h6>
+                            ${scoreBadge}
+                        </div>
+                        <p class="card-text text-white-50 small mb-0 text-truncate">${song.artist}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        mainContainer.appendChild(card);
     });
 }
 
-/* ==========================================================
-   🛠️ FUNCIÓN DE REPRODUCCIÓN SPOTIFY (PUT)
-   ========================================================== */
-async function playSpotifyUri(uri, token) {
-    if (!token) return console.error("❌ No hay token");
-    
-    // URL OFICIAL
-    let url = `https://api.spotify.com/v1/me/player/play`;
-    
-    // Intentamos forzar el dispositivo actual si está listo
-    let deviceId = window.SpotifyPlayerWrapper?.deviceId;
-    if (deviceId) url += `?device_id=${deviceId}`;
+// Helper Spotify Play
+async function playSpotifyUri(uri) {
+    if (!uri) return;
+    let deviceId = window.SpotifyPlayerWrapper?.deviceId; 
+    let queryParams = deviceId ? `?device_id=${deviceId}` : '';
 
     try {
-        await fetch(url, {
-            method: 'PUT',
-            body: JSON.stringify({ uris: [uri] }),
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        });
-    } catch (e) { console.error(e); }
+        await apiCall('spotify', `/me/player/play${queryParams}`, 'PUT', { uris: [uri] });
+    } catch (e) {
+        console.warn("⚠️ Error al reproducir:", e);
+    }
 }
+
+/* ==========================================================
+   🚀 AUTO-ARRANQUE (ESTO ES LO QUE TE FALTABA)
+   ========================================================== */
+/*(async function initSystem() {
+    console.log("⚡ Auto-iniciando sistema de recomendaciones...");
+
+    // Esperar a que el HTML cargue
+    if (document.readyState === 'loading') {
+        await new Promise(resolve => window.addEventListener('DOMContentLoaded', resolve));
+    }
+
+    try {
+        const songs = await obtenerRecomendaciones();
+        setOnContainer(songs);
+    } catch (error) {
+        console.error("❌ Error fatal en el auto-arranque:", error);
+    }
+})();*/

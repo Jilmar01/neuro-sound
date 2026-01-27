@@ -136,3 +136,76 @@ export async function apiCall(serverName, endpoint, method, body = null) {
         throw error;
     }
 }
+
+/**
+ * 🧪 FUNCIÓN DE PRUEBAS HÍBRIDA
+ * - URL Dinámica: Tú le dices a qué IP/Dominio apuntar.
+ * - Token Automático: Él busca el token correcto en localStorage según el 'serverKey'.
+ * * @param {string} dynamicBaseUrl - La URL base que quieres probar (ej: "https://mi-tunnel.ngrok.io")
+ * @param {string} serverKey - 'neuro' (para tu backend) o 'spotify' (para API externa)
+ * @param {string} endpoint - La ruta (ej: "/api/canciones")
+ * @param {string} method - "GET", "POST", etc.
+ * @param {object} body - Datos opcionales
+ */
+export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, body = null) {
+    
+    // 1. CONFIGURACIÓN DE CLAVES
+    // Definimos qué key del localStorage usar según el tipo de servidor
+    const tokenKeys = {
+        'neuro': 'token',         // Tu backend usa 'token'
+        'spotify': 'spotifyToken' // Spotify usa 'spotifyToken'
+    };
+
+    const storageKey = tokenKeys[serverKey];
+    
+    if (!storageKey) {
+        throw new Error(`Tipo de servidor desconocido: "${serverKey}". Usa 'neuro' o 'spotify'.`);
+    }
+
+    // 2. PREPARACIÓN DE URL
+    // Limpiamos barras extra para evitar "http://url//api"
+    const cleanBase = dynamicBaseUrl.replace(/\/$/, ''); 
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${cleanBase}${cleanEndpoint}`;
+
+    // 3. OBTENCIÓN DEL TOKEN (Automático)
+    const token = localStorage.getItem(storageKey);
+
+    // 4. HEADERS
+    const headers = { 'Content-Type': 'application/json' };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    } else {
+        console.warn(`warning: No se encontró token en localStorage para '${serverKey}' (${storageKey}). La petición irá sin auth.`);
+    }
+
+    const fetchOptions = {
+        method: method.toUpperCase(),
+        headers: headers
+    };
+
+    if (body && method.toUpperCase() !== 'GET') {
+        fetchOptions.body = JSON.stringify(body);
+    }
+
+    console.log(`[TEST] ${method} ${url} | Token: ${token ? 'SÍ' : 'NO'}`);
+
+    try {
+        const response = await fetch(url, fetchOptions);
+
+        if (response.status === 204) return null;
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.message || `Error HTTP ${response.status}`);
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error(`❌ Error en testsApiCall:`, error);
+        throw error;
+    }
+}
