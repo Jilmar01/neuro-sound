@@ -25,12 +25,6 @@ const surveySchema = new mongoose.Schema({
       required: true
     },
 
-    molestias: {
-      tone1: { type: Number, required: true },
-      tone2: { type: Number, required: true },
-      tone3: { type: Number, required: true }
-    },
-
     favorite: {
       type: String,
       required: true
