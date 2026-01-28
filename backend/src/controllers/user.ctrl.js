@@ -31,8 +31,7 @@ const createUser = async (req, res) => {
         const userObj = await registerUser(userData);
         return sendSuccess(res, userObj, 'Usuario creado exitosamente', 201);
     } catch (error) {
-        const { status, message } = mapServiceError(error);
-        return sendError(res, message, status);
+        return sendError(res, "Error al registrar el usuario", error.status, error.message);
     }
 };
 
