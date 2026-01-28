@@ -49,7 +49,7 @@ export function translateFullSurvey(rawInput, historyData) {
             currentVector.energy = 0.5 + intensityFactor;
             break;
         case 'ira':
-        case 'enojo':
+        case 'molestia':
             currentVector.valence = 0.4 - intensityFactor;
             currentVector.energy = 0.5 + intensityFactor; 
             break;
@@ -111,11 +111,11 @@ export function translateFullSurvey(rawInput, historyData) {
 
     // A. Mapeo de Tempo
     const tempoMap = {
-        "muy lentas y solemnes": 55,
-        "lentas y tranquilas": 75,
-        "ritmo moderado": 105,
-        "rapidas y animadas": 125,
-        "muy rapidas e intensas": 150
+        "muy lentas y solemnes": 55,//eliminar este
+        "lentas y tranquilas": 75, //cambio de un unico valor a un rango entre 40 y 75
+        "ritmo moderado": 105, //cambio de un unico valor a un rango entre 76 y 120
+        "rapidas y animadas": 125, //cambio de un unico valor a un rango entre 121 y180
+        "muy rapidas e intensas": 150 //eliminar este
     };
     
     // Validamos que tempo_preference exista antes de usarlo

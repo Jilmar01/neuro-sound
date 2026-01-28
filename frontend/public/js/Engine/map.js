@@ -3,7 +3,7 @@ emotions =[
     "tristeza",
     "calma",
     "felicidad",
-    "ira"
+    "molestia"
 ] //esto es como el usuario se siente en ese momento
 
 intensity = [
@@ -27,26 +27,16 @@ tones = [
 ]
 
 generes = [
-  "Blues",
-  "Indie",
-  "Reggae",
-  "Soul",
-  "Ambient",
-  "House",
+  "Indie", 
   "Reggaeton",
   "Rock",
-  "Classical",
   "Pop",
-  "Folk",
-  "Metal",
-  "EDM",
+  "Electronica", 
   "Hip-Hop",
-  "K-Pop",
-  "Country",
   "RnB",
-  "Jazz",
-  "Lofi",
-  "Gospel"
+  "salsa",
+  "cumbia",
+  "balada"
 ];//de aqui el usuario selecciona solo lo que le gusta
 
 artist_preference = [
@@ -54,11 +44,9 @@ artist_preference = [
 ]//este es un arreglo que el usuario llena manualmente con sus artistas favoritos separandolos con una coma para que se pueda identificar como parte del arreglo y no todo unido
 
 tempo_preference = [
-    "muy lentas y solemnes",
     "lentas y tranquilas",
     "ritmo moderado",
     "rapidas y animadas",
-    "muy rapidas e intensas"
 ] //este es el tipo de canciones o ritmos que le gusta en sus canciones
 
 intent = [
