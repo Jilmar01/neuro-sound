@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSongById, getSongs, analizeSong, getTracksByIds } from '../controllers/songs.ctrl.js';
+import { getSongById, getSongs, getTracksByIds } from '../controllers/songs.ctrl.js';
 
 const router = Router();
 
@@ -11,8 +11,5 @@ router.post("/track", getSongById);
 
 // Obtiene las canciones por array de IDs
 router.post("/tracks", getTracksByIds);
-
-/* Analiza una cancion por nombre y artista */
-router.post("/analyze-audio", analizeSong);
 
 export default router;
