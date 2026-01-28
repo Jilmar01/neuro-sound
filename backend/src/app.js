@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.routes.js';
 import surveyRoutes from './routes/survey.routes.js'
 import recommendRoutes from './routes/recommend.routes.js'
 import spotifyRoutes from './routes/spotify.routes.js';
+import serverMusic from './routes/music.server.routes.js';
 import songs from './routes/songs.routes.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/survey', surveyRoutes);
 app.use('/api/recommend', recommendRoutes);
 app.use('/api/spotify', spotifyRoutes);
+app.use('/api/server-music', serverMusic);
 app.use('/api/songs', songs);
 
 /* Ruta para enviar un mensaje de prueba */
