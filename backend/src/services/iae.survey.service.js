@@ -19,12 +19,12 @@ export const iaeRegister = async (userId, data) => {
         throw new HttpError("Datos M incompletos", 400);
     }
 
-    const exists = await IAESurvey.findOne({ user: userId });
+    const exists = await IAESurvey.findOne({ useId: userId });
     if (exists) {
         throw new HttpError("El usuario ya tiene una encuesta IAE", 409);
     }
 
-    const survey = new IAESurvey({ user: userId, M1, M2, M3 });
+    const survey = new IAESurvey({ userId: userId, M1, M2, M3 });
     await survey.save();
     
     return survey;
