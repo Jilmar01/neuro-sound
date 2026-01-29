@@ -4,7 +4,7 @@ import { HttpError } from "../utils/httpError.js";
 
 export const getIAESurvey = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
         const response = await getIAE(userId);
 
         return sendSuccess(res, response, "Encuesta IAE obtenida correctamente", 200);
