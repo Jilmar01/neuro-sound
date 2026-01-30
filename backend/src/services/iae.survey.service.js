@@ -1,8 +1,8 @@
 import IAESurvey from "../models/iae.survey.model.js";
 import { HttpError } from "../utils/httpError.js";
 
-export const getIAE = async (userId) => {
-    const survey = await IAESurvey.findOne({ userId: userId });
+export const getIAE = async (userId, recommendationId) => {
+    const survey = await IAESurvey.findOne({ userId, recommendationId });
 
     if (!survey) {
         throw new HttpError("Encuesta IAE no encontrada", 404);
@@ -11,20 +11,14 @@ export const getIAE = async (userId) => {
     return survey;
 };
 
-export const iaeRegister = async (userId, data) => {
-    const { M1, M2, M3 } = data;
+export const iaeRegister = async (userId, recommendationId, data) => {
+    const { M1, M2, M3, satisfaction } = data;
 
-
-    if (!M1 || !M2 || M3 === undefined) {
+    if (!M1 || !M2 || M3 === undefined, !satisfaction) {
         throw new HttpError("Datos M incompletos", 400);
     }
 
-    const exists = await IAESurvey.findOne({ useId: userId });
-    if (exists) {
-        throw new HttpError("El usuario ya tiene una encuesta IAE", 409);
-    }
-
-    const survey = new IAESurvey({ userId: userId, M1, M2, M3 });
+    const survey = new IAESurvey({ userId, recommendationId, M1, M2, M3, satisfaction });
     await survey.save();
     
     return survey;

@@ -2,8 +2,13 @@ import mongoose from 'mongoose';
 
 const iaeSurveySchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User',                
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  recommendationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Recommendation',
     required: true
   },
   M1: {
@@ -23,6 +28,12 @@ const iaeSurveySchema = new mongoose.Schema({
     required: true,
     min: 0,
     max: 1
+  },
+  satisfaction: {
+    type: Number, 
+    required: true,
+    min: 0,
+    max: 100
   },
   createdAt: {
     type: Date,
