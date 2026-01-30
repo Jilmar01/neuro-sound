@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro-Sound Desktop | Análisis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #e9ecef;
+        }
+
+        .logo-icon {
+            font-size: 36px;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-right: 12px;
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 10px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .chart-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .chart-section:hover {
+            border-color: #5e7dfa;
+            box-shadow: 0 5px 15px rgba(94, 125, 250, 0.1);
+        }
+
+        .chart-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #moodChart {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px auto;
+        }
+
+        .emotion-display {
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+
+        .emotion-label {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .emotion-value {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            border-color: #5e7dfa;
+            box-shadow: 0 5px 15px rgba(94, 125, 250, 0.1);
+        }
+
+        .info-card-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .info-card-title i {
+            margin-right: 8px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .genre-item {
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 10px;
+            font-size: 15px;
+            color: #495057;
+            font-weight: 500;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .genre-item:hover {
+            border-color: #5e7dfa;
+            transform: translateX(5px);
+        }
+
+        .pure-bar-container {
+            margin-top: 15px;
+            width: 100%;
+            background: #e9ecef;
+            height: 45px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pure-bar-segment {
+            height: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .pure-bar-segment:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn-continue {
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(94, 125, 250, 0.3);
+            width: 100%;
+        }
+
+        .btn-continue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(94, 125, 250, 0.4);
+            background: linear-gradient(135deg, #4e6dea 0%, #992de5 100%);
+        }
+
+        @media (max-width: 768px) {
+            .result-card {
+                padding: 25px 20px;
+            }
+
+            .logo-text {
+                font-size: 24px;
+            }
+
+            .logo-icon {
+                font-size: 28px;
+            }
+
+            #moodChart {
+                max-width: 200px;
+                max-height: 200px;
+            }
+
+            .emotion-value {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            body {
+                padding: 10px;
+            }
+
+            .result-card {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="result-container">
+        <div class="result-card p-4">
+
+            <div class="logo-container">
+                <i class="bi bi-soundwave logo-icon"></i>
+                <span class="logo-text">Neuro-Sound</span>
+            </div>
+
+            <div class="row g-4">
+                <!-- Columna Izquierda: Gráfico -->
+                <div class="col-lg-5">
+                    <div class="chart-section">
+                        <h3 class="section-title">
+                            <i class="bi bi-emoji-smile"></i>
+                            Perfil Emocional
+                        </h3>
+
+                        <div class="chart-wrapper">
+                            <canvas id="moodChart"></canvas>
+                        </div>
+
+                        <div class="emotion-display p-3 mt-3">
+                            <div class="emotion-label">Tu próxima emoción es:</div>
+                            <div class="emotion-value text-center" id="emotionTarget"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Información -->
+                <div class="col-lg-7">
+
+                    <div class="info-card">
+                        <div class="info-card-title">
+                            <i class="bi bi-music-note-list"></i>
+                            Géneros Seleccionados
+                        </div>
+                        <div id="genreContainer" class="row g-2"></div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-title">
+                            <i class="bi bi-soundwave"></i>
+                            Tonos Puros
+                        </div>
+                        <div class="pure-bar-container" id="pureBar"></div>
+                    </div>
+
+                    <a class="btn btn-continue mt-2" href="./home.html">
+                        <i class="bi bi-arrow-right-circle me-2"></i>
+                        Continuar
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="../public/js/result.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro Sound - Musical Questionnaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #e9ecef;
+        }
+
+        .section-number {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .form-label {
+            color: #495057;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .form-control,
+        .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #5e7dfa;
+            box-shadow: 0 0 0 0.2rem rgba(94, 125, 250, 0.25);
+        }
+
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-control.is-valid,
+        .form-select.is-valid {
+            border-color: #28a745;
+        }
+
+        .form-range {
+            height: 8px;
+            cursor: pointer;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            border: none;
+            border-radius: 50%;
+        }
+
+        .range-value {
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #5e7dfa;
+            margin-top: 10px;
+        }
+
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .genre-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: white;
+        }
+
+        .genre-card:hover {
+            border-color: #5e7dfa;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(94, 125, 250, 0.2);
+        }
+
+        .genre-card.selected {
+            border-color: #5e7dfa;
+            background: linear-gradient(135deg, rgba(94, 125, 250, 0.1) 0%, rgba(169, 44, 245, 0.1) 100%);
+        }
+
+        .genre-card input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #5e7dfa;
+        }
+
+        .genre-card label {
+            cursor: pointer;
+            margin-left: 10px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .audio-player-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .audio-player-card:hover {
+            border-color: #5e7dfa;
+            box-shadow: 0 5px 15px rgba(94, 125, 250, 0.1);
+        }
+
+        .audio-player-card audio {
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(94, 125, 250, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(94, 125, 250, 0.4);
+            background: linear-gradient(135deg, #4e6dea 0%, #992de5 100%);
+        }
+
+        .btn-outline-secondary {
+            border: 2px solid #6c757d;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        }
+
+        .progress-bar-container {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .invalid-feedback {
+            display: none;
+        }
+
+        .valid-feedback {
+            display: block;
+            font-size: 13px;
+            margin-top: 5px;
+            color: #dc3545;
+        }
+
+        .emotion-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-invalid {
+            border-color: #dc3545;
+        }
+
+        .emotion-option:hover {
+            border-color: #5e7dfa;
+            background: rgba(94, 125, 250, 0.05);
+        }
+
+        .emotion-option.selected {
+            border-color: #5e7dfa;
+            background: linear-gradient(135deg, rgba(94, 125, 250, 0.1) 0%, rgba(169, 44, 245, 0.1) 100%);
+        }
+
+        .emotion-icon {
+            font-size: 28px;
+            margin-right: 15px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(94, 125, 250, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .section {
+                padding: 25px 20px;
+            }
+
+            .genre-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Progress Bar -->
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+
+        <!-- Section 1: Consent -->
+        <div id="section1" class="section active">
+            <div class="logo-container">
+                <div class="logo-text">Neuro Sound</div>
+                <p class="text-muted">Personalize your musical experience</p>
+            </div>
+
+            <h2 class="section-title">
+                <span class="section-number">1</span>
+                Consent
+            </h2>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-shield-check text-primary me-2"></i>
+                    Do you agree that your responses will be used to personalize your musical experience?
+                </label>
+                <select id="consent" class="form-select" required>
+                    <option value="">Select an option</option>
+                    <option value="Si">Yes, I agree</option>
+                    <option value="No">No, I don't agree</option>
+                </select>
+                <div class="invalid-feedback" id="part-one">Please select an option.</div>
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnConsent">
+                <i class="bi bi-arrow-right me-2"></i>Next
+            </button>
+        </div>
+
+        <!-- Section 2: Emotional State -->
+        <div id="section2" class="section">
+            <button class="btn btn-outline-secondary mb-3" id="btnBack2">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+
+            <h2 class="section-title">
+                <span class="section-number">2</span>
+                Emotional State
+            </h2>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-emoji-smile text-primary me-2"></i>
+                    How do you feel right now?
+                </label>
+                <div id="emotionOptions">
+                    <div class="emotion-option" data-value="tristeza">
+                        <div class="emotion-icon">😢</div>
+                        <div>
+                            <strong>Sad</strong>
+                            <p class="mb-0 text-muted small">I feel discouraged</p>
+                        </div>
+                    </div>
+                    <div class="emotion-option" data-value="calma">
+                        <div class="emotion-icon">😌</div>
+                        <div>
+                            <strong>Calm</strong>
+                            <p class="mb-0 text-muted small">I feel peaceful</p>
+                        </div>
+                    </div>
+                    <div class="emotion-option" data-value="felicidad">
+                        <div class="emotion-icon">😊</div>
+                        <div>
+                            <strong>Happy</strong>
+                            <p class="mb-0 text-muted small">I feel content</p>
+                        </div>
+                    </div>
+                    <div class="emotion-option" data-value="molestia">
+                        <div class="emotion-icon">😠</div>
+                        <div>
+                            <strong>Annoyed</strong>
+                            <p class="mb-0 text-muted small">I feel irritated or frustrated</p>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="currentEmotion" required>
+                <div class="invalid-feedback" id="part-two">Please select how you feel.</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-thermometer-half text-primary me-2"></i>
+                    How intense is this emotion?
+                </label>
+                <input id="emotionIntensity" type="range" class="form-range" min="1" max="5" step="1" value="3">
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>Very mild</span>
+                    <span class="range-value" id="intensityVal">3</span>
+                    <span>Very strong</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnNext2">
+                <i class="bi bi-arrow-right me-2"></i>Next
+            </button>
+        </div>
+
+        <!-- Section 3: Pure Tone Test -->
+        <div id="section3" class="section">
+            <button class="btn btn-outline-secondary mb-3" id="btnBack3">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+
+            <h2 class="section-title">
+                <span class="section-number">3</span>
+                Pure Tone Test
+            </h2>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-music-note-beamed text-primary me-2"></i>
+                    Listen to the following tones and rate how much they bother you
+                </label>
+
+                <div class="audio-player-card">
+                    <strong></i>Tone 1</strong>
+                    <audio controls id="audio1"></audio>
+                </div>
+
+                <div class="audio-player-card">
+                    <strong>Tone 2</strong>
+                    <audio controls id="audio2"></audio>
+                </div>
+
+                <div class="audio-player-card">
+                    <strong>Tone 3</strong>
+                    <audio controls id="audio3"></audio>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="text-danger me-2"></i>
+                        Which tone did you like the most?
+                    </label>
+                    <select id="likedTone" class="form-select" required>
+                        <option value="">Select...</option>
+                        <option value="tone1">Tone 1</option>
+                        <option value="tone2">Tone 2</option>
+                        <option value="tone3">Tone 3</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="text-muted me-2"></i>
+                        Which tone did you like the least?
+                    </label>
+                    <select id="dislikedTone" class="form-select" required>
+                        <option value="">Select...</option>
+                        <option value="tone4">Tone 1</option>
+                        <option value="tone5">Tone 2</option>
+                        <option value="tone6">Tone 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnNext3">
+                <i class="bi bi-arrow-right me-2"></i>Next
+            </button>
+        </div>
+
+        <!-- Section 4: Music Genres -->
+        <div id="section4" class="section">
+            <button class="btn btn-outline-secondary mb-3" id="btnBack4"">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+
+            <h2 class="section-title">
+                <span class="section-number">4</span>
+                Musical Preferences
+            </h2>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-music-note-list text-primary me-2"></i>
+                    Select all the genres you enjoy
+                    <span class="text-muted small">(at least one)</span>
+                </label>
+                <div class="genre-grid">
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Pop" id="genre-pop">
+                        <label for="genre-pop">🎤 Pop</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Rock" id="genre-rock">
+                        <label for="genre-rock">🎸 Rock</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Electronic / EDM" id="genre-edm">
+                        <label for="genre-edm">🎧 Electronic / EDM</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Reggaeton" id="genre-reggaeton">
+                        <label for="genre-reggaeton">🔥 Reggaeton</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Hip-Hop / Rap" id="genre-hiphop">
+                        <label for="genre-hiphop">🎤 Hip-Hop / Rap</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="R&B" id="genre-rnb">
+                        <label for="genre-rnb">🎵 R&B</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Indie / Alternative" id="genre-indie">
+                        <label for="genre-indie">🌟 Indie / Alternative</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Salsa" id="genre-salsa">
+                        <label for="genre-salsa">💃 Salsa</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Cumbia" id="genre-cumbia">
+                        <label for="genre-cumbia">🎺 Cumbia</label>
+                    </div>
+                    <div class="genre-card">
+                        <input class="genreCheck" type="checkbox" value="Ballad / Latin Pop" id="genre-balada">
+                        <label for="genre-balada">❤️ Ballad / Latin Pop</label>
+                    </div>
+                </div>
+                <div class="invalid-feedback" id="genreError">Please select at least one genre.</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-star-fill text-warning me-2"></i>
+                    Current artists of interest
+                    <span class="text-muted small">(separate by commas)</span>
+                </label>
+                <input type="text" id="currentArtist" class="form-control"
+                    placeholder="E.g: Bad Bunny, Taylor Swift, The Weeknd">
+                <small class="text-muted">You can leave this blank if you prefer</small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-speedometer2 text-primary me-2"></i>
+                    Song type preference
+                </label>
+                <select id="tempoPref" class="form-select" required>
+                    <option value="">Select...</option>
+                    <option value="lento">Slow</option>
+                    <option value="normal">Normal</option>
+                    <option value="rapido">Fast</option>
+                </select>
+                <div class="invalid-feedback">Please select a preference.</div>
+            </div>
+
+            <button class="btn btn-primary w-100" id="btnNext4">
+                <i class="bi bi-arrow-right me-2"></i>Next
+            </button>
+        </div>
+
+        <!-- Section 5: Emotional Intent -->
+        <div id="section5" class="section">
+            <button class="btn btn-outline-secondary mb-3" id="btnBack5"">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+
+            <h2 class="section-title">
+                <span class="section-number">5</span>
+                Musical Goal
+            </h2>
+
+            <div class="mb-4">
+                <label class="form-label">
+                    <i class="bi bi-bullseye text-primary me-2"></i>
+                    What do you want the music to do for you?
+                </label>
+                <select id="emotionalGoal" class="form-select" required>
+                    <option value="">Select a goal...</option>
+                    <!-- Options will be filled dynamically -->
+                </select>
+                <div class="invalid-feedback">Please select a goal.</div>
+            </div>
+
+            <button class="btn btn-success w-100" id="btnSend">
+                <i class="bi bi-check-circle me-2"></i>Finish and Send
+            </button>
+        </div>
+
+         <button class="btn btn-dark w-100 mt-4 py-2" id="confirmLogoutBtn">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            <label for="">Logout</label>
+        </button>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../public/js/survey.js"></script>
+    <script type="module" src="../public/js/logout.js"></script>
+
+</body>
+</html>

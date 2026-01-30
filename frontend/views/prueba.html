@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuro Sound - Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../public/css/home.css">
+    <link rel="stylesheet" href="../public/css/satisfaction.css">
+</head>
+
+<body>
+
+    <div class="container-fluid h-100 p-0">
+        <div class="row h-100 g-0">
+
+            <!-- ================================
+                 DESKTOP SIDEBAR
+            ================================= -->
+            <div class="col-md-2 col-lg-1 d-none d-md-block h-100">
+                <div class="sidebar-container">
+                    <div class="mb-4 mt-2">
+                        <i class="bi bi-vinyl fs-1 text-white"
+                            style="filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));"></i>
+                    </div>
+
+                    <ul class="list-unstyled d-flex flex-column gap-2 w-100 align-items-center flex-grow-1">
+                        <li id="nav-home" class="sidebar-item active" onclick="cargarVista('home')">
+                            <i class="bi bi-house-door-fill fs-4"></i>
+                            <span>Home</span>
+                        </li>
+
+                        <li id="nav-iae" class="sidebar-item" onclick="cargarVista('satisfaction')">
+                            <i class="bi bi-clipboard-check-fill fs-4"></i>
+                            <span>IAE</span>
+                        </li>
+
+                        <li id="nav-settings" class="sidebar-item" onclick="cargarVista('settings')">
+                            <i class="bi bi-gear-fill fs-4"></i>
+                            <span>Settings</span>
+                        </li>
+
+                        <li class="sidebar-item mt-auto mb-3" data-bs-toggle="modal"
+                            data-bs-target="#logoutConfirmModal">
+                            <i class="bi bi-box-arrow-left fs-4"></i>
+                            <span>Logout</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ================================
+                 MAIN CONTENT AREA
+            ================================= -->
+            <div class="main col-12 col-md-10 col-lg-11 d-flex flex-column h-100">
+
+                <!-- Header -->
+                <div class="flex-shrink-0 col-12">
+                    <div class="header d-flex align-items-center justify-content-between py-2 px-3">
+                        <div class="logo d-flex align-items-center flex-grow-1">
+                            <i class="bi bi-soundwave fs-4 text-white me-2"></i>
+                            <h1 class="mb-0 fs-2 fw-bold text-white d-sm-block">Neuro Sound</h1>
+                        </div>
+
+                        <div class="profile">
+                            <a href="#" onclick="cargarVista('settings')" class="text-white">
+                                <i class="bi bi-person-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Row -->
+                <div class="row content-main flex-grow-1 overflow-hidden">
+
+                    <!-- Main Content Panel -->
+                    <div class="col-12 col-md-8 h-100">
+                        <div class="space h-100 d-flex flex-column" style="padding-bottom: 100px;">
+                            <div id="app-content" class="content-area">
+                                <div class="row mainPanel" id="mainPanel">
+                                    <!-- Dynamic content will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar (Charts - Desktop Only) -->
+                    <div class="col-md-4 d-none d-md-flex flex-column gap-4 mt-2 h-100">
+
+                        <div class="glass-panel flex-grow-1 p-3 d-flex flex-column" style="min-height: 300px;">
+                            <h6 class="text-white fw-bold mb-3">Your Stats</h6>
+                            <iframe src="" class="w-100 h-100 border-0"
+                                style="display: block; border-radius: 12px;"></iframe>
+                        </div>
+
+                        <!-- Desktop Player Controls -->
+                        <div class="player-controls">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <img class="ui-track-cover" src="../public/assets/img/defaultcover.png"
+                                    alt="Track Cover"
+                                    style="width:55px; height:55px; border-radius:10px; object-fit: cover;" />
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <h6 class="ui-track-name m-0 text-white fw-bold text-truncate">Track Name</h6>
+                                    <small class="ui-track-artist text-white-50 text-truncate d-block">Artist</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-center align-items-center gap-4 my-3">
+                                <i id="btnPrevDesktop" class="bi bi-skip-backward-fill fs-4"
+                                    style="cursor: pointer;"></i>
+                                <i id="btnPlayDesktop" class="bi bi-play-circle-fill ui-play-btn"
+                                    style="cursor: pointer; font-size: 2.5rem;"></i>
+                                <i id="btnNextDesktop" class="bi bi-skip-forward-fill fs-4"
+                                    style="cursor: pointer;"></i>
+                            </div>
+
+                            <div class="mt-3">
+                                <div id="progressDesktop" class="progress" style="cursor: pointer;">
+                                    <div class="progress-bar ui-track-progress" style="width:0%;"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2 small text-white-50">
+                                    <span class="ui-current-time">0:00</span>
+                                    <span class="ui-total-time">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================
+         MOBILE MINI PLAYER
+    ================================= -->
+    <div class="mobile-player d-md-none p-3" data-bs-toggle="offcanvas" data-bs-target="#fullScreenPlayer">
+
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+            <img class="ui-track-cover" src="../public/assets/img/defaultcover.png" alt="Track Cover"
+                style="width:45px; height:45px; border-radius:8px; object-fit:cover;" id="track-cover">
+            <div class="lh-1 flex-grow-1 overflow-hidden">
+                <p class="ui-track-name mt-0 mb-2 fw-bold small text-white text-truncate" id="track-name">Track Name</p>
+                <small class="ui-track-artist m-0 text-white-50 text-truncate d-block" style="font-size: 0.7rem;"
+                    id="track-artist">Artist</small>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center fs-3 gap-3 z-index-high">
+            <button class="btn p-0" id="btn-play">
+                <i id="btnPlayMobileMini" class="bi bi-play-fill text-white ui-play-btn fs-3"></i>
+            </button>
+            <button class="btn p-0" id="btn-next">
+                <i id="btnNextMobileMini" class="bi bi-skip-forward-fill text-white fs-3"></i>
+            </button>
+        </div>
+
+        <div
+            style="position:absolute; bottom:0; left:15px; right:15px; height:3px; background:rgba(255,255,255,0.3); border-radius: 2px;">
+            <div class="ui-track-progress" style="width:0%; height:100%; background:white; border-radius: 2px;"></div>
+        </div>
+    </div>
+
+    <!-- ================================
+         MOBILE BOTTOM NAVIGATION
+    ================================= -->
+    <nav class="navbar fixed-bottom mobile-navbar d-md-none justify-content-around">
+
+        <div id="mobile-nav-home" class="nav-link-mobile text-center text-white active" onclick="cargarVista('home')"
+            style="cursor: pointer;">
+            <i class="bi bi-house-door-fill fs-5"></i>
+            <div style="font-size: 0.7rem; font-weight: 600;">Home</div>
+        </div>
+
+        <div id="mobile-nav-iae" class="nav-link-mobile text-center text-white" style="cursor:pointer;" onclick="cargarVista('satisfaction')">
+            <i class="bi bi-clipboard-check-fill fs-5"></i>
+            <div style="font-size: 0.7rem; font-weight: 600;">IAE</div>
+        </div>
+
+        <div id="mobile-nav-settings" class="nav-link-mobile text-center text-white" style="cursor:pointer;" onclick="cargarVista('settings')">
+            <i class="bi bi-gear-fill fs-5"></i>
+            <div style="font-size: 0.7rem; font-weight: 600;">Settings</div>
+        </div>
+
+    </nav>
+
+    <!-- ================================
+         MOBILE FULL SCREEN PLAYER
+    ================================= -->
+    <div class="offcanvas offcanvas-bottom glass-modal h-100" tabindex="-1" id="fullScreenPlayer"
+        aria-labelledby="fullScreenPlayerLabel">
+
+        <div class="offcanvas-header border-0 pb-0">
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body d-flex flex-column align-items-center justify-content-between px-4 pb-5">
+
+            <div class="album-art-container mb-4">
+                <img class="ui-track-cover" src="../public/assets/img/defaultcover.png" alt="Album Art">
+            </div>
+
+            <div class="text-center mb-4 w-100">
+                <h4 class="ui-track-name fw-bold text-white mb-2 text-truncate">Track Name</h4>
+                <p class="ui-track-artist text-white-50 mb-0 text-truncate">Artist</p>
+            </div>
+
+            <div class="w-100 mb-4 px-2">
+                <input type="range" class="custom-range w-100 mb-2" id="seekSliderMobile" value="0" max="100">
+                <div class="d-flex justify-content-between small text-white-50">
+                    <span class="ui-current-time">0:00</span>
+                    <span class="ui-total-time">0:00</span>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center align-items-center gap-4 w-100 mb-3">
+                <i id="btnPrevMobile" class="bi bi-skip-backward-fill fs-2 text-white" style="cursor: pointer;"></i>
+                <i id="btnPlayMobile" class="bi bi-play-circle-fill ui-play-btn play-button-large text-white"
+                    style="cursor: pointer; font-size: 4rem;"></i>
+                <i id="btnNextMobile" class="bi bi-skip-forward-fill fs-2 text-white" style="cursor: pointer;"></i>
+            </div>
+
+            <div class="w-100 d-flex justify-content-center gap-4 mt-2">
+                <i class="bi bi-shuffle fs-5 text-white-50" style="cursor: pointer;"></i>
+                <i class="bi bi-repeat fs-5 text-white-50" style="cursor: pointer;"></i>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================================
+         LOGOUT CONFIRMATION MODAL
+    ================================= -->
+    <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-0"
+                style="background: rgba(0,0,0,0.75); backdrop-filter: blur(15px);">
+
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="logoutConfirmLabel">
+                        Confirmar cierre de sesión
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body text-center">
+                    ¿Estás seguro de que deseas cerrar sesión?
+                </div>
+
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">
+                        <i class="bi bi-box-arrow-left me-1"></i>
+                        Cerrar sesión
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================
+         SPOTIFY PREVIEW MODAL
+    ================================= -->
+    <div class="modal fade p-4" id="spotifyModal" tabindex="-1" aria-labelledby="spotifyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel text-white">
+
+                <div class="modal-header border-0 position-relative justify-content-center pt-4">
+
+                    <h5 class="modal-title text-center mt-4" id="spotifyModalLabel">
+                        Do you want to play this song?
+                    </h5>
+
+                    <button type="button" class="btn-close btn-close-white position-absolute end-0 top-0 m-3"
+                        data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <img id="modalCover" class="rounded mb-3" width="200" height="200" alt="Track Cover">
+
+                    <h6 id="modalTitle" class="fw-semibold mb-1"></h6>
+                    <small id="modalArtist" class="opacity-75"></small>
+
+                    <div class="mt-4 p-2 d-grid gap-2">
+
+                        <button id="btnSpotifyLogin" class="btn btn-success fw-bold">
+                            <i class="bi bi-spotify me-2"></i>Log in with Spotify
+                        </button>
+
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================
+         SCRIPTS
+    ================================= -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <script type="module" src="../public/js/home.js"></script>
+    <script type="module" src="../public/js/spotifyPlayer.js"></script>
+    <script type="module" src="../public/js/logout.js"></script>
+    
+    <!-- Sistema de navegación SPA mejorado -->
+    <script>
+        // Plantillas de contenido embebidas
+        const contentTemplates = {
+            satisfaction: `
+                <div class="survey-container">
+                    <div class="logo-section">
+                        <div class="brain-icon">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#5e7dfa;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#a92cf5;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <!-- Waveform -->
+                                <path d="M 10 50 Q 20 30, 30 50 T 50 50 T 70 50 T 90 50" 
+                                      stroke="url(#brainGradient)" 
+                                      stroke-width="2" 
+                                      fill="none"
+                                      stroke-linecap="round"/>
+                                <!-- Brain outline -->
+                                <path d="M 50 20 C 35 20, 25 30, 25 45 C 25 50, 27 55, 30 58 C 28 62, 30 68, 35 70 C 38 72, 42 72, 45 70 C 47 75, 52 78, 58 76 C 62 75, 65 72, 67 68 C 70 70, 74 70, 77 68 C 82 65, 84 58, 82 52 C 85 48, 85 42, 82 38 C 80 32, 75 28, 70 27 C 68 23, 62 20, 56 20 C 54 20, 52 20, 50 20 Z" 
+                                      stroke="url(#brainGradient)" 
+                                      stroke-width="2.5" 
+                                      fill="none"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h1>Neuro Sound</h1>
+                        <p class="subtitle">Evalúa tu experiencia musical</p>
+                    </div>
+
+                    <form id="satisfactionForm">
+                        <!-- Grid de preguntas M1 y M2 -->
+                        <div class="questions-grid">
+                            <!-- Pregunta 1: Claridad emocional (M1) -->
+                            <div class="question-section">
+                                <label class="question-label">
+                                    <i class="bi bi-emoji-smile"></i> Claridad Emocional
+                                </label>
+                                <p class="question-description">
+                                    ¿Qué tan bien entendió el sistema tu estado emocional?
+                                </p>
+                                <div class="scale-container" id="m1-scale">
+                                    <div class="scale-option">
+                                        <input type="radio" name="m1" id="m1-1" value="1">
+                                        <label for="m1-1" class="scale-label">
+                                            <span class="scale-number">1</span>
+                                            <span class="scale-text">Nada</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m1" id="m1-2" value="2">
+                                        <label for="m1-2" class="scale-label">
+                                            <span class="scale-number">2</span>
+                                            <span class="scale-text">Poco</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m1" id="m1-3" value="3">
+                                        <label for="m1-3" class="scale-label">
+                                            <span class="scale-number">3</span>
+                                            <span class="scale-text">Regular</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m1" id="m1-4" value="4">
+                                        <label for="m1-4" class="scale-label">
+                                            <span class="scale-number">4</span>
+                                            <span class="scale-text">Bien</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m1" id="m1-5" value="5">
+                                        <label for="m1-5" class="scale-label">
+                                            <span class="scale-number">5</span>
+                                            <span class="scale-text">Perfecto</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="error-message" id="m1-error">
+                                    ⚠️ Por favor, selecciona una opción para continuar
+                                </div>
+                            </div>
+
+                            <!-- Pregunta 2: Adecuación musical (M2) -->
+                            <div class="question-section">
+                                <label class="question-label">
+                                    <i class="bi bi-music-note-beamed"></i> Adecuación Musical
+                                </label>
+                                <p class="question-description">
+                                    ¿Qué tanto reflejó la música tu emoción?
+                                </p>
+                                <div class="scale-container" id="m2-scale">
+                                    <div class="scale-option">
+                                        <input type="radio" name="m2" id="m2-1" value="1">
+                                        <label for="m2-1" class="scale-label">
+                                            <span class="scale-number">1</span>
+                                            <span class="scale-text">Nada</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m2" id="m2-2" value="2">
+                                        <label for="m2-2" class="scale-label">
+                                            <span class="scale-number">2</span>
+                                            <span class="scale-text">Poco</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m2" id="m2-3" value="3">
+                                        <label for="m2-3" class="scale-label">
+                                            <span class="scale-number">3</span>
+                                            <span class="scale-text">Regular</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m2" id="m2-4" value="4">
+                                        <label for="m2-4" class="scale-label">
+                                            <span class="scale-number">4</span>
+                                            <span class="scale-text">Bien</span>
+                                        </label>
+                                    </div>
+                                    <div class="scale-option">
+                                        <input type="radio" name="m2" id="m2-5" value="5">
+                                        <label for="m2-5" class="scale-label">
+                                            <span class="scale-number">5</span>
+                                            <span class="scale-text">Perfecto</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="error-message" id="m2-error">
+                                    ⚠️ Por favor, selecciona una opción para continuar
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 3: Logro del objetivo emocional (M3) -->
+                        <div class="question-section">
+                            <label class="question-label">
+                                <i class="bi bi-bullseye"></i> Logro del Objetivo
+                            </label>
+                            <p class="question-description">
+                                ¿Pudiste mantener o cambiar tu estado emocional como deseabas?
+                            </p>
+                            <div class="toggle-container">
+                                <span class="toggle-label">No logré mi objetivo</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="m3" id="m3-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="toggle-label">Sí logré mi objetivo</span>
+                            </div>
+                            <div class="error-message" id="m3-error">
+                                ⚠️ Este campo es requerido
+                            </div>
+                        </div>
+
+                        <!-- Pregunta 4: Experiencia de Usuario (Estrellas) -->
+                        <div class="question-section">
+                            <label class="question-label">
+                                <i class="bi bi-stars"></i> Experiencia de Usuario
+                            </label>
+                            <p class="question-description">
+                                ¿Cómo calificas el diseño, colores y fluidez del sistema?
+                            </p>
+                            <div class="star-rating-container" id="ux-rating">
+                                <input type="radio" name="ux" id="ux-5" value="5" class="star-input">
+                                <label for="ux-5" class="star-label">⭐</label>
+                                
+                                <input type="radio" name="ux" id="ux-4" value="4" class="star-input">
+                                <label for="ux-4" class="star-label">⭐</label>
+                                
+                                <input type="radio" name="ux" id="ux-3" value="3" class="star-input">
+                                <label for="ux-3" class="star-label">⭐</label>
+                                
+                                <input type="radio" name="ux" id="ux-2" value="2" class="star-input">
+                                <label for="ux-2" class="star-label">⭐</label>
+                                
+                                <input type="radio" name="ux" id="ux-1" value="1" class="star-input">
+                                <label for="ux-1" class="star-label">⭐</label>
+                            </div>
+                            <div class="error-message" id="ux-error">
+                                ⚠️ Por favor, califica tu experiencia con estrellas
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="bi bi-check-circle"></i>
+                            Enviar Evaluación
+                        </button>
+                    </form>
+
+                    <!-- Resultado -->
+                    <div class="result-card" id="resultCard" style="display: none;">
+                        <div class="result-icon" id="resultIcon"></div>
+                        <div class="result-title" id="resultTitle"></div>
+                        <div class="result-description" id="resultDescription"></div>
+                        <div class="result-iae" id="resultIAE"></div>
+                        <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">
+                            ¡Gracias por tu retroalimentación! Nos ayuda a mejorar tu experiencia musical.
+                        </p>
+                    </div>
+                </div>
+            `,
+            
+            alreadyCompleted: `
+                <div class="survey-container">
+                    <div class="logo-section">
+                        <div class="brain-icon">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#5e7dfa;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#a92cf5;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M 10 50 Q 20 30, 30 50 T 50 50 T 70 50 T 90 50" 
+                                      stroke="url(#brainGradient)" 
+                                      stroke-width="2" 
+                                      fill="none"
+                                      stroke-linecap="round"/>
+                                <path d="M 50 20 C 35 20, 25 30, 25 45 C 25 50, 27 55, 30 58 C 28 62, 30 68, 35 70 C 38 72, 42 72, 45 70 C 47 75, 52 78, 58 76 C 62 75, 65 72, 67 68 C 70 70, 74 70, 77 68 C 82 65, 84 58, 82 52 C 85 48, 85 42, 82 38 C 80 32, 75 28, 70 27 C 68 23, 62 20, 56 20 C 54 20, 52 20, 50 20 Z" 
+                                      stroke="url(#brainGradient)" 
+                                      stroke-width="2.5" 
+                                      fill="none"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h1>Neuro Sound</h1>
+                        <p class="subtitle">Evaluación de experiencia musical</p>
+                    </div>
+
+                    <div class="result-card" style="display: block;">
+                        <div class="result-icon">✅</div>
+                        <div class="result-title">Evaluación ya completada</div>
+                        <div class="result-description">
+                            Ya has completado la evaluación IAE. Tu retroalimentación ha sido registrada exitosamente.
+                        </div>
+                        <div class="result-iae" id="previousIAE"></div>
+                        <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">
+                            ¡Gracias por ayudarnos a mejorar tu experiencia musical!
+                        </p>
+                        <button onclick="resetSurvey()" class="submit-btn" style="margin-top: 20px;">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Realizar nueva evaluación
+                        </button>
+                    </div>
+                </div>
+            `
+        };
+
+        // Función principal de carga de vistas
+        window.cargarVista = async function (vista) {
+            const panel = document.getElementById("mainPanel");
+
+            // Mostrar loader
+            panel.innerHTML = `
+                <div class="text-white p-4 text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            `;
+
+            try {
+                if (vista === 'satisfaction') {
+                    // Verificar si ya completó la encuesta
+                    const surveyCompleted = localStorage.getItem('neurosound_survey_completed');
+                    const surveyData = localStorage.getItem('neurosound_survey_data');
+                    
+                    if (surveyCompleted === 'true' && surveyData) {
+                        // Mostrar mensaje de encuesta completada
+                        panel.innerHTML = contentTemplates.alreadyCompleted;
+                        
+                        // Mostrar el resultado previo
+                        const data = JSON.parse(surveyData);
+                        const previousIAE = document.getElementById('previousIAE');
+                        if (previousIAE && data.iae) {
+                            previousIAE.innerHTML = `<strong>Tu IAE anterior:</strong> ${data.iae.toFixed(2)}`;
+                        }
+                    } else {
+                        // Mostrar formulario de encuesta
+                        panel.innerHTML = contentTemplates.satisfaction;
+                        initializeSurveyForm();
+                    }
+                } else {
+                    // Cargar otras vistas desde archivos
+                    const response = await fetch(`../views/home/${vista}.html`);
+                    if (!response.ok) throw new Error('Error al cargar la vista');
+                    const html = await response.text();
+                    panel.innerHTML = html;
+                }
+
+                activarNavbar(vista);
+            } catch (error) {
+                console.error('Error cargando vista:', error);
+                panel.innerHTML = `
+                    <div class="text-white p-4 text-center">
+                        <i class="bi bi-exclamation-triangle fs-1 mb-3"></i>
+                        <p>Error al cargar el contenido</p>
+                    </div>
+                `;
+            }
+        };
+
+        // Función para activar el navbar
+        function activarNavbar(vista) {
+            // Desktop navbar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const desktopNav = document.getElementById(`nav-${vista}`);
+            if (desktopNav) desktopNav.classList.add('active');
+
+            // Mobile navbar
+            document.querySelectorAll('.nav-link-mobile').forEach(item => {
+                item.classList.remove('active');
+            });
+            const mobileNav = document.getElementById(`mobile-nav-${vista}`);
+            if (mobileNav) mobileNav.classList.add('active');
+        }
+
+        // Inicializar formulario de encuesta
+        function initializeSurveyForm() {
+            const form = document.getElementById('satisfactionForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Limpiar errores previos
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.scale-container, .toggle-container, .star-rating-container').forEach(el => {
+                    el.style.borderColor = '';
+                });
+
+                // Validar M1
+                const m1 = document.querySelector('input[name="m1"]:checked');
+                if (!m1) {
+                    showError('m1');
+                    return;
+                }
+
+                // Validar M2
+                const m2 = document.querySelector('input[name="m2"]:checked');
+                if (!m2) {
+                    showError('m2');
+                    return;
+                }
+
+                // Validar UX
+                const ux = document.querySelector('input[name="ux"]:checked');
+                if (!ux) {
+                    showError('ux');
+                    return;
+                }
+
+                // Obtener M3
+                const m3Toggle = document.getElementById('m3-toggle');
+                const m3 = m3Toggle ? (m3Toggle.checked ? 1 : 0) : 0;
+
+                // Calcular IAE
+                const iae = calculateIAE(
+                    parseInt(m1.value),
+                    parseInt(m2.value),
+                    m3,
+                    parseInt(ux.value)
+                );
+
+                // Guardar en localStorage
+                const surveyData = {
+                    m1: parseInt(m1.value),
+                    m2: parseInt(m2.value),
+                    m3: m3,
+                    ux: parseInt(ux.value),
+                    iae: iae,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('neurosound_survey_completed', 'true');
+                localStorage.setItem('neurosound_survey_data', JSON.stringify(surveyData));
+
+                // Mostrar resultado
+                showResult(iae);
+            });
+        }
+
+        // Función para mostrar errores
+        function showError(field) {
+            const errorEl = document.getElementById(`${field}-error`);
+            const containerEl = document.getElementById(`${field}-scale`) || 
+                              document.querySelector('.toggle-container') ||
+                              document.getElementById('ux-rating');
+            
+            if (errorEl) errorEl.style.display = 'block';
+            if (containerEl) containerEl.style.borderColor = '#ef4444';
+            
+            // Scroll suave al error
+            containerEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Calcular IAE
+        function calculateIAE(m1, m2, m3, ux) {
+            const W1 = 0.35;
+            const W2 = 0.35;
+            const W3 = 0.15;
+            const W4 = 0.15;
+            
+            const iae = (W1 * m1) + (W2 * m2) + (W3 * m3 * 5) + (W4 * ux);
+            return iae;
+        }
+
+        // Mostrar resultado
+        function showResult(iae) {
+            document.getElementById('satisfactionForm').style.display = 'none';
+            const resultCard = document.getElementById('resultCard');
+            resultCard.style.display = 'block';
+            
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDescription = document.getElementById('resultDescription');
+            const resultIAE = document.getElementById('resultIAE');
+            
+            if (iae >= 4) {
+                resultIcon.textContent = '🎉';
+                resultTitle.textContent = '¡Excelente experiencia!';
+                resultDescription.textContent = 'Tu experiencia musical fue excepcional. El sistema funcionó perfectamente para tus necesidades.';
+            } else if (iae >= 3) {
+                resultIcon.textContent = '👍';
+                resultTitle.textContent = 'Buena experiencia';
+                resultDescription.textContent = 'Tu experiencia fue positiva. Seguiremos mejorando para ofrecerte lo mejor.';
+            } else if (iae >= 2) {
+                resultIcon.textContent = '😊';
+                resultTitle.textContent = 'Experiencia aceptable';
+                resultDescription.textContent = 'Gracias por tu opinión. Trabajaremos en mejorar los aspectos que mencionaste.';
+            } else {
+                resultIcon.textContent = '🔧';
+                resultTitle.textContent = 'Necesitamos mejorar';
+                resultDescription.textContent = 'Lamentamos que la experiencia no haya sido la mejor. Tu feedback es muy valioso.';
+            }
+            
+            resultIAE.innerHTML = `<strong>Tu IAE:</strong> ${iae.toFixed(2)} / 5.00`;
+            
+            // Scroll suave al resultado
+            resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Función para resetear la encuesta
+        window.resetSurvey = function() {
+            if (confirm('¿Estás seguro de que deseas realizar una nueva evaluación? Esto sobrescribirá tu evaluación anterior.')) {
+                localStorage.removeItem('neurosound_survey_completed');
+                localStorage.removeItem('neurosound_survey_data');
+                cargarVista('satisfaction');
+            }
+        };
+
+        // Cargar vista inicial
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarVista('home');
+        });
+    </script>
+</body>
+
+</html>

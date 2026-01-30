@@ -1,0 +1,10 @@
+.feedback-invalid {
+    display: none;
+}
+
+.feedback-valid {
+    display: block;
+    font-size: 13px;
+    margin-top: 5px;
+    color: #dc3545;
+}

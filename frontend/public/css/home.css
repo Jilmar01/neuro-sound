@@ -1,0 +1,959 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+    --primary-color: #5e7dfa;
+    --secondary-color: #a92cf5;
+    --glass-bg: rgba(255, 255, 255, 0.12);
+    --glass-border: rgba(255, 255, 255, 0.25);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --radius-card: 20px;
+    --radius-sm: 12px;
+}
+
+html {
+    /* Pinta el fondo base de un color oscuro o similar al gradiente */
+    background-color: #7960a2;
+    height: 100%;
+}
+
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #5e7dfa 0%, #a92cf5 100%);
+    background-size: cover;
+    background-attachment: fixed;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+/* ================================
+           SCROLLBAR STYLING
+        ================================= */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.profile a {
+    font-size: 40px;
+}
+
+/* Main */
+.main {
+    padding: 24px;
+}
+
+.content-main {
+    padding: 24px 0;
+}
+
+/* Contenedor Principal */
+.content-area {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px;
+}
+/*
+/* aquí va el scroll 
+.mainPanel {
+    overflow-y: auto;
+    max-height: calc(100vh - 220px);
+    padding: 0 12px;
+}
+
+
+/* scrollbar bonito 
+.mainPanel::-webkit-scrollbar {
+    width: 3px;
+}
+
+
+.mainPanel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}*/
+
+
+/* Clases Glass Genéricas */
+.glass-panel {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Slidebar */
+.sidebar-container {
+    width: 100%;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(255, 255, 255, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px;
+}
+
+.sidebar-item {
+    padding: 15px 0;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: 0.2s;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.sidebar-item i,
+.sidebar-item span {
+    color: white;
+}
+
+
+
+/* Ajuste de scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+/* Search Input */
+.searchfield input {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    border-radius: 20px;
+}
+
+.searchfield input::placeholder {
+    color: #ddd;
+}
+
+input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Mobile player */
+.mobile-player {
+    position: fixed;
+    left: 0;
+    right: 0;
+    margin: 0 12px;
+    height: 75px;
+    bottom: 90px;
+    z-index: 1040;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Offcanvas Glass (El panel lateral de charts) */
+.offcanvas-glass {
+    background: linear-gradient(135deg, #5b537a, #3e7cae);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+/* Estilos para el botón de configuración en el header */
+.profile .profile-link {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.profile .profile-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-1px);
+}
+
+
+.sidebar-item:hover,
+.sidebar-item.active {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+    color: white;
+}
+
+/* Estilo específico para el modal del reproductor */
+.glass-modal {
+    background: linear-gradient(180deg, rgba(62, 55, 90, 0.95), rgba(20, 20, 20, 0.98));
+    backdrop-filter: blur(20px);
+    border: none;
+    z-index: 2000;
+    /* Por encima de todo, incluso del navbar */
+}
+
+/* Contenedor de la carátula para darle sombra y dimensión */
+.album-art-container {
+    width: 100%;
+    max-width: 320px;
+    /* Que no sea gigante en tablets */
+    aspect-ratio: 1/1;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+/* Personalizar el Slider (Input Range) para que se vea blanco */
+.custom-range::-webkit-slider-thumb {
+    background: white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.custom-range::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animación suave al pulsar el botón play grande */
+.play-button-large:active {
+    transform: scale(0.95);
+}
+
+/* ================================
+   AJUSTES TARJETA CANCIÓN (Fixed Layout)
+================================= */
+
+.song-card {
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s;
+    min-height: 80px;
+    height: 72px;
+}
+
+.song-card:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.song-card img {
+    /* Forzamos que la imagen sea cuadrada y llene su columna */
+    width: 60px;
+    /* Tamaño fijo para móvil y escritorio */
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    /* Bordes un poco más cuadrados como en tu foto */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.song-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ESTILOS PARA LA VISTA DE SETTINGS */
+
+.form-control-glass {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 10px;
+}
+
+.form-control-glass:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    outline: none;
+}
+
+.form-control-glass::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-spotify {
+    background-color: #1DB954;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 25px;
+    font-weight: bold;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-spotify:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(29, 185, 84, 0.4);
+    color: white;
+}
+
+.btn-spotify.connected {
+    background-color: transparent;
+    border: 2px solid #1DB954;
+    color: #1DB954;
+}
+
+
+:root {
+    --accent-green: #69f0ae;
+    --accent-blue: #40c4ff;
+    --accent-orange: #ffb74d;
+    --text-dark: #1a1a1a;
+    --radius-card: 24px;
+}
+
+body {
+    /* Fondo blanco o transparente para que se mezcle con el iframe */
+    background-color: #ffffff00;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    /* Importante para iframes móviles: permitir scroll vertical */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Tarjeta ajustada para móvil/iframe */
+.mobile-card {
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Header */
+.header-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    /* Sin borde inferior para look más limpio en móvil */
+}
+
+.brand-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-name {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+}
+
+.page-title {
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #333;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+/* Gráfico */
+.chart-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.chart-container {
+    position: relative;
+    width: 260px;
+    /* Un poco más pequeño para asegurar que quepa en móviles angostos */
+    height: 260px;
+    margin-bottom: 15px;
+}
+
+.main-genre-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.main-genre-text strong {
+    display: block;
+    font-size: 1.4rem;
+    color: #2c3e50;
+    margin-top: 2px;
+}
+
+/* Sección de Datos */
+.data-section {
+    width: 100%;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.stat-box {
+    background-color: #f1f3f5;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1rem;
+    color: #333;
+}
+
+.text-success-custom {
+    color: #00c853;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+/* Frecuencias */
+.freq-box {
+    background-color: #e9ecef;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.freq-title {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+}
+
+.freq-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.freq-label {
+    width: 60px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.freq-label span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.65rem;
+    color: #666;
+}
+
+.bar-container {
+    flex-grow: 1;
+    height: 25px;
+    /* Barras un poco más finas en móvil */
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 6px;
+}
+
+/* Colores unificados */
+.fill-theta {
+    background-color: var(--accent-blue);
+    width: 40%;
+}
+
+.fill-alpha {
+    background-color: var(--accent-green);
+    width: 85%;
+}
+
+.fill-pink {
+    background-color: var(--accent-orange);
+    width: 60%;
+}
+
+/* Interpretación */
+.interpret-box {
+    background-color: #dee2e6;
+    border-radius: 15px;
+    padding: 15px;
+    font-size: 0.8rem;
+    color: #444;
+    line-height: 1.4;
+    text-align: justify;
+}
+
+.interpret-title {
+    font-weight: 800;
+    margin-bottom: 3px;
+    display: block;
+    color: #333;
+}
+
+.user-icon {
+    font-size: 1.4rem;
+    color: #333;
+}
+
+.sidebar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.08);
+}
+
+.sidebar-item.active {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    width: 4px;
+    height: 40px;
+    background: white;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-item i {
+    color: white;
+    margin-bottom: 4px;
+}
+
+.sidebar-item span {
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.header {
+    color: white;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.logo h1 {
+    background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
+}
+
+/* ================================
+           PROFILE ICON
+        ================================= */
+.profile a {
+    transition: all 0.3s ease;
+    display: inline-block;
+    color: white;
+}
+
+.profile a:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+}
+
+/* ================================
+           MUSIC CARDS
+        ================================= */
+.music-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.music-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+}
+
+.music-card img {
+    border-radius: 10px;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    margin-bottom: 12px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.music-card:hover img {
+    transform: scale(1.05);
+}
+
+.music-card h6 {
+    color: white;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.music-card p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+/* ================================
+           PLAYER CONTROLS (Desktop)
+        ================================= */
+.player-controls {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.player-controls i {
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.player-controls i:hover {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+}
+
+.ui-track-cover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ================================
+           PROGRESS BAR
+        ================================= */
+.progress {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    height: 6px;
+}
+
+.progress-bar {
+    background: white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: width 0.1s linear;
+}
+
+/* Mobile Navbar (Abajo) */
+.mobile-navbar {
+    height: 75px;
+    background: rgb(169, 44, 245, 0.5);
+    backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link-mobile {
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
+
+.nav-link-mobile:hover,
+.nav-link-mobile.active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+}
+
+/* ================================
+           FULL SCREEN PLAYER (Offcanvas)
+        ================================= */
+.glass-modal {
+    background: linear-gradient(135deg, rgba(94, 125, 250, 0.95) 0%, rgba(169, 44, 245, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    border: none;
+    z-index: 2000;
+}
+
+/* ================================
+           LOGOUT CONFIRMATION MODAL
+        ================================= */
+.modal-content {
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content .btn-danger {
+    background: linear-gradient(135deg, #ff6b6b 0%, #d63031 100%);
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modal-content .btn-danger:hover {
+    background: linear-gradient(135deg, #ff5252 0%, #c92a2a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+}
+
+.modal-content .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modal-content .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+.album-art-container {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1/1;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.album-art-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.play-button-large {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.play-button-large:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+}
+
+.play-button-large:active {
+    transform: scale(0.95);
+}
+
+/* ================================
+           CUSTOM RANGE INPUT
+        ================================= */
+.custom-range {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    outline: none;
+}
+
+.custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.custom-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ================================
+           ANIMATIONS
+        ================================= */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+/* ================================
+           RESPONSIVE ADJUSTMENTS
+        ================================= */
+@media (max-width: 768px) {
+    .space {
+        padding-bottom: 70px !important;
+    }
+
+    .header {
+        height: 75px;
+    }
+
+    .main {
+        padding: 12px;
+    }
+
+    .content-main {
+        padding: 12px 0;
+    }
+    
+    .content-area h2 {
+        font-size: 10px;
+    }
+}
+
+
+/* ================================
+           Z-INDEX MANAGEMENT
+        ================================= */
+.z-index-high {
+    position: relative;
+    z-index: 10;
+}
+
+.content-area h2 {
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: white;
+    font-size: 28px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+
+.song-img {
+    width: 54px;
+    height: 54px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.song-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.1;
+}
+
+.song-artist {
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+
+.song-play {
+    font-size: 2rem;
+    opacity: 0.85;
+}
