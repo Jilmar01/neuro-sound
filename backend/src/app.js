@@ -7,7 +7,7 @@ import cors from 'cors';
 import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import surveyRoutes from './routes/survey.routes.js'
-import recommendRoutes from './routes/recommend.routes.js'
+import recommendRoutes from './routes/recommendation.routes.js'
 import spotifyRoutes from './routes/spotify.routes.js';
 import serverMusic from './routes/music.server.routes.js';
 import surveyIaeRoutes from './routes/iae.survery.routes.js'
