@@ -1,5 +1,5 @@
 import { getRecommendationBySurvey, saveRecommendation } from '../services/recommendation.service.js';
-import { generateHybridPlaylist } from '../services/recommendEngine/NECv2.js';
+import { generateHybridPlaylist } from '../services/recommendationEngine/NECv2.js';
 import { getProfileUser } from '../services/survey.service.js';
 import { HttpError } from '../utils/httpError.js';
 import { sendError, sendSuccess } from '../utils/response.util.js';
@@ -19,10 +19,18 @@ export const recommendMusic = async (req, res) => {
 
         const recommend = await generateHybridPlaylist(survey);
         if (!recommend) {
-            throw new HttpError('Error al generar la encuesta', 400);
+            console.log("Entra al tratar de generar recomendacion");
+            throw new HttpError('Error al generar la recomendacion de canciones', 400);
         }
+        console.log(recommend);
 
         const recommendation = await saveRecommendation(userId, surveyId, recommend);
+        
+        if(!recommendation) {
+            console.log("Entra al tratar de guardar la recomendacion");
+            
+            throw new HttpError('Error al generar la recomendacion de canciones', 400);
+        }
 
         return sendSuccess(res, recommendation, 'Recomendaciones generadas correctamente', 200);
 

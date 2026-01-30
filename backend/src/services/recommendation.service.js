@@ -13,3 +13,7 @@ export const saveRecommendation = async (userId, surveyId, result) => {
 export const getRecommendationBySurvey = async (userId, surveyId) => {
   return await Recommendation.findOne({ userId, surveyId });
 };
+
+export const getRecommendation = async (userId) => {
+    return await Recommendation.findOne({ userId }).sort({ createdAt: -1 });
+}

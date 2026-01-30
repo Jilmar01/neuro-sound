@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.mdlw.js';
-import { getRecommendation, recommendMusic } from '../controllers/recommend.ctrl.js';
+import { getRecommendation, recommendMusic } from '../controllers/recommendation.ctrl.js';
 
 const router = Router();
 

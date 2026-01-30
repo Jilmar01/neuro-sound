@@ -8,11 +8,11 @@ const recommendationSchema = new mongoose.Schema({
   },
   surveyId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Survey', // ajusta al nombre real de tu encuesta base
+    ref: 'Survey',
     required: true
   },
   result: {
-    type: Object, // aquí guardas géneros, canciones, pesos, etc.
+    type: Object,
     required: true
   },
   createdAt: {
