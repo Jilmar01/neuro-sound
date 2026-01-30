@@ -1,23 +1,30 @@
 /* ==========================================
    js/spotifyPlayer.js
+   Reproductor SDK de Spotify (Con soporte de Playlist)
    ========================================== */
+
+import { apiCall } from '/js/refactored/fetch.js';
+import UIController from '/js/uicontroller.js'; // Asegúrate que el nombre coincida (Mayús/Minús)
 
 const SpotifyPlayerWrapper = {
     player: null,
     deviceId: null,
+    
+    // 👇 NUEVO: Estado interno para manejar la lista
+    playlist: [],
+    currentIndex: 0,
 
-    // Función principal para inyectar el script e iniciar
     init() {
         const token = localStorage.getItem('spotifyToken');
-        if (!token) return console.warn("⚠️ No hay token para el Player");
+        if (!token) {
+            console.warn("⚠️ [SpotifyPlayer] No hay token disponible.");
+            return;
+        }
 
-        // 1. Definir la función global QUE SPOTIFY BUSCARÁ
-        // Es vital que esto se defina ANTES de que el script de Spotify termine de cargar
         window.onSpotifyWebPlaybackSDKReady = () => {
             this.setupPlayer(token);
         };
 
-        // 2. Inyectar el SDK manualmente (si no existe ya)
         if (!document.getElementById('spotify-sdk')) {
             console.log("📥 Descargando SDK de Spotify...");
             const script = document.createElement('script');
@@ -25,8 +32,6 @@ const SpotifyPlayerWrapper = {
             script.src = "https://sdk.scdn.co/spotify-player.js";
             document.body.appendChild(script);
         } else {
-            // Si el script ya existía y cargó antes de que llegáramos aquí,
-            // forzamos la inicialización manual
             if (window.Spotify) {
                 this.setupPlayer(token);
             }
@@ -34,10 +39,8 @@ const SpotifyPlayerWrapper = {
         return this;
     },
 
-    // Lógica interna para configurar el reproductor
     setupPlayer(token) {
-        console.log("🔑 Token que se va a usar:", token);
-        console.log("🎵 Inicializando instancia del Player...");
+        console.log("🎵 [SpotifyPlayer] Inicializando...");
         
         this.player = new Spotify.Player({
             name: 'Neuro-Sound Web',
@@ -51,13 +54,19 @@ const SpotifyPlayerWrapper = {
             const track = state.track_window.current_track;
             const isPlaying = !state.paused;
 
-            // Actualizar UI si existe el controlador
+            // Detectar fin de canción para pasar a la siguiente
+            // (Si estaba sonando, ahora está pausado y la posición es 0)
+            if (state.paused && state.position === 0 && !state.loading && state.restrictions.disallow_resuming_reasons?.includes('not_paused')) {
+               // Nota: El SDK es caprichoso con el auto-next, pero esto ayuda.
+               // Lo ideal es manejarlo manualmente o dejar que el usuario pulse next.
+            }
+
             if (typeof UIController !== 'undefined') {
                 UIController.updatePlayIcon(isPlaying);
                 UIController.updateMetadata(
                     track.name,
                     track.artists.map(a => a.name).join(', '),
-                    track.album.images[0].url,
+                    track.album.images[0]?.url,
                     state.duration
                 );
                 UIController.updateProgress(state.position, state.duration);
@@ -67,50 +76,85 @@ const SpotifyPlayerWrapper = {
         this.player.addListener('ready', async ({ device_id }) => {
             console.log('✅ Spotify Listo. Device ID:', device_id);
             this.deviceId = device_id;
-            // Transferir reproducción automáticamente
-            await this.transferPlayback(token, device_id);
+            await this.transferPlayback(device_id);
         });
 
-        this.player.addListener('initialization_error', ({ message }) => console.error(message));
-        this.player.addListener('authentication_error', ({ message }) => console.error(message));
+        this.player.addListener('initialization_error', ({ message }) => console.error("❌ Init Error:", message));
+        this.player.addListener('authentication_error', ({ message }) => console.error("❌ Auth Error:", message));
 
         this.player.connect();
 
-        // Intervalo para la barra de progreso
         setInterval(async () => {
             if(this.player) {
                 const state = await this.player.getCurrentState();
-                if (state && !state.paused && typeof UIController !== 'undefined') {
+                if (state && !state.paused) {
                     UIController.updateProgress(state.position, state.duration);
                 }
             }
         }, 1000);
     },
 
-    // Transferir el audio a este navegador
-    async transferPlayback(token, deviceId) {
+    async transferPlayback(deviceId) {
+        console.log(`🔀 Transfiriendo a: ${deviceId}`);
         try {
-            await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "device_ids": [deviceId],
-                    "play": false 
-                })
+            await apiCall('spotify', '/me/player', 'PUT', {
+                device_ids: [deviceId],
+                play: false 
             });
-            console.log("🔀 Reproducción transferida a Neuro-Sound");
+            console.log("✅ Transferencia Exitosa.");
         } catch (e) {
-            console.warn("No se pudo transferir la reproducción automáticamente.");
+            console.warn("⚠️ Error en transferencia:", e);
         }
     },
 
-    // Controles públicos
-    togglePlay() { this.player?.togglePlay(); },
-    next() { this.player?.nextTrack(); },
-    prev() { this.player?.previousTrack(); },
+    // 👇 NUEVO: Método para recibir la lista de canciones (Igual que LocalPlayer)
+    updatePlaylist(songs) {
+        if (!songs || !Array.isArray(songs)) return;
+        this.playlist = songs;
+        console.log(`📋 SpotifyWrapper: Playlist actualizada con ${songs.length} canciones.`);
+    },
+
+    // 👇 NUEVO: Método interno para reproducir por índice
+    async playTrackAtIndex(index) {
+        if (index < 0 || index >= this.playlist.length) return;
+        
+        this.currentIndex = index;
+        const track = this.playlist[index];
+        
+        console.log(`▶️ Spotify Next/Prev: ${track.title}`);
+        
+        // Llamamos a la API para tocar esta canción específica
+        await apiCall('spotify', `/me/player/play?device_id=${this.deviceId}`, 'PUT', { 
+            uris: [track.uri] 
+        });
+    },
+
+    // --- CONTROLES PÚBLICOS (Actualizados) ---
+
+    togglePlay() { 
+        this.player?.togglePlay(); 
+    },
+
+    // Ahora next() calcula el índice y manda la orden
+    next() { 
+        if (this.playlist.length > 0) {
+            const nextIndex = (this.currentIndex + 1) % this.playlist.length;
+            this.playTrackAtIndex(nextIndex);
+        } else {
+            this.player?.nextTrack(); // Fallback por si no hay playlist cargada
+        }
+    },
+
+    // Ahora prev() calcula el índice y manda la orden
+    prev() { 
+        if (this.playlist.length > 0) {
+            const prevIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+            this.playTrackAtIndex(prevIndex);
+        } else {
+            this.player?.previousTrack();
+        }
+    },
+
     seek(percent) { 
         this.player?.getCurrentState().then(state => {
             if(state) {
@@ -121,7 +165,4 @@ const SpotifyPlayerWrapper = {
     }
 };
 
-// Iniciar al cargar el archivo
-document.addEventListener('DOMContentLoaded', () => {
-    SpotifyPlayerWrapper.init();
-});
+export default SpotifyPlayerWrapper;

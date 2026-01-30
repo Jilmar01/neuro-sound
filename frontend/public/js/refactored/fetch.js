@@ -18,7 +18,7 @@ let isRefreshing = false;
 // ---------------------------------------------------------
 // 2. FUNCIÓN DE REFRESCO (La Magia)
 // ---------------------------------------------------------
-async function refreshSpotifySession() {
+/*async function refreshSpotifySession() {
     const refreshToken = localStorage.getItem('spotifyRefreshToken');
     
     if (!refreshToken) {
@@ -58,7 +58,7 @@ async function refreshSpotifySession() {
         window.location.href = 'index.html'; // O tu pantalla de login
         throw error;
     }
-}
+}*/
 
 // ---------------------------------------------------------
 // 3. LA FUNCIÓN FETCH MAESTRA
@@ -147,29 +147,34 @@ export async function apiCall(serverName, endpoint, method, body = null) {
  * @param {string} method - "GET", "POST", etc.
  * @param {object} body - Datos opcionales
  */
+/* public/js/refactored/fetch.js */
+
 export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, body = null) {
     
     // 1. CONFIGURACIÓN DE CLAVES
-    // Definimos qué key del localStorage usar según el tipo de servidor
     const tokenKeys = {
-        'neuro': 'token',         // Tu backend usa 'token'
-        'spotify': 'spotifyToken' // Spotify usa 'spotifyToken'
+        'neuro': 'token',        
+        'spotify': 'spotifyToken',
+        'local': null // 👈 AGREGADO: null indica que no requiere buscar token
     };
 
-    const storageKey = tokenKeys[serverKey];
-    
-    if (!storageKey) {
-        throw new Error(`Tipo de servidor desconocido: "${serverKey}". Usa 'neuro' o 'spotify'.`);
+    // VALIDACIÓN: Verificamos si la clave existe en el objeto (usando 'in')
+    if (!(serverKey in tokenKeys)) {
+        throw new Error(`Tipo de servidor desconocido: "${serverKey}". Usa 'neuro', 'spotify' o 'local'.`);
     }
 
+    const storageKey = tokenKeys[serverKey];
+
     // 2. PREPARACIÓN DE URL
-    // Limpiamos barras extra para evitar "http://url//api"
     const cleanBase = dynamicBaseUrl.replace(/\/$/, ''); 
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${cleanBase}${cleanEndpoint}`;
 
-    // 3. OBTENCIÓN DEL TOKEN (Automático)
-    const token = localStorage.getItem(storageKey);
+    // 3. OBTENCIÓN DEL TOKEN (Solo si storageKey no es null)
+    let token = null;
+    if (storageKey) {
+        token = localStorage.getItem(storageKey);
+    }
 
     // 4. HEADERS
     const headers = { 'Content-Type': 'application/json' };
@@ -177,7 +182,8 @@ export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     } else {
-        console.warn(`warning: No se encontró token en localStorage para '${serverKey}' (${storageKey}). La petición irá sin auth.`);
+        // Log leve para saber que vamos sin token (normal en local)
+        // console.log(`ℹ️ Petición sin Auth para '${serverKey}'`);
     }
 
     const fetchOptions = {

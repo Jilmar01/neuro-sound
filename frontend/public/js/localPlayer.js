@@ -2,13 +2,12 @@
    js/localPlayer.js
    Reproductor de archivos locales/servidor
    ========================================== */
+import UIController from '/js/uicontroller.js';
 
 const LocalPlayer = {
     playlist: [],
     currentIndex: 0,
     audio: new Audio(),
-    
-    // Nueva variable para controlar errores consecutivos
     errorCount: 0, 
 
     async init(songsData) {
@@ -19,14 +18,12 @@ const LocalPlayer = {
             return;
         }
 
-        // 1. Guardar Playlist
         this.playlist = songsData;
-        console.log("✅ Playlist cargada:", this.playlist.length, "canciones.");
+        console.log("✅ Playlist cargada en LocalPlayer:", this.playlist.length, "canciones.");
 
-        // 2. Configurar Eventos
         this.setupAudioEvents();
 
-        // 3. Cargar visualmente la primera (sin reproducir)
+        // Precargar la primera sin reproducir
         try {
             await this.loadTrack(0, false); 
         } catch (error) {
@@ -37,23 +34,19 @@ const LocalPlayer = {
     },
 
     setupAudioEvents() {
-        // --- PROGRESO ---
         this.audio.ontimeupdate = () => {
             if (typeof UIController !== 'undefined') {
                 UIController.updateProgress(this.audio.currentTime * 1000, this.audio.duration * 1000);
             }
         };
         
-        // --- SIGUIENTE AUTOMÁTICO (SOLO SI TERMINA BIEN) ---
         this.audio.onended = () => {
-            console.log("Canción terminada. Pasando a la siguiente...");
-            this.errorCount = 0; // Reseteamos errores si terminó bien una canción
+            console.log("Canción terminada. Siguiente...");
+            this.errorCount = 0; 
             this.next();
         };
         
-        // --- METADATOS ---
         this.audio.onloadedmetadata = () => {
-            // Si cargó los metadatos, significa que el archivo está bien. Reseteamos contador de error.
             this.errorCount = 0;
             const track = this.playlist[this.currentIndex];
             if (typeof UIController !== 'undefined' && track) {
@@ -61,7 +54,6 @@ const LocalPlayer = {
             }
         };
 
-        // --- ESTADOS DE LA UI ---
         this.audio.onplay = () => { 
             if (typeof UIController !== 'undefined') UIController.updatePlayIcon(true);
         };
@@ -70,46 +62,28 @@ const LocalPlayer = {
             if (typeof UIController !== 'undefined') UIController.updatePlayIcon(false);
         };
         
-        // --- MANEJO DE ERRORES (CORREGIDO) ---
         this.audio.onerror = (e) => {
-            console.error(`❌ Error al reproducir pista ${this.currentIndex}:`, e);
-            
+            console.error(`❌ Error audio track ${this.currentIndex}:`, e);
             this.errorCount++;
 
-            // Si falla más de 2 veces seguidas, DETENEMOS TODO para no colgar el navegador
             if (this.errorCount >= 2) {
-                console.error("⚠️ Demasiados errores consecutivos. Deteniendo reproducción automática.");
+                console.error("⚠️ Demasiados errores. Stop.");
                 if (typeof UIController !== 'undefined') UIController.updatePlayIcon(false);
-                alert("Error de conexión con el servidor de audio. Por favor revisa si aceptaste el certificado de seguridad.");
-                return; // NO LLAMAMOS A NEXT()
+                return; 
             }
 
-            console.log("Intentando saltar a la siguiente canción...");
-            setTimeout(() => {
-                this.next(); 
-            }, 1000); // Esperamos 1 segundo antes de saltar para no saturar
+            console.log("Intentando saltar...");
+            setTimeout(() => { this.next(); }, 1000); 
         };
     },
 
-    // --- PETICIÓN AL SERVIDOR (POST) ---
     async fetchStreamUrl(title) {
         try {
-            // CORRECCIÓN: Forzamos el uso de la variable correcta o un fallback seguro
-            let baseUrl = "";
-            if (typeof config !== 'undefined' && config.API_URL) {
-                baseUrl = config.API_URL;
-            } else if (typeof STREAM_BASE_URL !== 'undefined') {
-                baseUrl = STREAM_BASE_URL;
-            } else {
-                // Fallback de emergencia basado en tus logs
-                baseUrl = "http://10.40.43.218:5001"; 
-            }
-
-            // Aseguramos que la URL no tenga slash al final antes de concatenar
-            baseUrl = baseUrl.replace(/\/$/, ""); 
-            const apiUrl = `${baseUrl}/get-songs`; // Endpoint correcto según tu backend
+            // 👇 Actualiza URL del túnel si cambia
+            const baseUrl = "https://t6b802qq-5001.use.devtunnels.ms"; 
             
-            console.log(`📡 Solicitando audio a: ${apiUrl} para "${title}"...`);
+            const apiUrl = `${baseUrl}/get-songs`;
+            console.log(`📡 Fetch Audio: ${apiUrl} -> "${title}"`);
             
             const bodyObject = { "songsRequested": [title] };
 
@@ -123,17 +97,11 @@ const LocalPlayer = {
             
             const data = await response.json();
 
-            // Lógica para extraer la URL del JSON
             let finalUrl = null;
             if (data.files && Array.isArray(data.files) && data.files.length > 0) {
                 finalUrl = data.files[0].url || data.files[0].link;
-            } else if (Array.isArray(data) && data.length > 0) {
-                finalUrl = data[0].url || data[0].link;
             }
             
-            // CORRECCIÓN DE PUERTO SI VIENE MAL DEL BACKEND
-            // Si el backend devuelve puerto 5001 (https) pero estamos en local, a veces falla.
-            // Si estás usando Tunnel, deja la URL como viene.
             return finalUrl;
 
         } catch (error) {
@@ -142,105 +110,74 @@ const LocalPlayer = {
         }
     },
 
-    // --- CARGAR CANCIÓN (LÓGICA PRINCIPAL) ---
     async loadTrack(index, autoPlay = true) {
         if (index < 0 || index >= this.playlist.length) return;
 
         this.currentIndex = index;
         const track = this.playlist[index];
-        console.log(`🔥 Cargando track ${index}: ${track.title}`);
+        console.log(`🔥 LocalPlayer Load: ${track.title}`);
 
         this.audio.pause();
         
-        if (typeof UIController !== 'undefined') {
-            UIController.updateMetadata(track.title, track.artist, track.cover, 0);
-            UIController.updatePlayIcon(true); 
-        }
-
-        // 3. Resolver URL (si no la tiene)
-        if (!track.src) {
+        if (!track.src && !track.preview_url) {
             const streamUrl = await this.fetchStreamUrl(track.title);
             if (streamUrl) {
                 track.src = streamUrl;
+                track.preview_url = streamUrl; 
             } else {
-                console.warn("⚠️ No se pudo obtener URL, cancelando reproducción.");
-                // No saltamos automáticamente para evitar bucles si el servidor está caído
-                if (typeof UIController !== 'undefined') UIController.updatePlayIcon(false);
+                console.warn("⚠️ Sin URL.");
                 return; 
             }
+        } else if (!track.src && track.preview_url) {
+            track.src = track.preview_url;
         }
 
-        // 4. Cargar y REPRODUCIR
         if (typeof track.src === 'string') {
             this.audio.src = track.src;
             this.audio.load();
 
             if (autoPlay) {
-                console.log("▶️ Intentando reproducir...");
                 try {
-                    const playPromise = this.audio.play();
-
-                    if (playPromise !== undefined) {
-                        playPromise
-                            .then(() => {
-                                console.log("✅ Reproduciendo.");
-                                this.errorCount = 0; // Éxito
-                            })
-                            .catch(error => {
-                                console.error("❌ Autoplay bloqueado o error de carga:", error);
-                                if (typeof UIController !== 'undefined') UIController.updatePlayIcon(false);
-                            });
-                    }
+                    await this.audio.play();
+                    this.errorCount = 0;
                 } catch (e) {
-                    console.error("Error síncrono al reproducir:", e);
+                    console.error("Autoplay prevent:", e);
                 }
             }
         }
     },
 
-    // --- MÉTODOS DE CONTROL ---
-
-    async play() {
-        if (this.audio.src) {
-            try {
-                await this.audio.play();
-            } catch (e) {
-                console.error("Error al forzar play:", e);
-            }
-        } else {
-            this.loadTrack(this.currentIndex, true);
-        }
-    },
-
+    // Métodos públicos extra
     togglePlay() {
-        if (this.playlist.length === 0) return;
-
-        if (this.audio.paused) {
-            // Reiniciamos contador de errores al interacción manual del usuario
-            this.errorCount = 0; 
-            if (this.audio.src && this.audio.src !== window.location.href) {
-                this.audio.play().catch(e => console.error("Error al reproducir:", e));
-            } else {
-                this.loadTrack(this.currentIndex, true);
-            }
-        } else {
-            this.audio.pause();
-        }
+        if (this.audio.paused) this.audio.play();
+        else this.audio.pause();
     },
 
-    async next() {
-        this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
-        await this.loadTrack(this.currentIndex, true);
+    next() {
+        const nextIndex = (this.currentIndex + 1) % this.playlist.length;
+        this.loadTrack(nextIndex, true);
     },
 
-    async prev() {
-        this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
-        await this.loadTrack(this.currentIndex, true);
+    prev() {
+        const prevIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+        this.loadTrack(prevIndex, true);
     },
-    
+
+    // 👇 AQUÍ ESTÁ LA NUEVA FUNCIÓN PARA LA BARRA DE PROGRESO
     seek(percent) {
-        if(this.audio.duration) {
-            this.audio.currentTime = (percent / 100) * this.audio.duration;
+        // Validamos que el audio tenga una duración válida (que esté cargado)
+        if (this.audio && this.audio.duration && isFinite(this.audio.duration)) {
+            // Calculamos el nuevo tiempo: (Porcentaje / 100) * Duración Total
+            const newTime = (percent / 100) * this.audio.duration;
+            
+            // Asignamos el nuevo tiempo al reproductor HTML5
+            this.audio.currentTime = newTime;
+            
+            console.log(`⏩ Seek to: ${Math.round(percent)}% (${newTime.toFixed(1)}s)`);
+        } else {
+            console.warn("⚠️ No se puede hacer seek: Audio no cargado o duración desconocida.");
         }
     }
 };
+
+export default LocalPlayer;

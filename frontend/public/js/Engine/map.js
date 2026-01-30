@@ -14,7 +14,7 @@ tones = [
     "tristeza":[110,174,210],
     "calma":[285,396,417],
     "felicidad":[440,528,639],
-    "ira":[741,852,963]
+    "molestia":[741,852,963]
     }//estas son frecuencias puras en hz que el usuario fue sometido a escuchar dependiendo de la emocion que selecciono
 ,
     molestias = {

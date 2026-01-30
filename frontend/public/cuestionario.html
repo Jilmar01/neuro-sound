@@ -8,377 +8,267 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/form.css">
     <style>
-        /* Estilos adicionales para los reproductores de audio */
-        audio {
-            width: 100%;
-            margin-bottom: 10px;
-        }
+        audio { width: 100%; margin-bottom: 10px; }
         .genre-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 10px;
         }
+        .section { display: none; }
+        .section.active { display: block; }
     </style>
 </head>
 
 <body>
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
 
     <div id="section1" class="section active">
-        <h2>1. Consentimiento</h2>
-        <div class="question">
-            <label>¿Acepta que sus respuestas se utilicen para personalizar su experiencia musical?</label>
-            <select id="consent" class="form-select">
-                <option value="Si">Sí</option>
-                <option value="No">No</option>
-            </select>
+        <div class="card p-4 shadow">
+            <h2>1. Consentimiento</h2>
+            <div class="question mt-3">
+                <label class="form-label">¿Acepta que sus respuestas se utilicen para personalizar su experiencia musical?</label>
+                <select id="consent" class="form-select">
+                    <option value="Si">Sí</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <button class="btn btn-primary mt-4" onclick="handleConsent()">Siguiente</button>
         </div>
-        <button class="btn btn-primary mt-3" onclick="handleConsent()">Siguiente</button>
     </div>
 
-    <div id="section2" class="section" style="display:none;">
-        <button class="btn btn-outline-secondary mb-3" onclick="previousSection(2)"><i class="bi bi-arrow-left"></i> Atrás</button>
-        <h2>2. Estado Emocional</h2>
+    <div id="section2" class="section">
+        <div class="card p-4 shadow">
+            <button class="btn btn-outline-secondary btn-sm mb-3" onclick="previousSection(2)"><i class="bi bi-arrow-left"></i> Atrás</button>
+            <h2>2. Estado Emocional</h2>
 
-        <div class="question mb-3">
-            <label>2.1 ¿Cuál de estas emociones describe mejor cómo se siente ahora?</label>
-            <select id="currentEmotion" class="form-select">
-                <option value="tristeza">Tristeza</option>
-                <option value="calma">Calma</option>
-                <option value="felicidad">Felicidad</option>
-                <option value="ira">Ira</option>
-            </select>
-        </div>
-
-        <div class="question mb-3">
-            <label>2.2 ¿Qué tan intensa es esta emoción? (1 = muy leve, 5 = muy fuerte)</label>
-            <input id="emotionIntensity" type="range" class="form-range" min="1" max="5" step="1" value="1" oninput="document.getElementById('intensityVal').innerText = this.value">
-            <div class="text-center fw-bold" id="intensityVal">3</div>
-        </div>
-
-        <button class="btn btn-primary" onclick="nextSection(2)">Siguiente</button>
-    </div>
-
-<div id="section3" class="section" style="display:none;">
-        <button class="btn btn-outline-secondary mb-3" onclick="previousSection(3)"><i class="bi bi-arrow-left"></i> Atrás</button>
-        <h2>3. Test de Tonos Puros</h2>
-
-        <div class="question mb-4">
-            <label>3.1 Escuche los siguientes tonos y califique cuánto le molestan (1 = Nada, 5 = Mucho):</label>
-            
-            <div class="mb-3 p-3 border rounded">
-                <strong>Tono 1:</strong>
-                <audio controls class="w-100 mb-2"></audio>
-                <label class="form-label">Nivel de molestia:</label>
-                <select id="molestia1" class="form-select">
-                    <option value="1">1 - Nada molesto</option>
-                    <option value="2">2 - Poco molesto</option>
-                    <option value="3">3 - Moderado</option>
-                    <option value="4">4 - Molesto</option>
-                    <option value="5">5 - Muy molesto</option>
+            <div class="question mb-4">
+                <label class="form-label">2.1 ¿Cómo se siente en este momento?</label>
+                <select id="currentEmotion" class="form-select">
+                    <option value="tristeza">Tristeza</option>
+                    <option value="calma">Calma</option>
+                    <option value="felicidad">Felicidad</option>
+                    <option value="molestia">Molestia</option>
                 </select>
             </div>
 
-            <div class="mb-3 p-3 border rounded">
-                <strong>Tono 2:</strong>
-                <audio controls class="w-100 mb-2"></audio>
-                <label class="form-label">Nivel de molestia:</label>
-                <select id="molestia2" class="form-select">
-                    <option value="1">1 - Nada molesto</option>
-                    <option value="2">2 - Poco molesto</option>
-                    <option value="3">3 - Moderado</option>
-                    <option value="4">4 - Molesto</option>
-                    <option value="5">5 - Muy molesto</option>
+            <div class="question mb-3">
+                <label class="form-label">2.2 Intensidad de la emoción (1: muy leve, 5: muy fuerte)</label>
+                <input id="emotionIntensity" type="range" class="form-range" min="1" max="5" step="1" value="3" oninput="document.getElementById('intensityVal').innerText = this.value">
+                <div class="text-center fw-bold fs-4" id="intensityVal">3</div>
+            </div>
+
+            <button class="btn btn-primary w-100" onclick="nextSection(2)">Siguiente</button>
+        </div>
+    </div>
+
+    <div id="section3" class="section">
+        <div class="card p-4 shadow">
+            <button class="btn btn-outline-secondary btn-sm mb-3" onclick="previousSection(3)"><i class="bi bi-arrow-left"></i> Atrás</button>
+            <h2>3. Test de Tonos Puros (Hz)</h2>
+            <p class="text-muted small">Escuche los tonos según su emoción actual y califique su molestia.</p>
+
+            <div id="tonesContainer">
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <strong>Tono 1:</strong>
+                    <audio id="audio1" controls class="mb-2"></audio>
+                    <label class="form-label small">Nivel de molestia (1-5):</label>
+                    <select id="molestia1" class="form-select molestia-input">
+                        <option value="1">1 (Mínima)</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5 (Máxima)</option>
+                    </select>
+                </div>
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <strong>Tono 2:</strong>
+                    <audio id="audio2" controls class="mb-2"></audio>
+                    <label class="form-label small">Nivel de molestia (1-5):</label>
+                    <select id="molestia2" class="form-select molestia-input">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <strong>Tono 3:</strong>
+                    <audio id="audio3" controls class="mb-2"></audio>
+                    <label class="form-label small">Nivel de molestia (1-5):</label>
+                    <select id="molestia3" class="form-select molestia-input">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">¿Qué tono le resultó mejor?</label>
+                    <select id="likedTone" class="form-select">
+                        <option value="tone 1">Tono 1</option>
+                        <option value="tone 2">Tono 2</option>
+                        <option value="tone 3">Tono 3</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">¿Qué tono le resultó peor?</label>
+                    <select id="dislikedTone" class="form-select">
+                        <option value="tone 1">Tono 1</option>
+                        <option value="tone 2">Tono 2</option>
+                        <option value="tone 3">Tono 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100" onclick="nextSection(3)">Siguiente</button>
+        </div>
+    </div>
+
+    <div id="section4" class="section">
+        <div class="card p-4 shadow">
+            <button class="btn btn-outline-secondary btn-sm mb-3" onclick="previousSection(4)"><i class="bi bi-arrow-left"></i> Atrás</button>
+            <h2>4. Gustos Musicales</h2>
+
+            <div class="question mb-4">
+                <label class="form-label fw-bold">Seleccione los géneros que le gustan:</label>
+                <div class="genre-grid" id="genreContainer">
+                    </div>
+            </div>
+
+            <div class="question mb-4">
+                <label class="form-label fw-bold">Sus artistas favoritos:</label>
+                <input type="text" id="artistPreference" class="form-control" placeholder="Ej: Soda Stereo, Daft Punk, Bad Bunny">
+                <div class="form-text">Sepárelos con comas para identificarlos correctamente.</div>
+            </div>
+
+            <div class="question mb-4">
+                <label class="form-label fw-bold">Preferencia de ritmo (Tempo):</label>
+                <select id="tempoPref" class="form-select">
+                    <option value="lentas y tranquilas">Lentas y tranquilas</option>
+                    <option value="ritmo moderado">Ritmo moderado</option>
+                    <option value="rapidas y animadas">Rápidas y animadas</option>
                 </select>
             </div>
 
-            <div class="mb-3 p-3 border rounded">
-                <strong>Tono 3:</strong>
-                <audio controls class="w-100 mb-2"></audio>
-                <label class="form-label">Nivel de molestia:</label>
-                <select id="molestia3" class="form-select">
-                    <option value="1">1 - Nada molesto</option>
-                    <option value="2">2 - Poco molesto</option>
-                    <option value="3">3 - Moderado</option>
-                    <option value="4">4 - Molesto</option>
-                    <option value="5">5 - Muy molesto</option>
+            <button class="btn btn-primary w-100" onclick="nextSection(4)">Siguiente</button>
+        </div>
+    </div>
+
+    <div id="section5" class="section">
+        <div class="card p-4 shadow">
+            <button class="btn btn-outline-secondary btn-sm mb-3" onclick="previousSection(5)"><i class="bi bi-arrow-left"></i> Atrás</button>
+            <h2>5. Intención de la Sesión</h2>
+
+            <div class="question mb-4">
+                <label class="form-label">¿Qué desea lograr con esta sesión musical?</label>
+                <select id="emotionalGoal" class="form-select">
+                    <option value="1">Mantener cómo me siento</option>
+                    <option value="2">Sentirme más feliz</option>
+                    <option value="3">Relajarme</option>
+                    <option value="4">Aumentar mi energía</option>
+                    <option value="5">Ayudarme a concentrarme</option>
                 </select>
             </div>
+
+            <button class="btn btn-success btn-lg w-100" onclick="sendData()">Finalizar y Enviar</button>
         </div>
-
-        <div class="question mb-3">
-            <label>3.2 ¿Qué tono le agradó más?</label>
-            <select id="likedTone" class="form-select">
-                <option value="tone1">Tono 1</option>
-                <option value="tone2">Tono 2</option>
-                <option value="tone3">Tono 3</option>
-            </select>
-        </div>
-
-        <div class="question mb-3">
-            <label>3.3 ¿Qué tono le desagradó más?</label>
-            <select id="dislikedTone" class="form-select">
-                <option value="tone4">Tono 1</option>
-                <option value="tone5">Tono 2</option>
-                <option value="tone6">Tono 3</option>
-            </select>
-        </div>
-
-        <button class="btn btn-primary" onclick="nextSection(3)">Siguiente</button>
-    </div>
-
-    <div id="section4" class="section" style="display:none;">
-        <button class="btn btn-outline-secondary mb-3" onclick="previousSection(4)"><i class="bi bi-arrow-left"></i> Atrás</button>
-        <h2>4. Géneros Musicales Preferidos</h2>
-
-        <div class="question mb-3">
-            <label>Marque todos los que disfrute:</label>
-            <div class="genre-grid mt-2">
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Blues"> <label>Blues</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Indie"> <label>Indie</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Reggae"> <label>Reggae</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Soul"> <label>Soul</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Ambient"> <label>Ambient</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="House"> <label>House</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Reggaeton"> <label>Reggaeton</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Rock"> <label>Rock</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Classical"> <label>Classical</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Pop"> <label>Pop</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Folk"> <label>Folk</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Metal"> <label>Metal</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="EDM"> <label>EDM</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Hip-Hop"> <label>Hip-Hop</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="K-Pop"> <label>K-Pop</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Country"> <label>Country</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="RnB"> <label>RnB</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Jazz"> <label>Jazz</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Lofi"> <label>Lofi</label></div>
-                <div class="form-check"><input class="form-check-input genreCheck" type="checkbox" value="Gospel"> <label>Gospel</label></div>
-            </div>
-        </div>
-
-        <div class="question mb-3">
-            <label>4.1 Artista actual de interés:</label>
-            <input type="text" id="currentArtist" class="form-control" placeholder="Dua Lipa, The Weeknd, etc.">
-        </div>
-
-        <div class="question mb-3">
-            <label>4.2 Preferencia de tipo de canción:</label>
-            <select id="tempoPref" class="form-select">
-                <option value="muy lentas y solemnes">Muy lentas y solemnes</option>
-                <option value="lentas y tranquilas">Lentas y tranquilas</option>
-                <option value="ritmo moderado">Ritmo moderado</option>
-                <option value="rapidas y animadas">Rápidas y animadas</option>
-                <option value="muy rápidas e intensas">Muy rápidas e intensas</option>
-            </select>
-        </div>
-
-        <button class="btn btn-primary" onclick="nextSection(4)">Siguiente</button>
-    </div>
-
-    <div id="section5" class="section" style="display:none;">
-        <button class="btn btn-outline-secondary mb-3" onclick="previousSection(5)"><i class="bi bi-arrow-left"></i> Atrás</button>
-        <h2>5. Intención Emocional</h2>
-
-        <div class="question mb-3">
-            <label>Seleccione lo que desea que la música haga por usted:</label>
-            <select id="emotionalGoal" class="form-select">
-                <option value="1">Mantener cómo me siento</option>
-                <option value="2">Sentirme más feliz</option>
-                <option value="3">Relajarme</option>
-                <option value="4">Aumentar mi energía</option>
-                <option value="5">Ayudarme a concentrarme</option>
-            </select>
-        </div>
-
-        <button class="btn btn-success" onclick="sendData()">Finalizar y Enviar</button>
     </div>
 
 </div>
+
 <script src="/js/config.js"></script>
 <script>
-    // Variable global para almacenar la emoción seleccionada
-let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
-
-    // Mapa para traducir la letra del archivo a la palabra completa
-    const emotionMap = {
-        'T': 'tristeza',
-        'C': 'calma',
-        'F': 'felicidad',
-        'I': 'ira'
+    // --- MAPAS DE DATOS SEGÚN DEFINICIÓN ---
+    const GENRES_LIST = ["Indie", "Reggaeton", "Rock", "Pop", "Electronica", "Hip-Hop", "RnB", "salsa", "cumbia", "balada"];
+    
+    const TONE_GROUPS = {
+        "tristeza": [110, 174, 210],
+        "calma": [285, 396, 417],
+        "felicidad": [440, 528, 639],
+        "molestia": [741, 852, 963]
     };
-    
-    // 1. Lógica de Audio y Reproductor -----------------------------------------
-    
-    function getEmotionCodeFromFileName(fileName) {
-        // 1. Buscamos la letra Mayúscula (T, C, F, I) antes del punto (.wav)
-        // La regex busca: un espacio (\s), seguido de una letra T,C,F o I, seguido de un punto
-        const regex = /\s([TCFI])\./;
-        const match = fileName.match(regex);
 
-        // 2. Si encontramos la letra (ej: "T"), devolvemos la palabra completa ("tristeza")
-        if (match && match.length > 1) {
-            const letraEncontrada = match[1]; // "T"
-            return emotionMap[letraEncontrada]; // Devuelve "tristeza"
-        }
-        
-        return null;
-    }
+    // Mapeo para nombres de archivos (Mantenemos coherencia con tu lógica de letras)
+    const emotionFileMap = {
+        "tristeza": "T",
+        "calma": "C",
+        "felicidad": "F",
+        "molestia": "I" // Ira/Molestia
+    };
 
-    // --- Asegúrate de actualizar también la función de filtrado ---
-    
-    function putSoundEmotion() {
-        const selector = document.getElementById("currentEmotion");
-        if (!selector) return;
-        
-        // Asegúrate de que los <option> en tu HTML tengan value="tristeza", value="calma", etc.
-        currentEmotion = selector.value; 
-        console.log("Emoción seleccionada:", currentEmotion);
-
-        const audioPlayers = document.querySelectorAll("audio");
-        if (audioPlayers.length === 0) return;
-
-        // Lista de archivos (Siguen teniendo la letra T, C, F, I en el nombre)
-        const availableAudios = [
-            "/assets/frecuences/tone_110hz_20s T.wav", 
-            "/assets/frecuences/tone_174hz_20s T.wav", 
-            "/assets/frecuences/tone_210hz_20s T.wav", 
-            "/assets/frecuences/tone_285hz_20s C.wav", 
-            "/assets/frecuences/tone_396hz_20s C.wav", 
-            "/assets/frecuences/tone_417hz_20s C.wav", 
-            "/assets/frecuences/tone_440hz_20s F.wav", 
-            "/assets/frecuences/tone_528hz_20s F.wav", 
-            "/assets/frecuences/tone_639hz_20s F.wav", 
-            "/assets/frecuences/tone_741hz_20s I.wav", 
-            "/assets/frecuences/tone_852hz_20s I.wav", 
-            "/assets/frecuences/tone_963hz_20s I.wav", 
-        ];
-        
-        const matchingAudios = availableAudios.filter(audioPath => {
-            // Aquí la función ya nos devuelve "tristeza", "calma", etc.
-            const emotionWord = getEmotionCodeFromFileName(audioPath);
-            
-            // Comparamos "tristeza" === "tristeza"
-            return emotionWord === currentEmotion;
-        });
-
-        if (matchingAudios.length === 0) {
-            console.warn("No hay audios para:", currentEmotion);
-            return;
-        }
-        
-        audioPlayers.forEach((audioElement, index) => {
-            const audioPath = matchingAudios[index % matchingAudios.length];
-            audioElement.src = audioPath;
-            audioElement.load(); 
-        });
-    }
-
-    function handleSingleAudioPlay() {
-        const audioPlayers = document.querySelectorAll("audio");
-        audioPlayers.forEach(player => {
-            player.removeEventListener('play', pauseOtherAudios);
-            player.addEventListener('play', pauseOtherAudios);
-        });
-    }
-
-    function pauseOtherAudios(event) {
-        const currentPlayingAudio = event.target;
-        const allAudios = document.querySelectorAll("audio");
-        allAudios.forEach(audio => {
-            if (audio !== currentPlayingAudio) {
-                audio.pause();
-            }
-        });
-    }
-
-    // Inicialización de audios al cargar
+    // --- INICIALIZACIÓN ---
     document.addEventListener("DOMContentLoaded", () => {
-        const selector = document.getElementById("currentEmotion");
-        if (selector) {
-            selector.addEventListener("change", putSoundEmotion);
-            putSoundEmotion(); // Carga inicial
-        }
-        handleSingleAudioPlay();
+        renderGenres();
+        const emotionSelector = document.getElementById("currentEmotion");
+        emotionSelector.addEventListener("change", updateAudioTones);
+        updateAudioTones(); // Carga inicial
+        setupAudioSinglePlay();
     });
 
-    // 2. Navegación del Formulario (Siguiente / Atrás) -----------------------
+    function renderGenres() {
+        const container = document.getElementById("genreContainer");
+        container.innerHTML = GENRES_LIST.map(genre => `
+            <div class="form-check">
+                <input class="form-check-input genre-check" type="checkbox" value="${genre}" id="genre_${genre}">
+                <label class="form-check-label" for="genre_${genre}">${genre}</label>
+            </div>
+        `).join('');
+    }
 
+    function updateAudioTones() {
+        const selectedEmotion = document.getElementById("currentEmotion").value;
+        const letter = emotionFileMap[selectedEmotion];
+        const frequencies = TONE_GROUPS[selectedEmotion];
+        
+        const audioPlayers = document.querySelectorAll("audio");
+        audioPlayers.forEach((player, index) => {
+            const freq = frequencies[index];
+            // Ruta dinámica basada en frecuencia y letra
+            player.src = `/assets/frecuences/tone_${freq}hz_20s ${letter}.wav`;
+            player.load();
+        });
+    }
+
+    function setupAudioSinglePlay() {
+        const audios = document.querySelectorAll("audio");
+        audios.forEach(a => {
+            a.addEventListener('play', (e) => {
+                audios.forEach(other => { if(other !== e.target) other.pause(); });
+            });
+        });
+    }
+
+    // --- NAVEGACIÓN ---
     function handleConsent() {
-        const val = document.getElementById("consent").value;
-        if (val === "No") {
-            alert("Es necesario aceptar el consentimiento para continuar.");
+        if (document.getElementById("consent").value === "No") {
+            alert("Debe aceptar el consentimiento para continuar.");
             return;
         }
         nextSection(1);
     }
 
     function nextSection(current) {
-        document.getElementById("section" + current).style.display = "none";
-        document.getElementById("section" + current).classList.remove("active");
-        
-        const next = document.getElementById("section" + (current + 1));
-        if(next) {
-            next.style.display = "block";
-            next.classList.add("active");
-        }
+        document.getElementById(`section${current}`).classList.remove("active");
+        document.getElementById(`section${current + 1}`).classList.add("active");
+        window.scrollTo(0,0);
     }
 
     function previousSection(current) {
-        document.getElementById("section" + current).style.display = "none";
-        document.getElementById("section" + current).classList.remove("active");
-
-        const prev = document.getElementById("section" + (current - 1));
-        if(prev) {
-            prev.style.display = "block";
-            prev.classList.add("active");
-        }
+        document.getElementById(`section${current}`).classList.remove("active");
+        document.getElementById(`section${current - 1}`).classList.add("active");
     }
 
-    // 3. Envío de Datos (AQUÍ ESTÁ LA CORRECCIÓN CLAVE) ----------------------
-
+    // --- ENVÍO DE DATOS ---
     async function sendData() {
-        //emociones a enviar por su frecuencia
-        const EMOTION_FREQUENCIES = {
-            tristeza: [110, 174, 210],
-            calma: [285, 396, 417],
-            felicidad: [440, 528, 639],
-            ira: [741, 852, 963]
-        };
-        // A. Token
-        const token = localStorage.getItem('token'); 
-        if (!token) {
-            alert("⚠️ Error: Sesión no iniciada.");
-            // window.location.href = "index.html"; // Descomenta esto en producción
-            return;
-        }
-        // --- 2. OBTENER LA EMOCIÓN ACTUAL ---
-        const selectedEmotion = document.getElementById("currentEmotion").value; // ej: "tristeza"
-        
-        // Buscamos el array correspondiente. Si por error no existe, enviamos un array vacío []
-        const frequenciesToSend = EMOTION_FREQUENCIES[selectedEmotion] || [];
-        // B. Recopilar Géneros
-        const genres = Array.from(
-            document.querySelectorAll('.genreCheck:checked')
-        ).map(x => x.value);
+        const token = localStorage.getItem('token');
+        if (!token) { alert("Sesión no válida"); return; }
 
-        const rawArtists = document.getElementById("currentArtist").value;
-        
-        // 2. Procesar: Cortar por comas -> Limpiar espacios -> Quitar vacíos
-        const artistArray = rawArtists
-            .split(',')                    // Crea el array
-            .map(artist => artist.trim())  // Quita espacios extra: " dua lipa " -> "dua lipa"
-            .filter(artist => artist !== "");
-        
+        const selectedEmotion = document.getElementById("currentEmotion").value;
+
+        // Construcción del objeto según tu esquema
         const body = {
-            // -- Campos Raíz (Root) --
-            emotion: document.getElementById("currentEmotion").value,
+            emotion: selectedEmotion,
             intensity: Number(document.getElementById("emotionIntensity").value),
-            
-            // -- Objeto Tones (Este sí coincide con la BD) --
             tones: {
-                group: frequenciesToSend,
+                group: TONE_GROUPS[selectedEmotion],
                 molestias: {
                     tone1: Number(document.getElementById("molestia1").value),
                     tone2: Number(document.getElementById("molestia2").value),
@@ -387,51 +277,39 @@ let currentEmotion = "tristeza"; // Ahora usa palabras completas y minúsculas
                 favorite: document.getElementById("likedTone").value,
                 least_favorite: document.getElementById("dislikedTone").value
             },
-
-            // -- CORRECCIÓN: Campos sacados de "musicPreferences" a la raíz --
-            genres: genres,
-            artist_interest: artistArray,
+            genres: Array.from(document.querySelectorAll('.genre-check:checked')).map(cb => cb.value),
+            artist_preference: document.getElementById("artistPreference").value
+                .split(',')
+                .map(a => a.trim())
+                .filter(a => a !== ""),
             tempo_preference: document.getElementById("tempoPref").value,
-            
-            // -- CORRECCIÓN: intent --
-            // Asegúrate de modificar el HTML (Paso 2 abajo) para que esto sea un número
-            intent: Number(document.getElementById("emotionalGoal").value),
-            
-            // Nota: 'consent' no aparece en tu ejemplo de BD. 
-            // Si el esquema de Mongoose lo permite, déjalo; si no, bórralo.
-            consent: document.getElementById("consent").value === "Si"
+            intent: Number(document.getElementById("emotionalGoal").value)
         };
 
-        console.log("📤 Enviando JSON Estructurado:", body);
+        console.log("📤 Datos a enviar:", body);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/survey/register`, { // REVISA QUE ESTA RUTA SEA LA CORRECTA EN TU BACKEND
+            const response = await fetch(`${API_BASE_URL}/api/survey/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}` 
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify(body)
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Muestra el mensaje exacto del servidor para depurar
-                throw new Error(data.message || JSON.stringify(data));
+            if (response.ok) {
+                alert("¡Datos guardados con éxito!");
+                window.location.href = "results.html";
+            } else {
+                const errorData = await response.json();
+                alert("Error: " + (errorData.message || "No se pudo guardar"));
             }
-
-            console.log("✅ Guardado exitoso:", data);
-            alert("Preferencias guardadas correctamente!");
-            window.location.href = "results.html";
-            
-
         } catch (err) {
-            console.error("❌ Error al guardar:", err);
-            alert("Error al guardar: " + err.message);
+            console.error(err);
+            alert("Error de conexión al servidor");
         }
     }
 </script>
-
 </body>
 </html>

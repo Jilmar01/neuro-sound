@@ -13,7 +13,7 @@ const CONFIG = {
     },
     TUNNEL: {
         API_URL: "https://neuro-sound.onrender.com",
-        STREAM_URL: "https://8nlqb9lj-5001.use2.devtunnels.ms",
+        STREAM_URL: "https://t6b802qq-5001.use.devtunnels.ms",
         FRONTEND_URL: `http://${MY_LOCAL_IP}:3000`
     }
 };

@@ -5,75 +5,76 @@ import { getAllAnalyzedSongs, getSurvey } from '/js/Engine/getData.js';         
 import { translateFullSurvey } from '/js/Engine/surveyNormalizer.js'; // El Arquitecto (Define el objetivo)
 import { normalizeAllSongsResponse } from '/js/Engine/allSongNormalizer.js'; // El Traductor Masivo (Convierte DB -> Math)
 import { rankCandidates } from '/js/Engine/neuroEngine.js';                 // El Juez (Ranking Matemático)
-import { enrichWithSpotifyMetadata } from '/js/Engine/dbsource.js';         // El Decorador (Trae fotos/audio de Spotify)
+import { enrichWithSpotifyMetadata,enrichWithLocalMetadata } from '/js/Engine/dbsource.js';         // El Decorador (Trae fotos/audio de Spotify)
 
 // 2. CONTROLADOR PRINCIPAL
-export async function generateHybridPlaylist(spotifyToken, rawSurvey) {
-    console.log("🏭 INICIANDO MOTOR (Modo: DB-First / Target-First)...");
+export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
+    console.log("🏭 INICIANDO MOTOR (Modo: DB-First)...");
 
     try {
-        // =========================================================
-        // PASO 1: OBTENCIÓN DE MATERIA PRIMA (Local Server)
-        // =========================================================
+        // --- PASO 1: DATA ---
         console.log("Solicitando biblioteca completa al servidor...");
-        rawSurvey = await getSurvey();
-
-        // Descargamos las 774+ canciones de golpe (es texto ligero)
+        if (!rawSurvey) rawSurvey = await getSurvey();
         const allRawSongs = await getAllAnalyzedSongs();
 
         if (!allRawSongs || allRawSongs.length === 0) {
-            console.warn("⚠️ La base de datos está vacía o no respondió.");
+            console.warn("⚠️ Base de datos vacía.");
             return [];
         }
 
-        // =========================================================
-        // PASO 2: TRADUCCIÓN Y NORMALIZACIÓN (Conversores)
-        // =========================================================
-        console.log("Traduciendo datos a Vectores Matemáticos...");
-
-        // A. Definimos el OBJETIVO (Target Vector) basado en la encuesta
+        // --- PASO 2: NORMALIZACIÓN ---
+        console.log("Traduciendo datos...");
         const { targetVector, categoricalFilters } = translateFullSurvey(rawSurvey);
-        
-        // B. Definimos los CANDIDATOS (Candidate Vectors) basados en la BD
-        // Usamos el normalizador masivo que creamos antes
         const candidateVectors = normalizeAllSongsResponse(allRawSongs);
 
-        console.log(`Objetivo definido. Comparando contra ${candidateVectors.length} vectores candidatos...`);
+        console.log(`Comparando contra ${candidateVectors.length} vectores...`);
 
-        // =========================================================
-        // PASO 3: EL MOTOR NEURO-ACÚSTICO (Ranking)
-        // =========================================================
-        // Aquí ocurre la ciencia: Distancia Euclidiana + Filtros
-        const rankedResults = rankCandidates(
-            targetVector,       // Lo que quiere el usuario
-            categoricalFilters, // Filtros duros (Género, etc.)
-            candidateVectors    // Lo que tenemos en la BD
-        );
-
-        // Seleccionamos a los ganadores (Top 15)
+        // --- PASO 3: RANKING ---
+        const rankedResults = rankCandidates(targetVector, categoricalFilters, candidateVectors);
         const topWinners = rankedResults.slice(0, 15);
 
-        if (topWinners.length === 0) {
-            console.warn("Ninguna canción de la BD cumplió los criterios matemáticos.");
-            return [];
+        if (topWinners.length === 0) return [];
+
+        console.log(`🏆 Top ${topWinners.length} seleccionados.`);
+
+        // =========================================================
+        // PASO 4: ENRIQUECIMIENTO (LÓGICA HÍBRIDA)
+        // =========================================================
+        
+        // 1. VALIDACIÓN PREVIA DEL TOKEN
+        const storedToken = localStorage.getItem('spotifyToken');
+        const activeToken = spotifyTokenArg || storedToken;
+        const hasValidToken = activeToken && activeToken !== 'undefined' && activeToken !== 'null';
+
+        // 2. MAPEO INTELIGENTE (Aquí está el cambio clave) 🧠
+        const winnersForEnrichment = topWinners.map(w => {
+            // ¿Qué valor necesitamos?
+            // Si vamos a Spotify -> Queremos el ID (w.id)
+            // Si vamos a Local   -> Queremos el NOMBRE (w.title o w.name)
+            
+            const identifier = hasValidToken 
+                ? w.id 
+                : (w.title || w.name || w.id); // Intenta sacar título, sino nombre, sino fallback a ID
+
+            return {
+                track_id: identifier, 
+                neuro_score: w.score
+            };
+        });
+
+        console.log(`📋 Identificadores preparados para modo ${hasValidToken ? 'Spotify' : 'Local'}`);
+
+        let finalPlaylist = [];
+
+        // 3. EJECUCIÓN
+        if (hasValidToken) {
+            console.log("🟢 Token válido. Usando Spotify API...");
+            finalPlaylist = await enrichWithSpotifyMetadata(activeToken, winnersForEnrichment);
+        } else {
+            console.log("🟠 Sin Token. Usando Servidor LOCAL...");
+            // Ahora winnersForEnrichment lleva los TÍTULOS ("Take on Me", etc.)
+            finalPlaylist = await enrichWithLocalMetadata(winnersForEnrichment);
         }
-
-        console.log(`🏆 Top ${topWinners.length} seleccionados. ID Líder: ${topWinners[0].id} (Score: ${topWinners[0].score}%)`);
-
-        // =========================================================
-        // PASO 4: ENRIQUECIMIENTO (Llamada a Spotify)
-        // =========================================================
-        console.log("Obteniendo metadatos visuales/audibles de Spotify...");
-
-        // Preparamos los datos para el "Mensajero"
-        // Mapeamos .id (interno) a .track_id (para Spotify)
-        const winnersForEnrichment = topWinners.map(w => ({
-            track_id: w.id, 
-            neuro_score: w.score
-        }));
-
-        // Hacemos UNA sola llamada a Spotify para las 15 canciones
-        const finalPlaylist = await enrichWithSpotifyMetadata(spotifyToken, winnersForEnrichment);
 
         console.log(`✅ Playlist Final lista con ${finalPlaylist.length} tracks.`);
         return finalPlaylist;

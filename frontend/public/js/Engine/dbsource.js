@@ -1,10 +1,73 @@
 /* public/js/Engine/dbSource.js */
-import { apiCall } from '/js/refactored/fetch.js'; // Importamos tu herramienta maestra
+import { apiCall,testsApiCall } from '/js/refactored/fetch.js'; // Importamos tu herramienta maestra
 
-/**
- * EL DECORADOR (Spotify Enricher)
- * Usa 'apiCall' para pedir metadatos a Spotify en bloque.
- */
+export async function enrichWithLocalMetadata(topCandidates) {
+    
+    if (!topCandidates || topCandidates.length === 0) return [];
+
+    const bodyPayload = {
+        songsRequested: topCandidates.map(c => String(c.track_id).trim())
+    };
+
+    console.log(`🏠 (dbSource) Testeando Endpoint Local...`);
+
+    try {
+        // CORRECCIÓN AQUÍ: Agregamos 'local' como segundo argumento
+        // Argumentos: (URL, SERVER_KEY, ENDPOINT, METHOD, BODY)
+        const data = await testsApiCall(
+            'https://t6b802qq-5001.use.devtunnels.ms/', // 1. URL Base
+            'local',                  // 2. Server Key (¡Faltaba este!)
+            '/get-songs',             // 3. Endpoint
+            'POST',                   // 4. Método
+            bodyPayload               // 5. Body
+        );
+
+        // ... (El resto de tu lógica de mapeo se mantiene igual) ...
+        
+        if (!data || !data.files || !Array.isArray(data.files)) {
+            console.warn("⚠️ Respuesta inválida del servidor local.", data);
+            return [];
+        }
+
+        const finalPlaylist = topCandidates.map((candidate) => {
+            const candidateName = String(candidate.track_id).toLowerCase().trim();
+            const localFile = data.files.find(f => f.name && f.name.toLowerCase().trim() === candidateName);
+
+            if (!localFile || localFile.error) return null;
+
+            let artistName = "Artista Local";
+            let songTitle = localFile.name;
+
+            if (localFile.name.includes(' - ')) {
+                const parts = localFile.name.split(' - ');
+                if (parts.length >= 2) {
+                    artistName = parts[0].trim();
+                    songTitle = parts[1].replace(/\.[^/.]+$/, "").trim();
+                }
+            }
+
+            return {
+                title: songTitle,
+                artist: artistName, 
+                cover: '/assets/img/defaultcover.png', 
+                preview_url: localFile.url,
+                uri: localFile.url,
+                spotify_link: '#',
+                score: candidate.neuro_score,            
+                id: candidate.track_id,
+                type: 'local',
+                details: `Match Local: ${candidate.neuro_score}%`
+            };
+        }).filter(item => item !== null);
+
+        return finalPlaylist;
+
+    } catch (e) {
+        console.error("❌ Error CRÍTICO en enrichWithLocalMetadata:", e);
+        return [];
+    }
+}
+
 export async function enrichWithSpotifyMetadata(token, topCandidates) {
     
     // 1. VALIDACIÓN
