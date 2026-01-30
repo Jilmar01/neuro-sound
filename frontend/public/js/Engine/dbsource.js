@@ -15,7 +15,7 @@ export async function enrichWithLocalMetadata(topCandidates) {
         // CORRECCIÓN AQUÍ: Agregamos 'local' como segundo argumento
         // Argumentos: (URL, SERVER_KEY, ENDPOINT, METHOD, BODY)
         const data = await testsApiCall(
-            'https://t6b802qq-5001.use.devtunnels.ms/', // 1. URL Base
+            'https://strips-discretion-anderson-harbor.trycloudflare.com/', // 1. URL Base
             'local',                  // 2. Server Key (¡Faltaba este!)
             '/get-songs',             // 3. Endpoint
             'POST',                   // 4. Método

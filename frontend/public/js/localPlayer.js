@@ -80,7 +80,7 @@ const LocalPlayer = {
     async fetchStreamUrl(title) {
         try {
             // 👇 Actualiza URL del túnel si cambia
-            const baseUrl = "https://t6b802qq-5001.use.devtunnels.ms"; 
+            const baseUrl = "https://strips-discretion-anderson-harbor.trycloudflare.com/"; 
             
             const apiUrl = `${baseUrl}/get-songs`;
             console.log(`📡 Fetch Audio: ${apiUrl} -> "${title}"`);
