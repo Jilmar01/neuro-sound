@@ -1,0 +1,321 @@
+<!DOCTYPE html><html class="light" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Evaluación Inicial - NeuroSound</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed": "#0f1d25",
+                    "on-tertiary-container": "#716d5b",
+                    "on-surface-variant": "#43474a",
+                    "surface": "#f7f9fb",
+                    "primary": "#526069",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-fixed-variant": "#3a4a49",
+                    "on-surface": "#191c1e",
+                    "on-primary-fixed-variant": "#3b4951",
+                    "tertiary": "#625f4d",
+                    "on-tertiary-fixed-variant": "#4a4737",
+                    "secondary-fixed-dim": "#b8cac9",
+                    "tertiary-container": "#f7f0d9",
+                    "secondary": "#516161",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#d4e6e5",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#2d3133",
+                    "outline": "#73787b",
+                    "on-secondary-container": "#576867",
+                    "primary-fixed-dim": "#bac9d3",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-tint": "#526069",
+                    "surface-dim": "#d8dadc",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-tertiary-fixed": "#1e1c0e",
+                    "primary-container": "#e3f2fd",
+                    "tertiary-fixed": "#e9e2cc",
+                    "secondary-container": "#d4e6e5",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "primary-fixed": "#d6e5ef",
+                    "on-primary-container": "#606f78",
+                    "surface-container-highest": "#e0e3e5",
+                    "inverse-primary": "#bac9d3",
+                    "outline-variant": "#c3c7cb",
+                    "on-secondary-fixed": "#0e1e1e",
+                    "surface-variant": "#e0e3e5",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#eceef0",
+                    "on-background": "#191c1e",
+                    "surface-container-high": "#e6e8ea",
+                    "on-error-container": "#93000a",
+                    "background": "#f7f9fb",
+                    "tertiary-fixed-dim": "#ccc6b1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "section-gap": "80px",
+                    "container-padding-desktop": "64px",
+                    "gutter": "24px",
+                    "container-padding-mobile": "24px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg-mobile": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .scale-node {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .scale-node.active {
+            background-color: theme('colors.primary');
+            color: theme('colors.on-primary');
+            transform: scale(1.15);
+            box-shadow: 0 0 20px 0px rgba(82, 96, 105, 0.2);
+        }
+        
+        .scale-track-fill {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Hide navigation shell on transactional screen */
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center font-body-md bg-surface antialiased pb-20">
+<!-- Main Content Canvas -->
+<main class="w-full max-w-[1024px] mx-auto px-container-padding-mobile md:px-container-padding-desktop py-section-gap flex flex-col items-center flex-grow justify-center">
+<!-- Header -->
+<header class="text-center mb-[80px] w-full max-w-2xl">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-6">¿Cómo te sientes en este momento?</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Para personalizar tu experiencia, necesitamos entender tu estado actual. Selecciona la intensidad en cada escala.</p>
+</header>
+<!-- Likert Scales Form -->
+<form class="w-full max-w-xl flex flex-col gap-12 mb-[104px]" onsubmit="event.preventDefault(); window.location.href='#';">
+<!-- Metric: Ansiedad -->
+<div class="metric-container" data-metric="ansiedad">
+<div class="flex justify-between items-end mb-6">
+<label class="font-headline-md text-headline-md text-on-surface">Ansiedad</label>
+<span class="font-body-md text-body-md text-on-surface-variant italic" id="label-ansiedad">Moderada</span>
+</div>
+<div class="relative w-full h-16 flex items-center">
+<!-- Track Background -->
+<div class="absolute w-full h-2 bg-surface-container-high rounded-full top-1/2 -translate-y-1/2"></div>
+<!-- Track Fill -->
+<div class="absolute h-2 bg-primary-container rounded-full top-1/2 -translate-y-1/2 scale-track-fill" style="width: 50%;"></div>
+<!-- Nodes -->
+<div class="relative w-full flex justify-between items-center z-10 px-2">
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="1" onclick="selectValue('ansiedad', 1)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sentiment_satisfied</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="2" onclick="selectValue('ansiedad', 2)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sentiment_neutral</span>
+</button>
+<button class="scale-node active w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary cursor-pointer focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="3" onclick="selectValue('ansiedad', 3)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sentiment_dissatisfied</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="4" onclick="selectValue('ansiedad', 4)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sentiment_very_dissatisfied</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="5" onclick="selectValue('ansiedad', 5)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sick</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between mt-2 px-4">
+<span class="font-label-sm text-label-sm text-outline">Baja</span>
+<span class="font-label-sm text-label-sm text-outline">Alta</span>
+</div>
+<input id="input-ansiedad" name="ansiedad" type="hidden" value="3">
+</div>
+<!-- Metric: Estrés -->
+<div class="metric-container" data-metric="estres">
+<div class="flex justify-between items-end mb-6">
+<label class="font-headline-md text-headline-md text-on-surface">Estrés</label>
+<span class="font-body-md text-body-md text-on-surface-variant italic" id="label-estres">Leve</span>
+</div>
+<div class="relative w-full h-16 flex items-center">
+<!-- Track Background -->
+<div class="absolute w-full h-2 bg-surface-container-high rounded-full top-1/2 -translate-y-1/2"></div>
+<!-- Track Fill -->
+<div class="absolute h-2 bg-secondary-container rounded-full top-1/2 -translate-y-1/2 scale-track-fill" style="width: 25%;"></div>
+<!-- Nodes -->
+<div class="relative w-full flex justify-between items-center z-10 px-2">
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-secondary-container" data-value="1" onclick="selectValue('estres', 1)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">spa</span>
+</button>
+<button class="scale-node active w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary cursor-pointer focus:outline-none focus:ring-4 focus:ring-secondary-container" data-value="2" onclick="selectValue('estres', 2)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">airwave</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-secondary-container" data-value="3" onclick="selectValue('estres', 3)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">bolt</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-secondary-container" data-value="4" onclick="selectValue('estres', 4)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">crisis_alert</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-secondary-container" data-value="5" onclick="selectValue('estres', 5)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">warning</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between mt-2 px-4">
+<span class="font-label-sm text-label-sm text-outline">Relajado</span>
+<span class="font-label-sm text-label-sm text-outline">Tenso</span>
+</div>
+<input id="input-estres" name="estres" type="hidden" value="2">
+</div>
+<!-- Metric: Tristeza -->
+<div class="metric-container" data-metric="tristeza">
+<div class="flex justify-between items-end mb-6">
+<label class="font-headline-md text-headline-md text-on-surface">Tristeza</label>
+<span class="font-body-md text-body-md text-on-surface-variant italic" id="label-tristeza">Nula</span>
+</div>
+<div class="relative w-full h-16 flex items-center">
+<!-- Track Background -->
+<div class="absolute w-full h-2 bg-surface-container-high rounded-full top-1/2 -translate-y-1/2"></div>
+<!-- Track Fill -->
+<div class="absolute h-2 bg-primary-container rounded-full top-1/2 -translate-y-1/2 scale-track-fill" style="width: 0%;"></div>
+<!-- Nodes -->
+<div class="relative w-full flex justify-between items-center z-10 px-2">
+<button class="scale-node active w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary cursor-pointer focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="1" onclick="selectValue('tristeza', 1)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">wb_sunny</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="2" onclick="selectValue('tristeza', 2)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">partly_cloudy_day</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="3" onclick="selectValue('tristeza', 3)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">cloud</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="4" onclick="selectValue('tristeza', 4)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">rainy</span>
+</button>
+<button class="scale-node w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-variant focus:outline-none focus:ring-4 focus:ring-primary-container" data-value="5" onclick="selectValue('tristeza', 5)" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">storm</span>
+</button>
+</div>
+</div>
+<div class="flex justify-between mt-2 px-4">
+<span class="font-label-sm text-label-sm text-outline">Despejado</span>
+<span class="font-label-sm text-label-sm text-outline">Nublado</span>
+</div>
+<input id="input-tristeza" name="tristeza" type="hidden" value="1">
+</div>
+<!-- Submit Button -->
+<div class="mt-8 flex justify-center w-full">
+<button class="w-full md:w-auto min-w-[240px] h-16 rounded-full bg-primary text-on-primary font-headline-md text-headline-md hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary-container shadow-[0_8px_32px_-8px_rgba(82,96,105,0.3)] hover:shadow-[0_16px_48px_-12px_rgba(82,96,105,0.4)] hover:-translate-y-1 flex items-center justify-center gap-3" type="submit">
+                    Continuar
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_forward</span>
+</button>
+</div>
+</form>
+</main><nav class="fixed bottom-0 w-full bg-surface/90 backdrop-blur-md border-t border-surface-container flex justify-center items-center h-[80px] z-50">
+<div class="flex items-center justify-around w-full max-w-[600px] px-4">
+<button class="flex flex-col items-center justify-center w-20 h-full text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:bg-surface-container-highest rounded-full px-4 py-1 transition-all duration-300">insights</span>
+<span class="text-xs font-medium font-label-sm">Análisis</span>
+</button>
+<button class="flex flex-col items-center justify-center w-20 h-full text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:bg-surface-container-highest rounded-full px-4 py-1 transition-all duration-300">library_music</span>
+<span class="text-xs font-medium font-label-sm">Biblioteca</span>
+</button>
+<button class="flex flex-col items-center justify-center w-20 h-full text-on-primary-container transition-colors">
+<div class="bg-primary-container rounded-full px-5 py-1 mb-1">
+<span class="material-symbols-outlined text-2xl text-on-primary-container filled">assignment</span>
+</div>
+<span class="text-xs font-medium font-label-sm">Encuesta</span>
+</button>
+<button class="flex flex-col items-center justify-center w-20 h-full text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-2xl mb-1 group-hover:bg-surface-container-highest rounded-full px-4 py-1 transition-all duration-300">settings</span>
+<span class="text-xs font-medium font-label-sm">Ajustes</span>
+</button>
+</div>
+</nav>
+<script>
+        const labels = {
+            ansiedad: ["Baja", "Leve", "Moderada", "Alta", "Severa"],
+            estres: ["Nulo", "Leve", "Moderado", "Alto", "Severo"],
+            tristeza: ["Nula", "Leve", "Moderada", "Alta", "Severa"]
+        };
+
+        function selectValue(metric, value) {
+            const container = document.querySelector(`.metric-container[data-metric="${metric}"]`);
+            const input = document.getElementById(`input-${metric}`);
+            const labelSpan = document.getElementById(`label-${metric}`);
+            const nodes = container.querySelectorAll('.scale-node');
+            const trackFill = container.querySelector('.scale-track-fill');
+
+            // Update input value
+            input.value = value;
+            
+            // Update text label
+            labelSpan.textContent = labels[metric][value - 1];
+
+            // Calculate percentage for track fill (0% for value 1, 100% for value 5)
+            const percentage = ((value - 1) / 4) * 100;
+            trackFill.style.width = `${percentage}%`;
+
+            // Reset all nodes in this metric
+            nodes.forEach(node => {
+                node.classList.remove('active', 'bg-primary', 'text-on-primary');
+                node.classList.add('bg-surface-container', 'text-on-surface-variant');
+                
+                // Reset icon fill
+                const icon = node.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.style.fontVariationSettings = "'FILL' 0";
+                }
+            });
+
+            // Set active node
+            const activeNode = container.querySelector(`.scale-node[data-value="${value}"]`);
+            activeNode.classList.remove('bg-surface-container', 'text-on-surface-variant');
+            activeNode.classList.add('active', 'bg-primary', 'text-on-primary');
+            
+            // Fill icon on active
+            const activeIcon = activeNode.querySelector('.material-symbols-outlined');
+            if (activeIcon) {
+                activeIcon.style.fontVariationSettings = "'FILL' 1";
+            }
+            
+            // Optional: Haptic feedback for mobile
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(50);
+            }
+        }
+    </script>
+</body></html>
