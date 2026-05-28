@@ -9,6 +9,7 @@ import { sendError } from '../utils/response.util.js';
 export const authMiddleware = (req, res, next) => {
   try {
 
+
     let token = null;
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -22,6 +23,7 @@ export const authMiddleware = (req, res, next) => {
     if (!token) return sendError(res, 'No autorizado', 401);
 
     const payload = verifyToken(token);
+    
     req.user = payload;
     return next();
   } catch (error) {

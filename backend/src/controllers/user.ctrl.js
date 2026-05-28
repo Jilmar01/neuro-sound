@@ -31,8 +31,7 @@ const createUser = async (req, res) => {
         const userObj = await registerUser(userData);
         return sendSuccess(res, userObj, 'Usuario creado exitosamente', 201);
     } catch (error) {
-        const { status, message } = mapServiceError(error);
-        return sendError(res, message, status);
+        return sendError(res, "Error al registrar el usuario", error.status, error.message);
     }
 };
 
@@ -41,7 +40,8 @@ const createUser = async (req, res) => {
  */
 const getUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+
+        const id = req.user?._id;
         const usuario = await getUserBy(id);
 
         if (!usuario) {
@@ -60,7 +60,7 @@ const getUserId = async (req, res) => {
  */
 const updateUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.user?._id;
         const updateData = { ...req.body };
 
         const updated = await updateUser(id, updateData);
@@ -81,7 +81,7 @@ const updateUserId = async (req, res) => {
  */
 const deleteUserId = async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.user?._id;
         const deleted = await deleteUser(id);
 
         if (!deleted) {

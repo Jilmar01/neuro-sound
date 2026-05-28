@@ -6,6 +6,12 @@ import cors from 'cors';
 
 import userRoutes from './routes/user.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import surveyRoutes from './routes/survey.routes.js'
+import recommendRoutes from './routes/recommendation.routes.js'
+import spotifyRoutes from './routes/spotify.routes.js';
+import serverMusic from './routes/music.server.routes.js';
+import surveyIaeRoutes from './routes/iae.survery.routes.js'
+import songsRoutes from './routes/songs.routes.js';
 
 const app = express();
 
@@ -20,10 +26,17 @@ dotenv.config();
 /* Rutas */
 app.use('/api/user', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/survey', surveyRoutes);
+app.use('/api/recommend', recommendRoutes);
+app.use('/api/spotify', spotifyRoutes);
+app.use('/api/server-music', serverMusic);
+app.use('/api/iae-survey', surveyIaeRoutes);
+app.use('/api/songs', songsRoutes);
+
 
 /* Ruta para enviar un mensaje de prueba */
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'API de NeuroSound funcionando correctamente' });
+  res.send('<h1>API de NeuroSound funcionando correctamente</h1>')
 });
 
 export default app;

@@ -1,10 +1,24 @@
 import User from '../models/user.model.js';
+import { HttpError } from '../utils/httpError.js';
 import { hashPassword } from '../utils/password.util.js';
+import dns from 'dns/promises';
 
 // Validadores auxiliares
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidPassword = (password) => password && password.length >= 6;
 const isValidName = (name) => name && name.trim().length > 0;
+
+const hasValidDomain = async (email) => {
+    const domain = email.split('@')[1];
+
+    try {
+        const mxRecords = await dns.resolveMx(domain);
+        return mxRecords && mxRecords.length > 0;
+    } catch {
+        return false;
+    }
+};
+
 
 /**
  * Obtiene un usuario por su ID.
@@ -24,7 +38,7 @@ export const getUserBy = async (id) => {
  * @throws {Error} Si validación falla o email ya existe.
  */
 export const registerUser = async (userData) => {
-    const { name, last_name, email, password } = userData;
+    const { name, last_name, email, password, form } = userData;
 
     // Validar campos requeridos
     if (!name || !last_name || !email || !password) {
@@ -41,6 +55,10 @@ export const registerUser = async (userData) => {
         throw new Error('VALIDATION_ERROR: El formato del email no es válido.');
     }
 
+    if (!(await hasValidDomain(email))) {
+        throw new Error('VALIDATION_ERROR: El correo electrónico no tiene un dominio válido.');
+    }
+
     // Validar longitud de contraseña
     if (!isValidPassword(password)) {
         throw new Error('VALIDATION_ERROR: La contraseña debe tener al menos 6 caracteres.');
@@ -49,12 +67,12 @@ export const registerUser = async (userData) => {
     // Verificar si el email ya existe
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-        throw new Error('DUPLICATE_EMAIL: El email ya está registrado.');
+        throw new HttpError('El email ya está registrado.', 409);
     }
 
     // Hashear contraseña
     const pwd = hashPassword(password);
-    const nuevoUsuario = new User({ name, last_name, email, password: pwd });
+    const nuevoUsuario = new User({ name, last_name, email, password: pwd, form });
     await nuevoUsuario.save();
 
     const userObj = nuevoUsuario.toObject ? nuevoUsuario.toObject() : { ...nuevoUsuario };
@@ -101,8 +119,7 @@ export const updateUser = async (id, updateData) => {
     }
 
     const updated = await User.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
-    console.log(updated);
-    
+
     return updated;
 };
 

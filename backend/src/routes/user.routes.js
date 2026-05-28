@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { userController } from "../controllers/user.ctrl.js";
+import { authMiddleware } from '../middleware/auth.mdlw.js';
 
 const router = Router();
 
@@ -7,12 +8,12 @@ const router = Router();
 router.post("/register", userController.createUser);
 
 // Ruta para obtener datos de un usuario por ID
-router.get('/data/:id', userController.getUserId);
+router.get('/data', authMiddleware, userController.getUserId);
 
 // Ruta para actulizar un usuario por ID
-router.put('/update/:id', userController.updateUserId);
+router.put('/update', authMiddleware, userController.updateUserId);
 
 // Ruta para eliminar un usuario por ID
-router.delete('/delete/:id', userController.deleteUserId);
+router.delete('/delete', authMiddleware, userController.deleteUserId);
 
 export default router;
