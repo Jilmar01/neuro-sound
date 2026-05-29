@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Onboarding from './components/screens/Onboarding';
 import InitialSurvey from './components/screens/InitialSurvey';
+import ArtistSurvey from './components/screens/ArtistSurvey';
 import Calibration from './components/screens/Calibration';
 import Dashboard from './components/screens/Dashboard';
 import FinalSurvey from './components/screens/FinalSurvey';
@@ -259,7 +260,7 @@ function App() {
     setTargetEmotion(defaultEmotion);
     setThemeMode('auto');
     
-    setScreen('calibration');
+    setScreen('artist-survey');
   };
 
   // Generate & load playlist
@@ -338,9 +339,29 @@ function App() {
       case 'onboarding':
         return <Onboarding onLogin={handleLogin} />;
       case 'initial-evaluation':
-        return <InitialSurvey onSubmit={handleSurveySubmit} />;
+        return (
+          <InitialSurvey 
+            onSubmit={handleSurveySubmit} 
+            onBack={() => setScreen('onboarding')}
+          />
+        );
+      case 'artist-survey':
+        return (
+          <ArtistSurvey 
+            onConfirm={(selectedArtists) => {
+              setSurveyData(prev => ({ ...prev, selectedArtists }));
+              setScreen('calibration');
+            }}
+            onBack={() => setScreen('initial-evaluation')}
+          />
+        );
       case 'calibration':
-        return <Calibration onConfirm={handleCalibrationConfirm} />;
+        return (
+          <Calibration 
+            onConfirm={handleCalibrationConfirm} 
+            onBack={() => setScreen('artist-survey')}
+          />
+        );
       case 'dashboard':
         return (
           <Dashboard
@@ -397,7 +418,7 @@ function App() {
   const currentTrack = playlist[currentIndex] || null;
 
   // Keep onboarding, survey and calibration fully neutral (gray)
-  const onboardingScreens = ['onboarding', 'initial-evaluation', 'calibration'];
+  const onboardingScreens = ['onboarding', 'initial-evaluation', 'artist-survey', 'calibration'];
   const isOnboarding = onboardingScreens.includes(screen);
 
   const activeThemeKey = isOnboarding 

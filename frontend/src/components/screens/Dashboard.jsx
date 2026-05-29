@@ -80,7 +80,7 @@ const Dashboard = ({
                 className={`position-relative rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center ${
                   isPlaying ? 'animate-subtle-pulse' : ''
                 }`}
-                style={{ width: '200px', height: '200px', background: '#eceef0' }}
+                style={{ width: '240px', height: '240px', background: '#eceef0' }}
               >
                 <div 
                   className="position-absolute w-100 h-100 bg-cover bg-center filter blur-sm opacity-25"
@@ -90,7 +90,7 @@ const Dashboard = ({
                 {/* Core cover image */}
                 <div 
                   className="rounded-circle overflow-hidden position-relative border shadow-inner z-1" 
-                  style={{ width: '150px', height: '150px' }}
+                  style={{ width: '180px', height: '180px' }}
                 >
                   <img src={currentTrack.cover} alt="" className="w-100 h-100 object-cover" />
                   
@@ -168,17 +168,17 @@ const Dashboard = ({
                 <button 
                   onClick={onPrev}
                   className="btn btn-light rounded-circle shadow-sm border-0 p-2 d-flex align-items-center justify-content-center"
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: '48px', height: '48px' }}
                 >
-                  <span className="material-symbols-outlined fs-5">skip_previous</span>
+                  <span className="material-symbols-outlined fs-4">skip_previous</span>
                 </button>
                 
                 <button 
                   onClick={onPlayPause}
                   className="btn btn-primary rounded-circle shadow p-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '56px', height: '56px' }}
+                  style={{ width: '64px', height: '64px' }}
                 >
-                  <span className="material-symbols-outlined fs-4 filled">
+                  <span className="material-symbols-outlined fs-3 filled">
                     {isPlaying ? 'pause' : 'play_arrow'}
                   </span>
                 </button>
@@ -186,9 +186,9 @@ const Dashboard = ({
                 <button 
                   onClick={onNext}
                   className="btn btn-light rounded-circle shadow-sm border-0 p-2 d-flex align-items-center justify-content-center"
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: '48px', height: '48px' }}
                 >
-                  <span className="material-symbols-outlined fs-5">skip_next</span>
+                  <span className="material-symbols-outlined fs-4">skip_next</span>
                 </button>
               </div>
             </div>

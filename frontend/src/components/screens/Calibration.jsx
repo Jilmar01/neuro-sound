@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Button from '../common/Button';
 import Slider from '../common/Slider';
 
-const Calibration = ({ onConfirm }) => {
+const Calibration = ({ onConfirm, onBack }) => {
   const [volume, setVolume] = useState(45);
   const [isTonePlaying, setIsTonePlaying] = useState(false);
 
@@ -78,7 +78,7 @@ const Calibration = ({ onConfirm }) => {
   return (
     <div className="w-100 py-2 d-flex flex-column align-items-center justify-content-center">
       {/* Center Column */}
-      <div className="w-full max-w-[600px] d-flex flex-column align-items-center p-3 animate-fade-in-up">
+      <div className="w-100 d-flex flex-column align-items-center p-3 animate-fade-in-up" style={{ maxWidth: '600px' }}>
         
         {/* Focus Icon */}
         <div className="w-16 h-16 rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 shadow-sm border border-light-subtle">
@@ -146,15 +146,30 @@ const Calibration = ({ onConfirm }) => {
             </div>
           </div>
 
-          {/* Primary Action Button */}
-          <Button
-            variant="primary"
-            icon="arrow_forward"
-            onClick={handleConfirm}
-            className="w-100 py-3 rounded-pill shadow-sm mt-2"
-          >
-            Confirmar y Calibrar
-          </Button>
+          {/* Action Buttons */}
+          <div className="d-flex gap-2 w-100 mt-2">
+            {onBack && (
+              <Button
+                variant="outline"
+                icon="arrow_back"
+                onClick={() => {
+                  stopTone();
+                  onBack();
+                }}
+                className="w-50 py-3 rounded-pill"
+              >
+                Regresar
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              icon="arrow_forward"
+              onClick={handleConfirm}
+              className={onBack ? "w-50 py-3 rounded-pill shadow-sm" : "w-100 py-3 rounded-pill shadow-sm"}
+            >
+              Confirmar y Calibrar
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Button from '../common/Button';
 import Slider from '../common/Slider';
 
-const InitialSurvey = ({ onSubmit }) => {
+const InitialSurvey = ({ onSubmit, onBack }) => {
   const [ansiedad, setAnsiedad] = useState(3);
   const [estres, setEstres] = useState(2);
   const [tristeza, setTristeza] = useState(1);
@@ -49,7 +49,7 @@ const InitialSurvey = ({ onSubmit }) => {
 
   return (
     <div className="w-100 py-2 d-flex flex-column align-items-center justify-content-center">
-      <main className="w-full max-w-[600px] d-flex flex-column align-items-center p-3 animate-fade-in-up">
+      <main className="w-100 d-flex flex-column align-items-center p-3 animate-fade-in-up" style={{ maxWidth: '600px' }}>
         {/* Header */}
         <header className="text-center mb-3 w-100">
           <h2 className="h4 text-dark mb-1 fw-bold">
@@ -125,13 +125,23 @@ const InitialSurvey = ({ onSubmit }) => {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="mt-3 d-flex justify-content-center w-100">
+          {/* Action Buttons */}
+          <div className="mt-3 d-flex gap-2 w-100 justify-content-center">
+            {onBack && (
+              <Button
+                onClick={onBack}
+                variant="outline"
+                icon="arrow_back"
+                className="w-50 py-3 rounded-pill"
+              >
+                Regresar
+              </Button>
+            )}
             <Button
               type="submit"
               variant="secondary"
               icon="arrow_forward"
-              className="w-100 py-3 shadow-sm"
+              className={onBack ? "w-50 py-3 shadow-sm rounded-pill" : "w-100 py-3 shadow-sm rounded-pill"}
             >
               Continuar
             </Button>

@@ -1,86 +1,76 @@
-/* public/js/Engine/neuroEngineController.js */
+import { apiCall } from '../utils/fetch.js';
 
-// 1. IMPORTACIONES: Las 4 Piezas del Rompecabezas
-import { getAllAnalyzedSongs, getSurvey } from './getData.js';          // El Minero (Trae todo de la BD)
-import { translateFullSurvey } from './surveyNormalizer.js'; // El Arquitecto (Define el objetivo)
-import { normalizeAllSongsResponse } from './allSongNormalizer.js'; // El Traductor Masivo (Convierte DB -> Math)
-import { rankCandidates } from './neuroEngine.js';                 // El Juez (Ranking Matemático)
-import { enrichWithSpotifyMetadata,enrichWithLocalMetadata } from './dbsource.js';         // El Decorador (Trae fotos/audio de Spotify)
-
-// 2. CONTROLADOR PRINCIPAL
-export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
-    console.log("🏭 INICIANDO MOTOR (Modo: DB-First)...");
-
+/**
+ * Genera una nueva recomendación de canciones en el backend.
+ * @returns {Promise<Object|null>} Datos de la generación de recomendación.
+ */
+export async function generateRecommendation() {
+    console.log("⚡ GENERANDO RECOMENDACIÓN EN EL BACKEND...");
     try {
-        // --- PASO 1: DATA ---
-        console.log("Solicitando biblioteca completa al servidor...");
-        if (!rawSurvey) rawSurvey = await getSurvey();
-        const allRawSongs = await getAllAnalyzedSongs();
-
-        if (!allRawSongs || allRawSongs.length === 0) {
-            console.warn("⚠️ Base de datos vacía.");
-            return [];
+        const response = await apiCall('neuro', '/api/recommend/generate', 'GET');
+        if (response && response.success) {
+            return response.data;
         }
-
-        // --- PASO 2: NORMALIZACIÓN ---
-        console.log("Traduciendo datos...");
-        const { targetVector, categoricalFilters } = translateFullSurvey(rawSurvey);
-        const candidateVectors = normalizeAllSongsResponse(allRawSongs);
-
-        console.log(`Comparando contra ${candidateVectors.length} vectores...`);
-
-        // --- PASO 3: RANKING ---
-        const rankedResults = rankCandidates(targetVector, categoricalFilters, candidateVectors);
-        const topWinners = rankedResults.slice(0, 15);
-
-        if (topWinners.length === 0) return [];
-
-        console.log(`🏆 Top ${topWinners.length} seleccionados.`);
-
-        // =========================================================
-        // PASO 4: ENRIQUECIMIENTO (LÓGICA HÍBRIDA)
-        // =========================================================
-        
-        // 1. VALIDACIÓN PREVIA DEL TOKEN
-        const storedToken = localStorage.getItem('spotifyToken');
-        const activeToken = spotifyTokenArg || storedToken;
-        const hasValidToken = activeToken && activeToken !== 'undefined' && activeToken !== 'null';
-
-        // 2. MAPEO INTELIGENTE (Aquí está el cambio clave) 🧠
-        const winnersForEnrichment = topWinners.map(w => {
-            // ¿Qué valor necesitamos?
-            // Si vamos a Spotify -> Queremos el ID (w.id)
-            // Si vamos a Local   -> Queremos el NOMBRE (w.title o w.name)
-            
-            const identifier = hasValidToken 
-                ? w.id 
-                : (w.title || w.name || w.id); // Intenta sacar título, sino nombre, sino fallback a ID
-
-            return {
-                track_id: identifier, 
-                neuro_score: w.score
-            };
-        });
-
-        console.log(`📋 Identificadores preparados para modo ${hasValidToken ? 'Spotify' : 'Local'}`);
-
-        let finalPlaylist = [];
-
-        // 3. EJECUCIÓN
-        if (hasValidToken) {
-            console.log("🟢 Token válido. Usando Spotify API...");
-            finalPlaylist = await enrichWithSpotifyMetadata(activeToken, winnersForEnrichment);
-        } else {
-            console.log("🟠 Sin Token. Usando Servidor LOCAL...");
-            // Ahora winnersForEnrichment lleva los TÍTULOS ("Take on Me", etc.)
-            finalPlaylist = await enrichWithLocalMetadata(winnersForEnrichment);
-        }
-
-        console.log(`✅ Playlist Final lista con ${finalPlaylist.length} tracks.`);
-        return finalPlaylist;
-
+        throw new Error(response?.message || "Error en respuesta del servidor");
     } catch (error) {
-        console.error("❌ Fallo crítico en el flujo DB-First:", error);
-        return [];
+        console.error("❌ Error en generateRecommendation:", error);
+        return null;
+    }
+}
+
+/**
+ * Obtiene la última recomendación generada en el backend.
+ * @returns {Promise<Object|null>} Lista de canciones recomendadas.
+ */
+export async function getLatestRecommendation() {
+    console.log("🔍 OBTENIENDO ÚLTIMA RECOMENDACIÓN...");
+    try {
+        const response = await apiCall('neuro', '/api/recommend/latest', 'GET');
+        if (response && response.success) {
+            return response.data;
+        }
+        throw new Error(response?.message || "Error en respuesta del servidor");
+    } catch (error) {
+        console.error("❌ Error en getLatestRecommendation:", error);
+        return null;
+    }
+}
+
+/**
+ * Solicita recomendaciones de canciones al backend utilizando la encuesta del usuario
+ * llamando a las rutas oficiales de generación y obtención.
+ * @param {string} spotifyTokenArg - Token de acceso de Spotify.
+ * @param {Object} rawSurvey - Datos de la encuesta emocional del usuario.
+ * @returns {Promise<Array|null>} Lista de pistas recomendadas o null para activar el fallback en el frontend.
+ */
+export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
+    console.log("🏭 SOLICITANDO RECOMENDACIONES AL BACKEND...");
+    try {
+        // 1. Generar la recomendación en base al usuario autenticado
+        await generateRecommendation();
+
+        // 2. Obtener los detalles de la última recomendación generada
+        const result = await getLatestRecommendation();
+
+        if (result && Array.isArray(result.songs)) {
+            console.log(`✅ Playlist recomendada recibida con ${result.songs.length} tracks.`);
+            
+            // Mapeamos las canciones del formato simple {title, artist} al formato enriquecido del reproductor
+            return result.songs.map((song, idx) => ({
+                id: `rec-${result.recommendationId || 'latest'}-${idx}`,
+                title: song.title,
+                artist: song.artist,
+                cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
+                preview_url: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(idx % 4) + 1}.mp3`,
+                energy: 3,
+                valence: 7,
+                bpm: 60,
+                genre: rawSurvey?.emotion || 'Calma'
+            }));
+        }
+        throw new Error("Formato de respuesta de recomendación no válido");
+    } catch (error) {
+        console.warn("⚠️ El backend no devolvió recomendaciones. Se activará el fallback local en el cliente:", error);
+        return null; // Retornar null para forzar el uso de fallbackPlaylist en App.jsx
     }
 }

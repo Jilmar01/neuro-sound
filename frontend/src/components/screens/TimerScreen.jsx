@@ -62,12 +62,12 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="w-100 py-2 d-flex flex-column align-items-center justify-content-center">
+    <div className="w-100 py-1 d-flex flex-column align-items-center justify-content-center">
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-[600px] flex flex-col items-center justify-center p-3 animate-fade-in-up">
+      <div className="position-relative z-3 w-100 d-flex flex-column align-items-center justify-content-center p-2 animate-fade-in-up" style={{ maxWidth: '480px' }}>
         {/* Header */}
-        <div className="text-center mb-3">
-          <h2 className="h4 text-dark mb-1 fw-bold">
+        <div className="text-center mb-2">
+          <h2 className="h5 text-dark mb-1 fw-bold">
             Temporizador de Sesión
           </h2>
           <p className="text-muted small mb-0">
@@ -76,21 +76,24 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
         </div>
 
         {/* Timer Canvas (Glassmorphism card) */}
-        <div className="w-full bg-white bg-opacity-75 backdrop-blur-sm rounded-4 p-4 border border-light-subtle shadow-sm d-flex flex-column align-items-center">
+        <div className="w-100 bg-white bg-opacity-75 backdrop-blur-sm rounded-4 p-3 border border-light-subtle shadow-sm d-flex flex-column align-items-center">
           
           {/* Timer Circle */}
-          <div className="relative w-48 h-48 flex items-center justify-center mb-4">
+          <div className="position-relative d-flex align-items-center justify-content-center mb-3" style={{ width: '192px', height: '192px' }}>
             {/* Breathing light aura */}
-            <div className={`absolute inset-4 rounded-full bg-primary-container bg-opacity-30 blur-2xl transition-all duration-[4000ms] ease-in-out ${
-              isRunning ? 'scale-110 opacity-80 animate-pulse' : 'scale-95 opacity-20'
-            }`} />
+            <div 
+              className={`position-absolute rounded-circle bg-primary-container bg-opacity-30 transition-all duration-[4000ms] ease-in-out ${
+                isRunning ? 'scale-110 opacity-80 animate-pulse' : 'scale-95 opacity-20'
+              }`}
+              style={{ top: '16px', left: '16px', right: '16px', bottom: '16px', filter: 'blur(24px)' }}
+            />
 
-            <svg className="w-full h-full transform -rotate-90 z-10">
+            <svg className="w-100 h-100 transform -rotate-90 position-relative" style={{ zIndex: 1 }}>
               <circle
                 cx="96"
                 cy="96"
                 r={radius}
-                className="stroke-light"
+                stroke="#eceef0"
                 strokeWidth="5"
                 fill="transparent"
               />
@@ -111,18 +114,18 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
             </svg>
 
             {/* Counter Overlay */}
-            <div className="absolute inset-0 d-flex flex-column align-items-center justify-content-center z-20">
-              <span className="text-4xl font-semibold font-mono text-dark tracking-wider">
+            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style={{ zIndex: 2 }}>
+              <span className="fw-bold font-monospace text-dark tracking-wider" style={{ fontSize: '2rem' }}>
                 {formatTime(timeLeft)}
               </span>
-              <span className="text-[10px] text-uppercase tracking-widest mt-1 text-secondary">
+              <span className="text-uppercase tracking-widest mt-1 text-secondary" style={{ fontSize: '9px' }}>
                 tiempo restante
               </span>
             </div>
           </div>
 
           {/* Preset Buttons */}
-          <div className="w-100 d-flex justify-content-between gap-2 mb-3 z-10">
+          <div className="w-100 d-flex justify-content-between gap-2 mb-2.5 position-relative" style={{ zIndex: 3 }}>
             {[5, 15, 30, 45, 60].map((mins) => {
               const isSelected = presetDuration === mins;
               return (
@@ -130,11 +133,12 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
                   key={mins}
                   type="button"
                   onClick={() => handlePresetSelect(mins)}
-                  className={`flex-grow-1 py-2 px-1 rounded-pill text-xs font-semibold transition-all ${
+                  className={`flex-grow-1 py-1.5 px-1 rounded-pill fw-semibold transition-all ${
                     isSelected 
                       ? 'btn btn-primary shadow-sm' 
                       : 'btn btn-light text-secondary'
                   }`}
+                  style={{ fontSize: '11px' }}
                 >
                   {mins}m
                 </button>
@@ -143,11 +147,11 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
           </div>
 
           {/* Actions */}
-          <div className="w-100 d-flex gap-3 z-10">
+          <div className="w-100 d-flex gap-2 position-relative" style={{ zIndex: 3 }}>
             <Button
               variant={isRunning ? "outline" : "secondary"}
               onClick={handleStartPause}
-              className="flex-grow-1 py-3"
+              className="flex-grow-1 py-2.5"
               icon={isRunning ? "pause" : "play_arrow"}
             >
               {isRunning ? "Pausar" : "Iniciar"}
@@ -156,7 +160,7 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
             <Button
               variant="text"
               onClick={handleReset}
-              className="flex-grow-1 py-3 border border-secondary border-opacity-25 rounded-pill"
+              className="flex-grow-1 py-2.5 border border-secondary border-opacity-25 rounded-pill"
               icon="replay"
             >
               Reiniciar
@@ -165,7 +169,7 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
         </div>
 
         {isRunning && (
-          <p className="mt-4 text-sm text-primary opacity-80 d-flex align-items-center gap-2">
+          <p className="mt-3 text-sm text-primary opacity-80 d-flex align-items-center gap-2">
             <span className="material-symbols-outlined text-base animate-spin">sync</span>
             Reproducción automatizada activa
           </p>

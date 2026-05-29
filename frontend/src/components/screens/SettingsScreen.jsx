@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
+import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
 
 const SettingsScreen = ({ 
   onNavigate, 
@@ -9,6 +10,61 @@ const SettingsScreen = ({
   themeMode = 'auto', 
   onThemeModeChange 
 }) => {
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('spotifyToken');
+        if (token) {
+          const response = await fetch('https://api.spotify.com/v1/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUserProfile({
+              name: data.display_name || 'Usuario de Spotify',
+              email: data.email || '',
+              photo: data.images?.[0]?.url || null,
+              type: 'Spotify Premium'
+            });
+            setLoading(false);
+            return;
+          }
+        }
+        
+        const cached = localStorage.getItem('userData');
+        if (cached) {
+          const u = JSON.parse(cached);
+          setUserProfile({
+            name: `${u.name || ''} ${u.last_name || ''}`.trim() || 'Usuario',
+            email: u.email || '',
+            photo: u.photo || null,
+            type: 'Cuenta Local'
+          });
+          setLoading(false);
+          return;
+        }
+
+        setUserProfile({
+          name: 'Invitado',
+          email: 'Sesión temporal sin sincronizar',
+          photo: null,
+          type: 'Invitado'
+        });
+      } catch (err) {
+        console.error("Error al cargar perfil:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const handleSpotifyConnect = () => {
     // Redirect to Spotify OAuth or simulate connection
     const clientId = 'f5e7f1f0a25642a8a1d7f57561f7db91'; // Replace or read from config
@@ -29,31 +85,70 @@ const SettingsScreen = ({
   return (
     <div className="w-100 py-3 d-flex flex-column align-items-center justify-content-center">
       {/* Main Content Card */}
-      <div className="relative z-10 w-full max-w-[600px] flex flex-col items-center p-4 animate-fade-in-up">
-        <header className="text-center mb-6">
-          <h2 className="font-display-lg-mobile text-display-lg-mobile text-on-surface font-semibold mb-2">
+      <div className="position-relative z-3 w-100 d-flex flex-column align-items-center p-2 animate-fade-in-up" style={{ maxWidth: '750px' }}>
+        <header className="text-center mb-4">
+          <h2 className="h4 text-dark fw-bold mb-2">
             Ajustes
           </h2>
-          <p className="font-body-md text-body-md text-on-surface-variant">
+          <p className="text-muted small">
             Configura tu cuenta y conexiones de música terapéutica.
           </p>
         </header>
 
-        <div className="w-full bg-white bg-opacity-75 backdrop-blur-sm rounded-4 p-5 border border-light-subtle shadow-sm d-flex flex-column gap-4">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold font-label-sm text-outline uppercase tracking-wider">
+        <div className="w-100 bg-white bg-opacity-75 backdrop-blur-sm rounded-4 p-4 border border-light-subtle shadow-sm d-flex flex-column gap-4">
+          {/* Perfil del Usuario */}
+          <div className="d-flex align-items-center gap-3 p-3 bg-light bg-opacity-50 rounded-3 border border-light-subtle">
+            <div 
+              className="rounded-circle bg-white d-flex align-items-center justify-content-center border border-light-subtle overflow-hidden shadow-sm"
+              style={{ 
+                width: '64px', 
+                height: '64px', 
+                backgroundPosition: 'center', 
+                backgroundSize: 'cover',
+                backgroundImage: userProfile?.photo ? `url(${userProfile.photo})` : 'none' 
+              }}
+            >
+              {!userProfile?.photo && (
+                <span className="material-symbols-outlined text-secondary opacity-70 fs-2">
+                  person
+                </span>
+              )}
+            </div>
+            <div className="d-flex flex-column text-start">
+              <span className="badge bg-primary text-white align-self-start mb-1" style={{ fontSize: '10px' }}>
+                {userProfile?.type || 'Sesión'}
+              </span>
+              <h4 className="h6 text-dark fw-bold mb-0">
+                {userProfile?.name || 'Cargando perfil...'}
+              </h4>
+              <p className="text-muted mb-0" style={{ fontSize: '11px' }}>
+                {userProfile?.email || 'Sin correo electrónico'}
+              </p>
+            </div>
+          </div>
+
+          <hr className="border-secondary border-opacity-25 my-0" />
+
+          <div className="d-flex flex-column gap-2">
+            <h3 className="text-sm font-semibold text-uppercase text-secondary tracking-wider" style={{ fontSize: '12px' }}>
               Conexión de Música
             </h3>
-            <p className="text-xs text-on-surface-variant mb-2">
+            <p className="text-xs text-muted mb-2">
               Conecta tu cuenta de Spotify Premium para sintonizar pistas directo desde la base de datos de Spotify.
             </p>
             <Button
-              variant="secondary"
-              icon="swap_horizontal_circle"
               onClick={handleSpotifyConnect}
-              className="w-full py-4"
+              className="w-100 py-3"
+              style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}
             >
-              Conectar a Spotify
+              <span className="d-inline-flex align-items-center gap-2 justify-content-center">
+                <img 
+                  src={spotifyLogo} 
+                  alt="Spotify Logo" 
+                  style={{ width: '20px', height: '20px' }} 
+                />
+                <span>Conectar a Spotify</span>
+              </span>
             </Button>
           </div>
 
@@ -112,7 +207,7 @@ const SettingsScreen = ({
 
           <hr className="border-secondary border-opacity-25" />
 
-          <div className="flex flex-col gap-2">
+          <div className="d-flex flex-column gap-2">
             <h3 className="text-sm font-semibold text-uppercase text-secondary tracking-wider" style={{ fontSize: '12px' }}>
               Sesión
             </h3>
@@ -123,7 +218,7 @@ const SettingsScreen = ({
               variant="outline"
               icon="logout"
               onClick={onLogout}
-              className="w-full py-3.5 text-danger border-danger border-opacity-25 hover:bg-danger-subtle hover:text-danger"
+              className="w-100 py-3 text-danger border-danger border-opacity-25 hover:bg-danger-subtle hover:text-danger"
             >
               Cerrar Sesión
             </Button>
