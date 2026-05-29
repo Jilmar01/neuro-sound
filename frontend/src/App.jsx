@@ -5,7 +5,6 @@ import ArtistSurvey from './components/screens/ArtistSurvey';
 import Calibration from './components/screens/Calibration';
 import Dashboard from './components/screens/Dashboard';
 import FinalSurvey from './components/screens/FinalSurvey';
-import TimerScreen from './components/screens/TimerScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
 import Sidebar from './components/common/Sidebar';
 import { generateHybridPlaylist } from './engine/NECv2.js';
@@ -378,13 +377,7 @@ function App() {
             onSeek={handleSeek}
             onNavigate={setScreen}
             onFeedback={handleFeedback}
-          />
-        );
-      case 'timer':
-        return (
-          <TimerScreen
             onTimerEnd={handleTimerEnd}
-            onNavigate={setScreen}
           />
         );
       case 'settings':
@@ -473,7 +466,7 @@ function App() {
     }
   `;
 
-  const mainScreens = ['dashboard', 'timer', 'settings', 'final-evaluation'];
+  const mainScreens = ['dashboard', 'settings', 'final-evaluation'];
   const showSidebar = mainScreens.includes(screen);
 
   if (showSidebar) {

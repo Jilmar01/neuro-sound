@@ -10,14 +10,12 @@ const Sidebar = ({
 }) => {
   const tabs = [
     { id: 'library', label: 'Biblioteca', icon: 'library_music' },
-    { id: 'timer', label: 'Timer', icon: 'schedule' },
     { id: 'survey', label: 'Encuesta', icon: 'assignment' },
     { id: 'settings', label: 'Ajustes', icon: 'settings' },
   ];
 
   const handleTabClick = (tabId) => {
     if (tabId === 'library') onTabChange('dashboard');
-    if (tabId === 'timer') onTabChange('timer');
     if (tabId === 'survey') onTabChange('final-evaluation');
     if (tabId === 'settings') onTabChange('settings');
   };
