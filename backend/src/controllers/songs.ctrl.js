@@ -1,4 +1,4 @@
-import { findSongsByIds, getAllSongs } from "../services/songs.service.js"
+import { findSongsByIds, getAllSongs, saveSongAnalysis, getSongsPaginatedService } from "../services/songs.service.js"
 import { sendError, sendSuccess } from "../utils/response.util.js";
 import { getTrackById } from "../services/spotify.service.js";
 
@@ -9,6 +9,16 @@ export const getSongs = async (req, res) => {
     } catch (error) {
         return sendError(res, error.message || "Error interno del servidor", 500);
     }
+}
+
+export const getSongsPaginated = async (req, res) => {
+    try {
+        const { skip, limit } = req.query;
+        const response = await getSongsPaginatedService({ skip, limit });
+        return sendSuccess(res, response, "Lista de canciones obtenida correctamente", 200);
+    } catch (error) {
+        return sendError(res, error.message || "Error interno del servidor", 500);
+    }       
 }
 
 export const getSongById = async (req, res) => {
@@ -23,7 +33,6 @@ export const getSongById = async (req, res) => {
         return sendError(res, error.message || "Error interno del servidor", 500);
     }
 }
-
 export const getTracksByIds = async (req, res) => {
     try {
         const { track_ids } = req.body; 
