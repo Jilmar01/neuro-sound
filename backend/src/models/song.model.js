@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const SongSchema = new mongoose.Schema(
   {
-    track_id: {
+    id: {
       type: String,
       required: true,
       unique: true,
@@ -14,56 +14,34 @@ const SongSchema = new mongoose.Schema(
       required: true
     },
 
-    artists: {
-      type: [String],
-      required: true
-    },
-
-    genre: {
-      type: String,
-      required: true
-    },
-
-    energy: {
-      type: Number,
-      min: 1,
-      max: 10
-    },
-
-    bpm: {
-      type: Number,
-      required: true
-    },
-
-    duration: {
-      type: Number
-    },
-
-    tags: {
-      type: [String],
-      default: []
-    },
-
     popularity: {
       type: Number,
       min: 0,
       max: 100
     },
 
-    key: {
-      type: String
+    duration_ms: {
+      type: Number,
+      required: true
     },
 
-    camelot: {
-      type: String
+    explicit: {
+      type: Boolean,
+      default: false
     },
 
-    timbre: {
-      type: Number
+    artists: {
+      type: [String],
+      required: true
     },
 
-    drop_time: {
-      type: Number
+    id_artists: {
+      type: [String],
+      default: []
+    },
+
+    release_date: {
+      type: Date
     },
 
     danceability: {
@@ -72,17 +50,66 @@ const SongSchema = new mongoose.Schema(
       max: 1
     },
 
-    vocal_presence: {
+    energy: {
       type: Number,
       min: 0,
       max: 1
     },
 
-    freq_class: {
-      type: String
+    key: {
+      type: Number,
+      min: 0,
+      max: 11
+    },
+
+    loudness: {
+      type: Number
+    },
+
+    mode: {
+      type: Number,
+      enum: [0, 1]
+    },
+
+    speechiness: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    acousticness: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    instrumentalness: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    liveness: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    valence: {
+      type: Number,
+      min: 0,
+      max: 1
+    },
+
+    tempo: {
+      type: Number
+    },
+
+    time_signature: {
+      type: Number
     }
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Song", SongSchema);
+export default mongoose.model("Song", SongSchema, "songsV2");
