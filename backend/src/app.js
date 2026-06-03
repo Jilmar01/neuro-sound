@@ -12,6 +12,7 @@ import spotifyRoutes from './routes/spotify.routes.js';
 import serverMusic from './routes/music.server.routes.js';
 import surveyIaeRoutes from './routes/iae.survery.routes.js'
 import songsRoutes from './routes/songs.routes.js';
+import artistRoutes from './routes/artist.routes.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/spotify', spotifyRoutes);
 app.use('/api/server-music', serverMusic);
 app.use('/api/iae-survey', surveyIaeRoutes);
 app.use('/api/songs', songsRoutes);
+app.use('/api/artists', artistRoutes);
 
 
 /* Ruta para enviar un mensaje de prueba */
