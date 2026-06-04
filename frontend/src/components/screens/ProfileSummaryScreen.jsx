@@ -303,26 +303,23 @@ const ProfileSummaryScreen = ({
   const comoQuiere  = surveyData?.comoQuiere  ?? 4;
 
   const handleArtistSave = async (ids, artistsData) => {
-    // Guardar en backend
+    // Actualizar caché local
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await apiCall('neuro', '/api/user/artists', 'POST', { selectedArtists: ids });
-        // Actualizar caché local
-        const cachedUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-        cachedUser.selectedArtists = ids;
-        localStorage.setItem('user', JSON.stringify(cachedUser));
-        localStorage.setItem('selectedArtists', JSON.stringify(ids));
-        localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
-      }
+      const cachedUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+      cachedUser.selectedArtists = ids;
+      localStorage.setItem('user', JSON.stringify(cachedUser));
+      localStorage.setItem('selectedArtists', JSON.stringify(ids));
+      localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
     } catch (e) {
-      console.error('❌ Error guardando artistas:', e);
+      console.error('Error saving local cache for artists:', e);
     }
     // Actualizar estado local y cerrar editor
     setLocalArtists(artistsData);
     setEditingArtists(false);
-    // Notificar al padre para que actualice su estado global
-    if (onArtistsSaved) onArtistsSaved(ids, artistsData);
+    // Notificar al padre para que actualice su estado global y guarde en backend
+    if (onArtistsSaved) {
+      await onArtistsSaved(ids, artistsData);
+    }
   };
 
   return (

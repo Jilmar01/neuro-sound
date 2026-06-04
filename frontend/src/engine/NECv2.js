@@ -1,43 +1,135 @@
 import { apiCall } from '../utils/fetch.js';
 
 /**
+ * Mapea los datos de la encuesta del frontend al esquema de Survey esperado por el backend.
+ * @param {Object} rawSurvey - Carga útil de la encuesta del frontend.
+ * @returns {Object} Carga útil formateada para el backend.
+ */
+export function mapSurveyToBackendPayload(rawSurvey) {
+    if (!rawSurvey) {
+        return {
+            emotion: "calma",
+            intensity: 3,
+            tones: {
+                group: [200, 396, 417],
+                molestias: { tone1: 0, tone2: 0, tone3: 0 },
+                favorite: "tone2",
+                least_favorite: "tone3"
+            },
+            genres: ["Lofi", "Ambient"],
+            artist_interest: [],
+            tempo_preference: "normal",
+            intent: 2
+        };
+    }
+
+    // 1. Mapear emoción al conjunto esperado por el backend (tristeza, calma, alegria/felicidad, ira/molestia)
+    let backendEmotion = 'calma';
+    const rawEmotion = (rawSurvey.emotion || 'calma').toLowerCase();
+    if (rawEmotion === 'zen') {
+        backendEmotion = 'tristeza';
+    } else if (rawEmotion === 'relajacion') {
+        backendEmotion = 'alegria';
+    } else if (['tristeza', 'calma', 'felicidad', 'alegria', 'ira', 'molestia'].includes(rawEmotion)) {
+        backendEmotion = rawEmotion;
+    }
+
+    // 2. Mapear intensidad (escala de 1 a 10 en base a comoSiente o variables de estrés/tristeza)
+    let intensity = 3;
+    if (rawSurvey.comoSiente) {
+        intensity = Math.round(rawSurvey.comoSiente * 2);
+    } else if (rawSurvey.tristeza || rawSurvey.estres || rawSurvey.ansiedad) {
+        intensity = Math.max(rawSurvey.tristeza || 1, rawSurvey.estres || 1, rawSurvey.ansiedad || 1);
+    }
+    intensity = Math.max(1, Math.min(10, intensity));
+
+    // 3. Mapear intención (1=tristeza, 2=calma, 3=felicidad, 4=molestia)
+    let intent = 2;
+    if (rawSurvey.comoQuiere) {
+        if (rawSurvey.comoQuiere <= 2) intent = 1;
+        else if (rawSurvey.comoQuiere === 3) intent = 2;
+        else intent = 3;
+    } else if (rawSurvey.emotion === 'zen') {
+        intent = 1;
+    } else if (rawSurvey.emotion === 'calma') {
+        intent = 2;
+    } else if (rawSurvey.emotion === 'relajacion') {
+        intent = 3;
+    }
+
+    // 4. Mapear tonos y frecuencia calibrada (Hawkins volume)
+    const calibratedFreq = rawSurvey.volume || 200;
+    const tones = {
+        group: [calibratedFreq, 396, 417],
+        molestias: {
+            tone1: Math.max(0, 5 - (rawSurvey.comoSiente || 3)),
+            tone2: 0,
+            tone3: Math.max(0, (rawSurvey.estres || 3) - 3)
+        },
+        favorite: "tone2",
+        least_favorite: "tone3"
+    };
+
+    // 5. Mapear géneros y artistas de interés desde localStorage si están presentes
+    let genres = [];
+    let artistInterest = [];
+    try {
+        const storedArtists = localStorage.getItem('selectedArtistsData');
+        if (storedArtists) {
+            const artistsList = JSON.parse(storedArtists);
+            artistInterest = artistsList.map(a => a.name).filter(Boolean);
+            artistsList.forEach(a => {
+                const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+                artistGenres.forEach(g => {
+                    if (g && !genres.includes(g)) genres.push(g);
+                });
+            });
+        }
+    } catch (e) {
+        console.error("Error reading genres/artists for survey mapping:", e);
+    }
+
+    if (genres.length === 0) {
+        genres = ["Lofi", "Ambient"];
+    }
+
+    // 6. Mapear tempo
+    let tempoPreference = "normal";
+    if (rawSurvey.emotion === 'zen' || rawSurvey.emotion === 'calma') {
+        tempoPreference = "lento";
+    } else if (rawSurvey.emotion === 'relajacion') {
+        tempoPreference = "normal";
+    }
+
+    return {
+        emotion: backendEmotion,
+        intensity,
+        tones,
+        genres,
+        artist_interest: artistInterest.length > 0 ? artistInterest : null,
+        tempo_preference: tempoPreference,
+        intent
+    };
+}
+
+/**
  * Genera una nueva recomendación de canciones en el backend.
  * @param {Object} rawSurvey - Datos de la encuesta emocional del usuario.
  * @returns {Promise<Object|null>} Datos de la generación de recomendación.
  */
 export async function generateRecommendation(rawSurvey = null) {
-    console.log("⚡ GENERANDO RECOMENDACIÓN EN EL BACKEND CON ENCUESTA...", rawSurvey);
+    console.log("⚡ GENERANDO RECOMENDACIÓN EN EL BACKEND...", rawSurvey);
     try {
-        const method = rawSurvey ? 'POST' : 'GET';
-        
-        // Enrich payload with selectedArtists and dislikedTracks from localStorage
-        const payload = { ...(rawSurvey || {}) };
-        try {
-            const stored = localStorage.getItem('selectedArtists');
-            if (stored) {
-                payload.selectedArtists = JSON.parse(stored);
-            }
-        } catch (e) {
-            console.error("❌ Error reading selectedArtists from localStorage:", e);
-        }
-        try {
-            const storedDisliked = localStorage.getItem('dislikedTracks');
-            if (storedDisliked) {
-                payload.dislikedTracks = JSON.parse(storedDisliked);
-            }
-        } catch (e) {
-            console.error("❌ Error reading dislikedTracks from localStorage:", e);
-        }
-        try {
-            const storedPlayed = localStorage.getItem('playedTracks');
-            if (storedPlayed) {
-                payload.playedTracks = JSON.parse(storedPlayed);
-            }
-        } catch (e) {
-            console.error("❌ Error reading playedTracks from localStorage:", e);
+        // Si hay una encuesta local, primero la registramos/guardamos en la base de datos
+        if (rawSurvey) {
+            console.log("💾 Registrando encuesta activa en el backend...");
+            const backendPayload = mapSurveyToBackendPayload(rawSurvey);
+            await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
+            console.log("✅ Encuesta registrada correctamente.");
         }
 
-        const response = await apiCall('neuro', '/api/recommend/generate', method, payload);
+        // Luego solicitamos al backend que genere las recomendaciones usando GET
+        const response = await apiCall('neuro', '/api/recommend/generate', 'GET');
         if (response && response.success) {
             return response.data;
         }
@@ -76,27 +168,28 @@ export async function getLatestRecommendation() {
 export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
     console.log("🏭 SOLICITANDO RECOMENDACIONES AL BACKEND...");
     try {
-        // 1. Generar la recomendación en base al usuario autenticado y la encuesta
+        // 1. Generar la recomendación en base al usuario autenticado
         await generateRecommendation(rawSurvey);
 
         // 2. Obtener los detalles de la última recomendación generada
         const result = await getLatestRecommendation();
 
-        if (result && Array.isArray(result.songs)) {
-            console.log(`✅ Playlist recomendada recibida con ${result.songs.length} tracks.`);
-            
+        // El backend almacena las canciones en el campo 'result'
+        const playlistSongs = result?.result || result?.songs;
+
+        if (result && Array.isArray(playlistSongs)) {
+            console.log(`✅ Playlist recomendada recibida con ${playlistSongs.length} tracks.`);
+
             // Mapeamos las canciones del formato de MongoDB al formato enriquecido del reproductor
-            return result.songs.map((song, idx) => ({
-                id: song.track_id || `rec-${result.recommendationId || 'latest'}-${idx}`,
-                title: song.name || 'Canción Desconocida',
+            return playlistSongs.map((song, idx) => ({
+                id: song.id || song.track_id || `rec-${result.recommendationId || 'latest'}-${idx}`,
+                title: song.title || song.name || 'Canción Desconocida',
                 artist: Array.isArray(song.artists) ? song.artists.join(', ') : (song.artist || 'Artista Desconocido'),
-                cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
-                // If already downloaded: use backend URL. Otherwise null — the on-demand processor
-                // in App.jsx will fetch and update it when this track becomes active.
-                preview_url: (song.file_url && song.file_url.includes("/processed/")) ? `http://${window.location.hostname}:5002${song.file_url}` : null,
+                cover: song.cover || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
+                preview_url: song.preview_url || song.file_url || null,
                 energy: song.energy || 3,
-                valence: song.vocal_presence ? Math.round(song.vocal_presence * 10) : 7,
-                bpm: song.bpm || 60,
+                valence: song.valence || 7,
+                bpm: song.bpm || song.tempo || 60,
                 genre: song.genre || rawSurvey?.emotion || 'Calma'
             }));
         }
@@ -114,31 +207,6 @@ export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
  * @returns {Promise<string|null>} URL del archivo de audio procesado, o null si no disponible.
  */
 export async function processTrackOnDemand(trackId, surveyData) {
-    console.log(`⚡ SOLICITANDO PROCESAMIENTO TERAPÉUTICO ON-DEMAND PARA EL TRACK ${trackId}...`);
-    try {
-        const payload = {
-            track_id: trackId,
-            estres: surveyData?.estres || 3,
-            ansiedad: surveyData?.ansiedad || 3,
-            tristeza: surveyData?.tristeza || 1,
-            volume: surveyData?.volume !== undefined ? surveyData.volume : 45
-        };
-        const response = await apiCall('neuro', '/api/recommend/process', 'POST', payload);
-        if (response && response.success) {
-            console.log(`✅ Track ${trackId} procesado con éxito: ${response.file_url}`);
-            return response.file_url;
-        }
-        throw new Error(response?.error || "Error en respuesta del servidor");
-    } catch (error) {
-        // 422 = El audio no está disponible en YouTube — esto no es un crash, solo skip
-        const is422 = error?.message?.includes('Error HTTP 422') || error?.message?.includes('422');
-        if (is422) {
-            console.warn(`⚠️ Track ${trackId} no disponible en YouTube (422). Saltando...`);
-            const notAvailableErr = new Error('TRACK_NOT_AVAILABLE');
-            notAvailableErr.notAvailable = true;
-            throw notAvailableErr;
-        }
-        console.error("❌ Error en processTrackOnDemand:", error);
-        return null;
-    }
+    console.log(`⚡ [Local Bypass] Track ${trackId} se reproduce directamente desde el servidor de música.`);
+    return null;
 }

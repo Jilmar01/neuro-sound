@@ -7,7 +7,7 @@ import Dashboard from './components/screens/Dashboard';
 import FinalSurvey from './components/screens/FinalSurvey';
 import SettingsScreen from './components/screens/SettingsScreen';
 import Sidebar from './components/common/Sidebar';
-import { generateHybridPlaylist, processTrackOnDemand } from './engine/NECv2.js';
+import { generateHybridPlaylist, processTrackOnDemand, mapSurveyToBackendPayload } from './engine/NECv2.js';
 import { apiCall } from './utils/fetch.js';
 import Slider from './components/common/Slider';
 
@@ -776,7 +776,8 @@ function App() {
       const token = localStorage.getItem('token');
       if (token) {
         console.log("💾 Registrando encuesta en el backend...");
-        await apiCall('neuro', '/api/user/survey', 'POST', data);
+        const backendPayload = mapSurveyToBackendPayload(data);
+        await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
         console.log("✅ Encuesta registrada exitosamente en base de datos.");
       }
     } catch (e) {
@@ -849,7 +850,8 @@ function App() {
       const token = localStorage.getItem('token');
       if (token) {
         console.log("💾 Actualizando encuesta inline en el backend...");
-        await apiCall('neuro', '/api/user/survey', 'POST', updatedData);
+        const backendPayload = mapSurveyToBackendPayload(updatedData);
+        await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
         console.log("✅ Encuesta inline guardada en base de datos.");
       }
     } catch (e) {
@@ -902,7 +904,8 @@ function App() {
       const token = localStorage.getItem('token');
       if (token) {
         console.log("💾 Guardando artistas seleccionados en el backend...");
-        await apiCall('neuro', '/api/user/artists', 'POST', { selectedArtists });
+        const backendPayload = mapSurveyToBackendPayload(surveyData);
+        await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
         console.log("✅ Artistas guardados exitosamente en la base de datos.");
         
         // Actualizar el objeto de usuario local
@@ -1076,9 +1079,23 @@ function App() {
             surveyData={surveyData}
             selectedArtistsData={selectedArtistsData}
             fromOnboarding={true}
-            onArtistsSaved={(ids, data) => {
+            onArtistsSaved={async (ids, data) => {
               setSelectedArtistsData(data);
               localStorage.setItem('selectedArtistsData', JSON.stringify(data));
+              try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  console.log("💾 Guardando artistas en el backend...");
+                  const backendPayload = mapSurveyToBackendPayload(surveyData);
+                  await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
+                  console.log("✅ Artistas guardados exitosamente en el backend.");
+                  const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                  cachedUserObj.selectedArtists = ids;
+                  localStorage.setItem('user', JSON.stringify(cachedUserObj));
+                }
+              } catch (e) {
+                console.error("❌ Error al guardar artistas en el backend:", e);
+              }
             }}
             onContinue={async () => {
               setScreen('dashboard');
@@ -1095,9 +1112,23 @@ function App() {
             fromOnboarding={false}
             onContinue={() => setScreen('dashboard')}
             onBack={() => setScreen('dashboard')}
-            onArtistsSaved={(ids, data) => {
+            onArtistsSaved={async (ids, data) => {
               setSelectedArtistsData(data);
               localStorage.setItem('selectedArtistsData', JSON.stringify(data));
+              try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  console.log("💾 Guardando artistas en el backend...");
+                  const backendPayload = mapSurveyToBackendPayload(surveyData);
+                  await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
+                  console.log("✅ Artistas guardados exitosamente en el backend.");
+                  const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                  cachedUserObj.selectedArtists = ids;
+                  localStorage.setItem('user', JSON.stringify(cachedUserObj));
+                }
+              } catch (e) {
+                console.error("❌ Error al guardar artistas en el backend:", e);
+              }
             }}
           />
         );
