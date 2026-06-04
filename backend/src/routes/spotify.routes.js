@@ -10,7 +10,7 @@ const router = express.Router();
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    redirectUri: "https://neuro-sound.onrender.com/api/spotify/callback" 
+    redirectUri: "http://localhost:3000/api/spotify/callback" 
 });
 
 // ------------------------------------
