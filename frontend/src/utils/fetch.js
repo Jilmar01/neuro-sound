@@ -3,7 +3,7 @@
 // ---------------------------------------------------------
 const SERVERS = {
     'neuro': {
-        baseUrl: 'https://neuro-sound.onrender.com', // Tu Backend
+        baseUrl: 'https://neuro-sound.onrender.com', // Backend en producción (Render)
         tokenKey: 'token'
     },
     'spotify': {
@@ -18,7 +18,7 @@ let isRefreshing = false;
 // ---------------------------------------------------------
 // 2. FUNCIÓN DE REFRESCO (La Magia)
 // ---------------------------------------------------------
-/*async function refreshSpotifySession() {
+async function refreshSpotifySession() {
     const refreshToken = localStorage.getItem('spotifyRefreshToken');
     
     if (!refreshToken) {
@@ -29,7 +29,7 @@ let isRefreshing = false;
 
     try {
         // Llamamos a TU backend, ruta: /api/spotify/refresh
-        const response = await fetch('https://neuro-sound.onrender.com/api/spotify/refresh', {
+        const response = await fetch(`${SERVERS.neuro.baseUrl}/api/spotify/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: refreshToken })
@@ -58,7 +58,7 @@ let isRefreshing = false;
         window.location.href = 'index.html'; // O tu pantalla de login
         throw error;
     }
-}*/
+}
 
 // ---------------------------------------------------------
 // 3. LA FUNCIÓN FETCH MAESTRA

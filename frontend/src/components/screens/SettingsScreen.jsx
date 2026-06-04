@@ -1,86 +1,186 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Button from '../common/Button';
+import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
 
-const SettingsScreen = ({ 
-  onNavigate, 
-  onLogout, 
-  targetEmotion = 'calma', 
-  onEmotionChange, 
-  themeMode = 'auto', 
-  onThemeModeChange 
+/* ─── Avatar generativo ─── */
+const DynamicAvatar = ({ name, size = 40 }) => {
+  const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  const colors = [
+    'linear-gradient(135deg,#FF6B6B,#FF8E53)', 'linear-gradient(135deg,#4E54C8,#8F94FB)',
+    'linear-gradient(135deg,#11998E,#38EF7D)', 'linear-gradient(135deg,#FC466B,#3F5EFB)',
+    'linear-gradient(135deg,#f857a6,#ff5858)', 'linear-gradient(135deg,#1D976C,#93F9B9)',
+    'linear-gradient(135deg,#8A2387,#E94057,#F27121)', 'linear-gradient(135deg,#00c6ff,#0072ff)',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return (
+    <div className="w-100 h-100 d-flex align-items-center justify-content-center text-white fw-bold"
+      style={{ background: colors[Math.abs(hash) % colors.length], fontSize: size * 0.3, borderRadius: '50%' }}>
+      {initials}
+    </div>
+  );
+};
+
+/* ─── Paleta de colores por índice de género ─── */
+const GENRE_PALETTE = [
+  { bar: 'linear-gradient(90deg,#4E54C8,#8F94FB)', dot: '#4E54C8' },
+  { bar: 'linear-gradient(90deg,#FC466B,#f857a6)', dot: '#FC466B' },
+  { bar: 'linear-gradient(90deg,#11998E,#38EF7D)', dot: '#11998E' },
+  { bar: 'linear-gradient(90deg,#fd7e14,#ffc107)', dot: '#fd7e14' },
+  { bar: 'linear-gradient(90deg,#8A2387,#E94057)', dot: '#8A2387' },
+  { bar: 'linear-gradient(90deg,#00c6ff,#0072ff)', dot: '#0072ff' },
+];
+
+/* ─── Info del estado de Hawkins ─── */
+const getHawkinsInfo = (freq) => {
+  if (freq < 100) return { name: 'Apatía/Miedo',  emoji: '😶', color: '#adb5bd' };
+  if (freq < 200) return { name: 'Ira/Orgullo',   emoji: '😠', color: '#ff6b6b' };
+  if (freq < 310) return { name: 'Coraje',         emoji: '💪', color: '#51cf66' };
+  if (freq < 500) return { name: 'Voluntad/Paz',  emoji: '🧘', color: '#0d6efd' };
+  if (freq < 600) return { name: 'Amor/Alegría',  emoji: '💙', color: '#fc5c7d' };
+  return { name: 'Paz/Iluminación', emoji: '✨', color: '#a9e34b' };
+};
+
+const EMOTION_LABELS = ['Muy triste', 'Algo triste', 'Neutral', 'Algo feliz', 'Muy feliz'];
+
+/* ═══════════════════════════════════════════════════════
+   Componente principal: Ajustes
+══════════════════════════════════════════════════════ */
+const SettingsScreen = ({
+  onNavigate,
+  onLogout,
+  targetEmotion = 'calma',
+  onEmotionChange,
+  themeMode = 'auto',
+  onThemeModeChange,
+  surveyData,
+  selectedArtistsData = [],
 }) => {
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading]         = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('spotifyToken');
+        if (token) {
+          const response = await fetch('https://api.spotify.com/v1/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUserProfile({
+              name:  data.display_name || 'Usuario de Spotify',
+              email: data.email || '',
+              photo: data.images?.[0]?.url || null,
+              type:  'Spotify Premium'
+            });
+            setLoading(false);
+            return;
+          }
+        }
+
+        const cached = localStorage.getItem('user');
+        if (cached) {
+          const u = JSON.parse(cached);
+          setUserProfile({
+            name:  `${u.name || ''} ${u.last_name || ''}`.trim() || 'Usuario',
+            email: u.email || '',
+            photo: u.photo || null,
+            type:  'Cuenta Local'
+          });
+          setLoading(false);
+          return;
+        }
+
+        setUserProfile({ name: 'Invitado', email: 'Sesión temporal sin sincronizar', photo: null, type: 'Invitado' });
+      } catch (err) {
+        console.error('Error al cargar perfil:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const handleSpotifyConnect = () => {
-    // Redirect to Spotify OAuth or simulate connection
-    const clientId = 'f5e7f1f0a25642a8a1d7f57561f7db91'; // Replace or read from config
+    const clientId   = 'f5e7f1f0a25642a8a1d7f57561f7db91';
     const redirectUri = window.location.origin + '/';
-    const scopes = [
-      'user-read-private',
-      'user-read-email',
-      'user-modify-playback-state',
-      'user-read-playback-state'
-    ].join(' ');
-
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
-    window.location.href = authUrl;
+    const scopes = ['user-read-private','user-read-email','user-modify-playback-state','user-read-playback-state'].join(' ');
+    window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
   };
-
-
 
   return (
     <div className="w-100 py-3 d-flex flex-column align-items-center justify-content-center">
-      {/* Main Content Card */}
-      <div className="relative z-10 w-full max-w-[600px] flex flex-col items-center p-4 animate-fade-in-up">
-        <header className="text-center mb-6">
-          <h2 className="font-display-lg-mobile text-display-lg-mobile text-on-surface font-semibold mb-2">
-            Ajustes
-          </h2>
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Configura tu cuenta y conexiones de música terapéutica.
-          </p>
+      <div className="position-relative z-3 w-100 d-flex flex-column align-items-center p-2 animate-fade-in-up" style={{ maxWidth: '750px' }}>
+        <header className="text-center mb-4">
+          <h2 className="h4 text-dark fw-bold mb-2">Ajustes</h2>
+          <p className="text-muted small">Configura tu cuenta y conexiones de música terapéutica.</p>
         </header>
 
-        <div className="w-full bg-white bg-opacity-75 backdrop-blur-sm rounded-4 p-5 border border-light-subtle shadow-sm d-flex flex-column gap-4">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold font-label-sm text-outline uppercase tracking-wider">
+        <div className="w-100 d-flex flex-column gap-3">
+
+          {/* ══ 1. PERFIL DE USUARIO ══ */}
+          <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
+            {/* Identidad */}
+            <div className="d-flex align-items-center gap-3 mb-4">
+              <div
+                className="rounded-circle bg-white d-flex align-items-center justify-content-center border border-light-subtle overflow-hidden shadow-sm flex-shrink-0"
+                style={{
+                  width: '56px', height: '56px',
+                  backgroundImage: userProfile?.photo ? `url(${userProfile.photo})` : 'none',
+                  backgroundSize: 'cover', backgroundPosition: 'center'
+                }}
+              >
+                {!userProfile?.photo && (
+                  <span className="material-symbols-outlined notranslate text-secondary opacity-70 fs-3" translate="no">person</span>
+                )}
+              </div>
+              <div>
+                <span className="badge bg-primary text-white mb-1" style={{ fontSize: '10px' }}>{userProfile?.type || 'Sesión'}</span>
+                <h4 className="h6 text-dark fw-bold mb-0">{userProfile?.name || 'Cargando...'}</h4>
+                <p className="text-muted mb-0" style={{ fontSize: '11px' }}>{userProfile?.email}</p>
+              </div>
+            </div>
+
+
+          </div>
+
+          {/* ══ 2. CONEXIÓN SPOTIFY ══ */}
+          <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
+            <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               Conexión de Música
             </h3>
-            <p className="text-xs text-on-surface-variant mb-2">
-              Conecta tu cuenta de Spotify Premium para sintonizar pistas directo desde la base de datos de Spotify.
+            <p className="text-muted mb-3" style={{ fontSize: '12px' }}>
+              Conecta tu cuenta de Spotify Premium para sintonizar pistas directo desde su base de datos.
             </p>
-            <Button
-              variant="secondary"
-              icon="swap_horizontal_circle"
-              onClick={handleSpotifyConnect}
-              className="w-full py-4"
-            >
-              Conectar a Spotify
+            <Button onClick={handleSpotifyConnect} className="w-100 py-3"
+              style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}>
+              <span className="d-inline-flex align-items-center gap-2 justify-content-center">
+                <img src={spotifyLogo} alt="Spotify Logo" style={{ width: '20px', height: '20px' }} />
+                <span>Conectar a Spotify</span>
+              </span>
             </Button>
           </div>
 
-          <hr className="border-secondary border-opacity-25" />
-
-          {/* Theme Selector Widget */}
-          <div className="d-flex flex-column gap-2">
-            <h3 className="text-sm font-semibold text-uppercase text-secondary tracking-wider" style={{ fontSize: '12px' }}>
+          {/* ══ 3. FOCO VISUAL ══ */}
+          <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
+            <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               Foco Visual y Tema
             </h3>
-            <p className="text-xs text-muted mb-2">
+            <p className="text-muted mb-3" style={{ fontSize: '12px' }}>
               Sincroniza los colores del fondo automáticamente con la canción activa o fija una emoción.
             </p>
-            
+
             <div className="btn-group w-100 mb-3" role="group">
-              <button
-                type="button"
+              <button type="button"
                 className={`btn btn-sm py-2 ${themeMode === 'auto' ? 'btn-primary text-white shadow-sm' : 'btn-outline-primary'}`}
-                onClick={() => onThemeModeChange('auto')}
-              >
+                onClick={() => onThemeModeChange('auto')}>
                 Automático (Música)
               </button>
-              <button
-                type="button"
+              <button type="button"
                 className={`btn btn-sm py-2 ${themeMode === 'manual' ? 'btn-primary text-white shadow-sm' : 'btn-outline-primary'}`}
-                onClick={() => onThemeModeChange('manual')}
-              >
+                onClick={() => onThemeModeChange('manual')}>
                 Manual (Fijar Foco)
               </button>
             </div>
@@ -88,20 +188,17 @@ const SettingsScreen = ({
             {themeMode === 'manual' && (
               <div className="d-flex justify-content-between gap-2">
                 {[
-                  { id: 'calma', name: 'Calma', color: '#0d6efd' },
-                  { id: 'relajacion', name: 'Relajación', color: '#198754' },
-                  { id: 'foco', name: 'Foco', color: '#fd7e14' },
-                  { id: 'zen', name: 'Zen', color: '#6f42c1' }
-                ].map((emo) => {
+                  { id: 'calma',     name: 'Calma',     color: '#0d6efd' },
+                  { id: 'relajacion',name: 'Relajación', color: '#198754' },
+                  { id: 'foco',      name: 'Foco',      color: '#fd7e14' },
+                  { id: 'zen',       name: 'Zen',       color: '#6f42c1' },
+                ].map(emo => {
                   const isSel = targetEmotion === emo.id;
                   return (
-                    <button
-                      key={emo.id}
-                      type="button"
+                    <button key={emo.id} type="button"
                       onClick={() => onEmotionChange(emo.id)}
-                      className={`btn btn-sm flex-grow-1 text-white border-0 py-2.5 ${isSel ? 'shadow font-bold scale-105' : 'opacity-75'}`}
-                      style={{ backgroundColor: emo.color, fontSize: '11px', borderRadius: '8px' }}
-                    >
+                      className={`btn btn-sm flex-grow-1 text-white border-0 py-2 ${isSel ? 'shadow fw-bold' : 'opacity-75'}`}
+                      style={{ backgroundColor: emo.color, fontSize: '11px', borderRadius: '8px' }}>
                       {emo.name}
                     </button>
                   );
@@ -110,24 +207,18 @@ const SettingsScreen = ({
             )}
           </div>
 
-          <hr className="border-secondary border-opacity-25" />
-
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-uppercase text-secondary tracking-wider" style={{ fontSize: '12px' }}>
+          {/* ══ 4. SESIÓN ══ */}
+          <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
+            <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               Sesión
             </h3>
-            <p className="text-xs text-muted mb-2">
-              Cierra tu sesión actual para salir del sistema.
-            </p>
-            <Button
-              variant="outline"
-              icon="logout"
-              onClick={onLogout}
-              className="w-full py-3.5 text-danger border-danger border-opacity-25 hover:bg-danger-subtle hover:text-danger"
-            >
+            <p className="text-muted mb-3" style={{ fontSize: '12px' }}>Cierra tu sesión actual para salir del sistema.</p>
+            <Button variant="outline" icon="logout" onClick={onLogout}
+              className="w-100 py-3 text-danger border-danger border-opacity-25">
               Cerrar Sesión
             </Button>
           </div>
+
         </div>
       </div>
     </div>
