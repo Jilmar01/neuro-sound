@@ -29,7 +29,7 @@ const Onboarding = ({ onLogin }) => {
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
         }
-        onLogin('traditional');
+        onLogin('traditional', response.data.user);
       } else {
         setError(response?.message || 'Error al iniciar sesión.');
       }
@@ -69,7 +69,7 @@ const Onboarding = ({ onLogin }) => {
           if (loginResponse.data.user) {
             localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
           }
-          onLogin('traditional');
+          onLogin('traditional', loginResponse.data.user);
         } else {
           // If auto-login fails, redirect to login mode
           setMode('login');
@@ -104,7 +104,7 @@ const Onboarding = ({ onLogin }) => {
         {/* Logo Section */}
         <div className="mb-4 d-flex flex-column align-items-center animate-fade-in-up">
           <div className="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 shadow-sm border border-light-subtle" style={{ width: '100px', height: '100px' }}>
-            <span className="material-symbols-outlined text-primary opacity-80 text-[54px]" style={{ fontVariationSettings: "'FILL' 0" }}>
+            <span className="material-symbols-outlined notranslate text-primary opacity-80 text-[54px]" translate="no" style={{ fontVariationSettings: "'FILL' 0" }}>
               headphones
             </span>
           </div>
@@ -143,15 +143,6 @@ const Onboarding = ({ onLogin }) => {
             >
               Iniciar Sesión
             </Button>
-
-            {/* Guest Option */}
-            <Button
-              variant="ghost"
-              onClick={() => onLogin('guest')}
-              className="w-100 py-2 opacity-75"
-            >
-              Entrar como Invitado
-            </Button>
           </div>
         )}
 
@@ -164,7 +155,7 @@ const Onboarding = ({ onLogin }) => {
                 className="btn btn-link p-0 text-secondary me-2 d-flex align-items-center"
                 onClick={() => setMode('select')}
               >
-                <span className="material-symbols-outlined">arrow_back</span>
+                <span className="material-symbols-outlined notranslate" translate="no">arrow_back</span>
               </button>
               <h2 className="h5 text-primary fw-bold mb-0">Iniciar Sesión</h2>
             </div>
@@ -181,7 +172,7 @@ const Onboarding = ({ onLogin }) => {
                 <label className="form-label small text-secondary fw-semibold mb-1">Correo Electrónico</label>
                 <div className="input-group">
                   <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                    <span className="material-symbols-outlined text-[20px]">mail</span>
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">mail</span>
                   </span>
                   <input
                     type="email"
@@ -199,7 +190,7 @@ const Onboarding = ({ onLogin }) => {
                 <label className="form-label small text-secondary fw-semibold mb-1">Contraseña</label>
                 <div className="input-group">
                   <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                    <span className="material-symbols-outlined text-[20px]">lock</span>
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">lock</span>
                   </span>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -214,7 +205,7 @@ const Onboarding = ({ onLogin }) => {
                     className="btn bg-white bg-opacity-20 border border-start-0 border-light-subtle rounded-end-3 text-secondary d-flex align-items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <span className="material-symbols-outlined text-[20px]">
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">
                       {showPassword ? "visibility_off" : "visibility"}
                     </span>
                   </button>
@@ -252,7 +243,7 @@ const Onboarding = ({ onLogin }) => {
                 className="btn btn-link p-0 text-secondary me-2 d-flex align-items-center"
                 onClick={() => setMode('login')}
               >
-                <span className="material-symbols-outlined">arrow_back</span>
+                <span className="material-symbols-outlined notranslate" translate="no">arrow_back</span>
               </button>
               <h2 className="h5 text-primary fw-bold mb-0">Crear Cuenta</h2>
             </div>
@@ -270,7 +261,7 @@ const Onboarding = ({ onLogin }) => {
                   <label className="form-label small text-secondary fw-semibold mb-1">Nombre</label>
                   <div className="input-group">
                     <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                      <span className="material-symbols-outlined text-[20px]">person</span>
+                      <span className="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>
                     </span>
                     <input
                       type="text"
@@ -286,7 +277,7 @@ const Onboarding = ({ onLogin }) => {
                   <label className="form-label small text-secondary fw-semibold mb-1">Apellido</label>
                   <div className="input-group">
                     <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                      <span className="material-symbols-outlined text-[20px]">person</span>
+                      <span className="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>
                     </span>
                     <input
                       type="text"
@@ -305,7 +296,7 @@ const Onboarding = ({ onLogin }) => {
                 <label className="form-label small text-secondary fw-semibold mb-1">Correo Electrónico</label>
                 <div className="input-group">
                   <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                    <span className="material-symbols-outlined text-[20px]">mail</span>
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">mail</span>
                   </span>
                   <input
                     type="email"
@@ -323,7 +314,7 @@ const Onboarding = ({ onLogin }) => {
                 <label className="form-label small text-secondary fw-semibold mb-1">Contraseña</label>
                 <div className="input-group">
                   <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
-                    <span className="material-symbols-outlined text-[20px]">lock</span>
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">lock</span>
                   </span>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -338,7 +329,7 @@ const Onboarding = ({ onLogin }) => {
                     className="btn bg-white bg-opacity-20 border border-start-0 border-light-subtle rounded-end-3 text-secondary d-flex align-items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <span className="material-symbols-outlined text-[20px]">
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">
                       {showPassword ? "visibility_off" : "visibility"}
                     </span>
                   </button>

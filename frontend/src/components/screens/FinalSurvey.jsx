@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import Button from '../common/Button';
 
+/**
+ * Encuesta final de sesion.
+ * @param {Object} props - Propiedades del componente.
+ * @param {number} [props.initialStress] - Nivel inicial de estres.
+ * @param {(action: "finish"|"new") => void} props.onAction - Accion seleccionada.
+ * @param {(screen: string) => void} props.onNavigate - Navegacion (no usada aqui).
+ * @returns {JSX.Element}
+ */
 const FinalSurvey = ({
   initialStress = 8,
   onAction,
@@ -13,7 +21,7 @@ const FinalSurvey = ({
   return (
     <div className="w-100 py-3 d-flex flex-column align-items-center justify-content-center">
       <main className="position-relative z-3 w-100 d-flex flex-column gap-3 px-3 animate-fade-in-up" style={{ maxWidth: '550px' }}>
-        {/* Header */}
+        {/* Encabezado */}
         <header className="text-center mb-1">
           <h1 className="h5 text-dark fw-bold mb-1">
             Evaluación de Sesión
@@ -28,7 +36,7 @@ const FinalSurvey = ({
           <h2 className="text-dark fw-bold mb-1" style={{ fontSize: '14.5px', lineHeight: '1.4' }}>
             1. ¿Qué tan bien entendió el sistema tu estado emocional?
           </h2>
-          
+
           <div className="w-100 d-flex justify-content-between my-2">
             {[
               { val: 1, label: 'NADA' },
@@ -43,14 +51,13 @@ const FinalSurvey = ({
                   <button
                     type="button"
                     onClick={() => setQ1(item.val)}
-                    className={`rounded-circle border transition-all duration-300 d-flex align-items-center justify-content-center focus:outline-none fw-bold ${
-                      isActive 
-                        ? 'bg-primary text-white border-0 shadow' 
+                    className={`rounded-circle border transition-all duration-300 d-flex align-items-center justify-content-center focus:outline-none fw-bold ${isActive
+                        ? 'bg-primary text-white border-0 shadow'
                         : 'bg-white text-secondary border-secondary border-opacity-25 hover:bg-light'
-                    }`}
-                    style={{ 
-                      width: '42px', 
-                      height: '42px', 
+                      }`}
+                    style={{
+                      width: '42px',
+                      height: '42px',
                       fontSize: '14px',
                       transform: isActive ? 'scale(1.12)' : 'scale(1)'
                     }}
@@ -71,7 +78,7 @@ const FinalSurvey = ({
           <h2 className="text-dark fw-bold mb-1" style={{ fontSize: '14.5px', lineHeight: '1.4' }}>
             2. ¿Qué tanto reflejó la música tu emoción?
           </h2>
-          
+
           <div className="w-100 d-flex justify-content-between my-2">
             {[
               { val: 1, label: 'NADA' },
@@ -86,14 +93,13 @@ const FinalSurvey = ({
                   <button
                     type="button"
                     onClick={() => setQ2(item.val)}
-                    className={`rounded-circle border transition-all duration-300 d-flex align-items-center justify-content-center focus:outline-none fw-bold ${
-                      isActive 
-                        ? 'bg-primary text-white border-0 shadow' 
+                    className={`rounded-circle border transition-all duration-300 d-flex align-items-center justify-content-center focus:outline-none fw-bold ${isActive
+                        ? 'bg-primary text-white border-0 shadow'
                         : 'bg-white text-secondary border-secondary border-opacity-25 hover:bg-light'
-                    }`}
-                    style={{ 
-                      width: '42px', 
-                      height: '42px', 
+                      }`}
+                    style={{
+                      width: '42px',
+                      height: '42px',
                       fontSize: '14px',
                       transform: isActive ? 'scale(1.12)' : 'scale(1)'
                     }}
@@ -114,7 +120,7 @@ const FinalSurvey = ({
           <h2 className="text-dark fw-bold mb-1" style={{ fontSize: '14.5px', lineHeight: '1.4' }}>
             3. ¿Pudiste mantener o cambiar tu estado emocional como deseabas?
           </h2>
-          
+
           <div className="d-flex flex-column gap-2">
             {[
               { id: 'no', label: 'No logré mi objetivo' },
@@ -126,14 +132,13 @@ const FinalSurvey = ({
                   key={option.id}
                   type="button"
                   onClick={() => setQ3(option.id)}
-                  className={`w-100 d-flex align-items-center gap-3 p-3 rounded-3 border text-start transition-all duration-200 ${
-                    isSelected
+                  className={`w-100 d-flex align-items-center gap-3 p-3 rounded-3 border text-start transition-all duration-200 ${isSelected
                       ? 'bg-primary-subtle border-primary text-primary-emphasis'
                       : 'bg-white border-light-subtle text-secondary hover:bg-light'
-                  }`}
+                    }`}
                   style={{ fontSize: '13.5px', fontWeight: '500' }}
                 >
-                  <span className={`material-symbols-outlined fs-5 ${isSelected ? 'text-primary' : 'text-muted'}`}>
+                  <span className={`material-symbols-outlined notranslate fs-5 ${isSelected ? 'text-primary' : 'text-muted'}`} translate="no">
                     {isSelected ? 'radio_button_checked' : 'radio_button_unchecked'}
                   </span>
                   <span>{option.label}</span>
@@ -143,7 +148,7 @@ const FinalSurvey = ({
           </div>
         </section>
 
-        {/* Action buttons */}
+        {/* Botones de accion */}
         <div className="d-flex flex-column gap-2 w-100 mt-2">
           <Button
             variant="secondary"

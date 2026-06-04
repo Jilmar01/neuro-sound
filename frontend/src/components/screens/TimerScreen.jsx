@@ -170,7 +170,7 @@ const TimerScreen = ({ onTimerEnd, onNavigate }) => {
 
         {isRunning && (
           <p className="mt-3 text-sm text-primary opacity-80 d-flex align-items-center gap-2">
-            <span className="material-symbols-outlined text-base animate-spin">sync</span>
+            <span className="material-symbols-outlined notranslate text-base animate-spin" translate="no">sync</span>
             Reproducción automatizada activa
           </p>
         )}

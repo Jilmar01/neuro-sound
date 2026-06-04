@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
-const LoadingOverlay = ({ 
-  isLoading, 
-  message = "Afinando las frecuencias para ti..." 
+/**
+ * Overlay de carga con animacion y mensaje.
+ * @param {Object} props - Propiedades del componente.
+ * @param {boolean} props.isLoading - Controla si se muestra.
+ * @param {string} [props.message] - Texto a mostrar.
+ * @returns {JSX.Element|null}
+ */
+const LoadingOverlay = ({
+  isLoading,
+  message = "Afinando las frecuencias para ti..."
 }) => {
   const [shouldRender, setShouldRender] = useState(isLoading);
   const [opacity, setOpacity] = useState(0);
@@ -10,13 +17,13 @@ const LoadingOverlay = ({
   useEffect(() => {
     if (isLoading) {
       setShouldRender(true);
-      // Wait for next tick to animate opacity
+      // Espera al siguiente tick para animar la opacidad.
       setTimeout(() => setOpacity(100), 50);
     } else {
       setOpacity(0);
       const timer = setTimeout(() => {
         setShouldRender(false);
-      }, 1000); // match transition duration
+      }, 1000); // coincide con la duracion de la transicion
       return () => clearTimeout(timer);
     }
   }, [isLoading]);
@@ -24,7 +31,7 @@ const LoadingOverlay = ({
   if (!shouldRender) return null;
 
   return (
-    <div 
+    <div
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-surface/95 backdrop-blur-2xl transition-opacity duration-1000`}
       style={{ opacity: opacity / 100 }}
     >
