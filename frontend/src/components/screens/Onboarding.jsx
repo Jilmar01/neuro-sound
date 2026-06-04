@@ -85,6 +85,51 @@ const Onboarding = ({ onLogin }) => {
     }
   };
 
+  const handleSpotifyLogin = async () => {
+    const clientId   = 'f5e7f1f0a25642a8a1d7f57561f7db91';
+    const redirectUri = window.location.origin + '/';
+    const scopes = [
+      'user-read-private',
+      'user-read-email',
+      'user-modify-playback-state',
+      'user-read-playback-state',
+      'streaming'
+    ].join(' ');
+
+    // --- PKCE: generar code_verifier y code_challenge ---
+    const generateCodeVerifier = (length = 128) => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      const arr = new Uint8Array(length);
+      crypto.getRandomValues(arr);
+      return Array.from(arr).map(v => chars[v % chars.length]).join('');
+    };
+
+    const generateCodeChallenge = async (verifier) => {
+      const enc = new TextEncoder().encode(verifier);
+      const hash = await crypto.subtle.digest('SHA-256', enc);
+      return btoa(String.fromCharCode(...new Uint8Array(hash)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    };
+
+    const verifier  = generateCodeVerifier();
+    const challenge = await generateCodeChallenge(verifier);
+
+    // Guardamos el verifier para usarlo en el callback
+    localStorage.setItem('spotifyCodeVerifier', verifier);
+
+    const params = new URLSearchParams({
+      client_id:             clientId,
+      response_type:         'code',
+      redirect_uri:          redirectUri,
+      scope:                 scopes,
+      code_challenge_method: 'S256',
+      code_challenge:        challenge,
+      show_dialog:           'false'
+    });
+
+    window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+  };
+
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -121,7 +166,7 @@ const Onboarding = ({ onLogin }) => {
           <div className="w-100 d-flex flex-column gap-3 animate-fade-in-up" style={{ maxWidth: '360px' }}>
             {/* Spotify Option */}
             <Button
-              onClick={() => onLogin('spotify')}
+              onClick={handleSpotifyLogin}
               className="w-100 py-3"
               style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}
             >

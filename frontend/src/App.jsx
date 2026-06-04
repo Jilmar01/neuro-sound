@@ -386,19 +386,115 @@ function App() {
     };
   }, [isTimerRunning]);
 
-  // Verifica el callback OAuth de Spotify al montar
+  // Verifica el callback OAuth de Spotify (PKCE) al montar
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash) {
-      const params = new URLSearchParams(hash.substring(1));
-      const token = params.get('access_token');
-      if (token) {
-        localStorage.setItem('spotifyToken', token);
-        window.history.replaceState(null, null, ' ');
+    const searchParams = new URLSearchParams(window.location.search);
+    const code  = searchParams.get('code');
+    const error = searchParams.get('error');
+
+    if (error) {
+      console.error('❌ Spotify rechazó la autenticación:', error);
+      window.history.replaceState(null, null, '/');
+      return;
+    }
+
+    if (!code) return; // No hay código → primera carga normal
+
+    const verifier = localStorage.getItem('spotifyCodeVerifier');
+    if (!verifier) {
+      console.error('❌ No se encontró code_verifier en localStorage');
+      window.history.replaceState(null, null, '/');
+      return;
+    }
+
+    // Limpiar la URL para que no se vuelva a procesar
+    window.history.replaceState(null, null, '/');
+    localStorage.removeItem('spotifyCodeVerifier');
+
+    const exchangeAndSync = async () => {
+      try {
+        console.log('🔄 Intercambiando código PKCE por access_token de Spotify...');
+
+        // 1. Intercambio de código → token (PKCE, sin client_secret)
+        const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id:     'f5e7f1f0a25642a8a1d7f57561f7db91',
+            grant_type:    'authorization_code',
+            code,
+            redirect_uri:  window.location.origin + '/',
+            code_verifier: verifier
+          })
+        });
+
+        if (!tokenRes.ok) {
+          const errBody = await tokenRes.json().catch(() => ({}));
+          throw new Error(errBody.error_description || `Token exchange failed: ${tokenRes.status}`);
+        }
+
+        const tokenData = await tokenRes.json();
+        const accessToken  = tokenData.access_token;
+        const refreshToken = tokenData.refresh_token;
+
+        localStorage.setItem('spotifyToken', accessToken);
+        if (refreshToken) localStorage.setItem('spotifyRefreshToken', refreshToken);
+        console.log('✅ Token de Spotify obtenido y guardado.');
+
+        // 2. Sincronizar con el backend local
+        const localToken = localStorage.getItem('token');
+        if (localToken) {
+          // Ya hay sesión local → solo vinculamos Spotify
+          setUserType('spotify');
+          console.log('✅ Spotify vinculado a la sesión local activa.');
+          return;
+        }
+
+        // No hay sesión local: obtener perfil de Spotify y crear cuenta
+        const meRes = await fetch('https://api.spotify.com/v1/me', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        if (meRes.ok) {
+          const spotifyUser = await meRes.json();
+          const spotifyEmail = spotifyUser.email || `spotify_${spotifyUser.id}@neurosound.com`;
+          const names    = (spotifyUser.display_name || 'Spotify User').split(' ');
+          const name     = names[0] || 'Spotify';
+          const lastName = names.slice(1).join(' ') || 'User';
+          const password = `spotify_secret_2026_${spotifyUser.id}`;
+
+          // Registrar usuario (si ya existe, ignoramos el error)
+          try {
+            await apiCall('neuro', '/api/user/register', 'POST', {
+              name, last_name: lastName, email: spotifyEmail, password
+            });
+            console.log('✅ Usuario de Spotify registrado en base de datos local.');
+          } catch (regErr) {
+            console.log('ℹ️ Usuario ya existente o error leve de registro:', regErr.message);
+          }
+
+          // Iniciar sesión local para obtener JWT
+          const loginRes = await apiCall('neuro', '/api/auth/login', 'POST', {
+            email: spotifyEmail, password
+          });
+
+          if (loginRes?.success) {
+            localStorage.setItem('token', loginRes.data.token);
+            if (loginRes.data.user) {
+              localStorage.setItem('user', JSON.stringify(loginRes.data.user));
+            }
+            console.log('✅ Sesión local iniciada para el usuario de Spotify.');
+          }
+        }
+      } catch (e) {
+        console.error('❌ Error en el flujo PKCE de Spotify:', e);
+      } finally {
         setUserType('spotify');
         setScreen('initial-evaluation');
       }
-    }
+    };
+
+    exchangeAndSync();
   }, []);
 
   // Inicializa el objeto Audio persistente
