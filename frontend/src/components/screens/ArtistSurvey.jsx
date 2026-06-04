@@ -118,8 +118,10 @@ const ArtistSurvey = ({ onConfirm }) => {
         if (searchQuery) params.set('search', searchQuery);
         const res = await apiCall('neuro', `/api/artists?${params}`, 'GET');
         if (res?.success && active) {
-          setBaseArtists(dedupe(res.data));
-          setTotalPages(res.pagination?.totalPages || 1);
+          const artistsList = res.data?.artists || (Array.isArray(res.data) ? res.data : []);
+          const paginationInfo = res.data?.pagination || res.pagination;
+          setBaseArtists(dedupe(artistsList));
+          setTotalPages(paginationInfo?.totalPages || 1);
           // Limpiar expansiones al cambiar pagina/busqueda
           setInjected({});
           setOpenId(null);

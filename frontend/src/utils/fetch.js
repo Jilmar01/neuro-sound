@@ -3,7 +3,7 @@
 // ---------------------------------------------------------
 const SERVERS = {
     'neuro': {
-        baseUrl: `http://${window.location.hostname}:5000`, // Tu Backend dinámico
+        baseUrl: `http://${window.location.hostname}:5001`, // Tu Backend dinámico
         tokenKey: 'token'
     },
     'spotify': {

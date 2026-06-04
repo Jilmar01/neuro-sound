@@ -120,6 +120,32 @@ export function mapSurveyToBackendPayload(rawSurvey) {
 export async function generateRecommendation(rawSurvey = null) {
     console.log("⚡ GENERANDO RECOMENDACIÓN EN EL BACKEND...", rawSurvey);
     try {
+        const payload = { ...(rawSurvey || {}) };
+        try {
+            const stored = localStorage.getItem('selectedArtists');
+            if (stored) {
+                payload.selectedArtists = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.error("❌ Error reading selectedArtists from localStorage:", e);
+        }
+        try {
+            const storedDisliked = localStorage.getItem('dislikedTracks');
+            if (storedDisliked) {
+                payload.dislikedTracks = JSON.parse(storedDisliked);
+            }
+        } catch (e) {
+            console.error("❌ Error reading dislikedTracks from localStorage:", e);
+        }
+        try {
+            const storedPlayed = localStorage.getItem('playedTracks');
+            if (storedPlayed) {
+                payload.playedTracks = JSON.parse(storedPlayed);
+            }
+        } catch (e) {
+            console.error("❌ Error reading playedTracks from localStorage:", e);
+        }
+
         // Si hay una encuesta local, primero la registramos/guardamos en la base de datos
         if (rawSurvey) {
             console.log("💾 Registrando encuesta activa en el backend...");
