@@ -47,7 +47,7 @@ router.get("/callback", async (req, res) => {
         // 👇 CAMBIO IMPORTANTE 👇
         // Enviamos AMBOS tokens al frontend.
         // El frontend debe guardar el refreshToken en localStorage para usarlo en 1 hora.
-        const frontendUrl = `http://127.0.0.1:5173/home?access_token=${accessToken}&refresh_token=${refreshToken}`;
+        const frontendUrl = `http://127.0.0.1:5173/?access_token=${accessToken}&refresh_token=${refreshToken}`;
         
         return res.redirect(frontendUrl);
 
