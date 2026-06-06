@@ -47,7 +47,7 @@ router.get("/callback", async (req, res) => {
         // 👇 CAMBIO IMPORTANTE 👇
         // Enviamos AMBOS tokens al frontend.
         // El frontend debe guardar el refreshToken en localStorage para usarlo en 1 hora.
-        const frontendUrl = `https://neuro-sound.web.app/home.html?access_token=${accessToken}&refresh_token=${refreshToken}`;
+        const frontendUrl = `http://localhost:5173/?access_token=${accessToken}&refresh_token=${refreshToken}`;
         
         return res.redirect(frontendUrl);
 
