@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.mdlw.js';
-import { searchSongs, survey, updateSurvey } from '../controllers/survey.ctrl.js';
-import { getSurvey } from '../controllers/survey.ctrl.js';
+import { survey, getSurvey, updateSurvey } from '../controllers/survey.ctrl.js';
 
 const router = Router();
 
