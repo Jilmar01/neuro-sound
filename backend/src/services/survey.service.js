@@ -1,4 +1,5 @@
 import Survey from "../models/survey.model.js";
+import { HttpError } from "../utils/httpError.js";
 import { updateUser } from "./user.service.js";
 
 export const processSurvey = async (userId, surveyData) => {
@@ -29,13 +30,13 @@ export const processSurvey = async (userId, surveyData) => {
 
     } catch (error) {
         console.error("Error en processSurvey:", error);
-        throw new Error(error.message || "Error procesando la encuesta");
+        throw new HttpError(error.message || "Error procesando la encuesta", 500);
     }
 };
 
 export const getProfileUser = async (userId) => {
     if (!userId) {
-        throw new Error("El userId es obligatorio.");
+        throw new HttpError("El userId es obligatorio.", 400);
     }
 
     try {
@@ -44,10 +45,45 @@ export const getProfileUser = async (userId) => {
             .sort({ createdAt: -1 })
             .lean();
 
+        if (!survey) {
+            throw new HttpError("El usuario no tiene una encuesta registrada.", 404);
+        }
+
         return survey;
 
-    } catch (err) {
-        throw new Error("No se pudo obtener el perfil del usuario.");
+    } catch (error) {
+        throw new HttpError(error.message || "Error obteniendo el perfil del usuario.", 500);
     }
 };
 
+
+/**
+ * Actualiza una encuesta de un usuario
+ * 
+ * @param {*} surveyId - Id de la encuesta a Actualizar
+ * @param {*} surveyData - Datos de la encuesta a Actualizar
+ */
+export const updateSurveyById = async (surveyId, surveyData) => {
+    try {
+        if (!surveyId) {
+            throw new HttpError("El usuario no tiene una encuesta registrada.", 404);
+        }
+
+        if (!surveyData) {
+            throw new HttpError("Los datos de la encuesta están vacíos.", 400);
+        }
+
+        const updatedSurvey = await Survey.findOneAndUpdate(
+            { _id: surveyId },
+            { $set: surveyData },
+            { new: true }
+        );
+
+        if (!updatedSurvey) {
+            throw new HttpError("Encuesta no encontrada.", 404);
+        }
+
+    } catch (error) {
+        throw new HttpError(error.message || "Error actualizando la encuesta", 500);
+    }
+};
