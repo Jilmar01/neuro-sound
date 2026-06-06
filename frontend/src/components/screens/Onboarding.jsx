@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Button from '../common/Button';
 import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
+import CryptoJS from 'crypto-js';
 import { apiCall } from '../../utils/fetch.js';
 
 const Onboarding = ({ onLogin }) => {
@@ -86,17 +87,10 @@ const Onboarding = ({ onLogin }) => {
   };
 
   const handleSpotifyLogin = async () => {
-    const clientId   = 'f5e7f1f0a25642a8a1d7f57561f7db91';
-    const redirectUri = window.location.origin + '/';
-    const scopes = [
-      'user-read-private',
-      'user-read-email',
-      'user-modify-playback-state',
-      'user-read-playback-state',
-      'streaming'
-    ].join(' ');
+    const clientId = 'f94cd594219c4d11abc5a2ab15472b9c';
+    const redirectUri = 'http://127.0.0.1:5173/callback';
+    const scopes = ['user-read-private', 'user-read-email', 'user-modify-playback-state', 'user-read-playback-state', 'streaming'].join(' ');
 
-    // --- PKCE: generar code_verifier y code_challenge ---
     const generateCodeVerifier = (length = 128) => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
       const arr = new Uint8Array(length);
@@ -105,29 +99,27 @@ const Onboarding = ({ onLogin }) => {
     };
 
     const generateCodeChallenge = async (verifier) => {
-      const enc = new TextEncoder().encode(verifier);
-      const hash = await crypto.subtle.digest('SHA-256', enc);
-      return btoa(String.fromCharCode(...new Uint8Array(hash)))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const hash = CryptoJS.SHA256(verifier);
+      const base64 = CryptoJS.enc.Base64.stringify(hash);
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     };
 
-    const verifier  = generateCodeVerifier();
+    const verifier = generateCodeVerifier();
     const challenge = await generateCodeChallenge(verifier);
 
-    // Guardamos el verifier para usarlo en el callback
     localStorage.setItem('spotifyCodeVerifier', verifier);
 
     const params = new URLSearchParams({
-      client_id:             clientId,
-      response_type:         'code',
-      redirect_uri:          redirectUri,
-      scope:                 scopes,
+      client_id: clientId,
+      response_type: 'code',
+      redirect_uri: redirectUri,
+      scope: scopes,
       code_challenge_method: 'S256',
-      code_challenge:        challenge,
-      show_dialog:           'false'
+      code_challenge: challenge,
+      show_dialog: 'false'
     });
 
-    window.location.href = `https://accounts.spotify.com/authorize?${params}`;
+    window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
   };
 
   const resetForm = () => {

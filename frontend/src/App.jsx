@@ -176,6 +176,9 @@ function App() {
 
   // Navegacion y sesion
   const [screen, setScreen] = useState(() => {
+    if (window.location.search.includes('code=')) {
+      return 'processing-spotify';
+    }
     const token = localStorage.getItem('token');
     const spotifyToken = localStorage.getItem('spotifyToken');
     if (token || spotifyToken) {
@@ -263,18 +266,18 @@ function App() {
           if (response && response.success && response.data) {
             const userObj = response.data;
             localStorage.setItem('user', JSON.stringify(userObj));
-            
+
             // Sincronizar encuestas si existen
             if (userObj.surveys && userObj.surveys.length > 0) {
               const lastSurvey = userObj.surveys[userObj.surveys.length - 1];
               setSurveyData(lastSurvey);
               localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
             }
-            
+
             // Sincronizar artistas seleccionados y sus datos completos
             if (userObj.selectedArtists && userObj.selectedArtists.length > 0) {
               localStorage.setItem('selectedArtists', JSON.stringify(userObj.selectedArtists));
-              
+
               // Cargar detalles de los artistas seleccionados
               const artistsDetails = await apiCall('neuro', `/api/artists?ids=${userObj.selectedArtists.join(',')}`, 'GET');
               if (artistsDetails && artistsDetails.success && artistsDetails.data) {
@@ -389,7 +392,7 @@ function App() {
   // Verifica el callback OAuth de Spotify (PKCE) al montar
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const code  = searchParams.get('code');
+    const code = searchParams.get('code');
     const error = searchParams.get('error');
 
     if (error) {
@@ -420,10 +423,10 @@ function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
-            client_id:     'f5e7f1f0a25642a8a1d7f57561f7db91',
-            grant_type:    'authorization_code',
+            client_id: 'f94cd594219c4d11abc5a2ab15472b9c',
+            grant_type: 'authorization_code',
             code,
-            redirect_uri:  window.location.origin + '/',
+            redirect_uri: 'http://127.0.0.1:5173/callback',
             code_verifier: verifier
           })
         });
@@ -434,7 +437,7 @@ function App() {
         }
 
         const tokenData = await tokenRes.json();
-        const accessToken  = tokenData.access_token;
+        const accessToken = tokenData.access_token;
         const refreshToken = tokenData.refresh_token;
 
         localStorage.setItem('spotifyToken', accessToken);
@@ -458,8 +461,8 @@ function App() {
         if (meRes.ok) {
           const spotifyUser = await meRes.json();
           const spotifyEmail = spotifyUser.email || `spotify_${spotifyUser.id}@neurosound.com`;
-          const names    = (spotifyUser.display_name || 'Spotify User').split(' ');
-          const name     = names[0] || 'Spotify';
+          const names = (spotifyUser.display_name || 'Spotify User').split(' ');
+          const name = names[0] || 'Spotify';
           const lastName = names.slice(1).join(' ') || 'User';
           const password = `spotify_secret_2026_${spotifyUser.id}`;
 
@@ -601,7 +604,7 @@ function App() {
               if (updated[currentIndex] && updated[currentIndex].id === currentTrack.id) {
                 updated[currentIndex] = {
                   ...updated[currentIndex],
-                   preview_url: `http://${window.location.hostname}:5002${processedUrl}`
+                  preview_url: `http://${window.location.hostname}:5002${processedUrl}`
                 };
               }
               return updated;
@@ -834,7 +837,7 @@ function App() {
     setUserType(type);
     const user = userObj || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
     if (user) {
-      const hasSurvey  = user.surveys && user.surveys.length > 0;
+      const hasSurvey = user.surveys && user.surveys.length > 0;
       const hasArtists = user.selectedArtists && user.selectedArtists.length > 0;
 
       if (hasSurvey) {
@@ -994,7 +997,7 @@ function App() {
     localStorage.setItem('selectedArtists', JSON.stringify(selectedArtists));
     localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
     setSelectedArtistsData(artistsData);
-    
+
     // Guardar en la base de datos si el usuario está autenticado
     try {
       const token = localStorage.getItem('token');
@@ -1003,16 +1006,20 @@ function App() {
         const backendPayload = mapSurveyToBackendPayload(surveyData);
         await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
         console.log("✅ Artistas guardados exitosamente en la base de datos.");
-        
+
         // Actualizar el objeto de usuario local
         const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
         cachedUserObj.selectedArtists = selectedArtists;
         localStorage.setItem('user', JSON.stringify(cachedUserObj));
+        
+        // Novedad: Guardar los artistas en el perfil de usuario del backend para que no se pierdan al recargar
+        await apiCall('neuro', '/api/user/update', 'PUT', { selectedArtists });
+        console.log("✅ Artistas actualizados en el perfil de usuario del servidor.");
       }
     } catch (e) {
       console.error("❌ Error al guardar los artistas en el backend:", e);
     }
-    
+
     setScreen(nextScreen);
   };
 
@@ -1047,7 +1054,7 @@ function App() {
       } catch (e) {
         console.error("Error storing disliked track:", e);
       }
-      
+
       // Detener audio actual y marcar cargando
       if (audioRef.current) {
         audioRef.current.pause();
@@ -1058,7 +1065,7 @@ function App() {
       console.log("Refrescando la playlist excluyendo la canción rechazada...");
       // Recargar la playlist con la misma encuesta (que enviará dislikedTracks en el payload)
       await loadPlaylist(surveyData || {});
-      
+
       // Reproducir de forma automática la nueva lista
       setIsPlaying(true);
     } else {
@@ -1107,8 +1114,14 @@ function App() {
       setSurveyData(null);
       setPlaylist([]);
       setCurrentIndex(0);
+
+      // Limpiar TODO el localStorage relacionado a la sesión
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('spotifyToken');
+      localStorage.removeItem('spotifyRefreshToken');
+      localStorage.removeItem('selectedArtists');
+      localStorage.removeItem('selectedArtistsData');
     }
   };
 
@@ -1120,6 +1133,14 @@ function App() {
     switch (screen) {
       case 'onboarding':
         return <Onboarding onLogin={handleLogin} />;
+      case 'processing-spotify':
+        return (
+          <div className="w-100 vh-100 d-flex flex-column align-items-center justify-content-center bg-dark text-white">
+            <div className="spinner-border text-success mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
+            <h4 className="fw-bold animate-pulse">Conectando con Spotify...</h4>
+            <p className="text-muted">Procesando tu sesión segura</p>
+          </div>
+        );
       case 'initial-evaluation':
         const userObjForSurvey = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
         const hasSavedSurvey = (userObjForSurvey.surveys && userObjForSurvey.surveys.length > 0) || !!surveyData;
@@ -1380,7 +1401,7 @@ const EmotionalSummaryModal = ({ surveyData, onClose, onUpdateSurvey }) => {
 
   const labelsSientes = ["Triste", "Algo Triste", "Neutral", "Algo Feliz", "Feliz"];
   const labelsQuieres = ["Triste", "Algo Triste", "Neutral", "Algo Feliz", "Feliz"];
-  
+
   const nodesSientes = [
     { value: 1, icon: 'sentiment_very_dissatisfied' },
     { value: 2, icon: 'sentiment_dissatisfied' },
@@ -1388,7 +1409,7 @@ const EmotionalSummaryModal = ({ surveyData, onClose, onUpdateSurvey }) => {
     { value: 4, icon: 'sentiment_satisfied' },
     { value: 5, icon: 'sentiment_very_satisfied' }
   ];
-  
+
   const nodesQuieres = [
     { value: 1, icon: 'sentiment_very_dissatisfied' },
     { value: 2, icon: 'sentiment_dissatisfied' },

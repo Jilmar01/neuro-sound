@@ -20,7 +20,7 @@ let isRefreshing = false;
 // ---------------------------------------------------------
 async function refreshSpotifySession() {
     const refreshToken = localStorage.getItem('spotifyRefreshToken');
-    
+
     if (!refreshToken) {
         throw new Error("No hay refresh token. Inicia sesión nuevamente.");
     }
@@ -41,7 +41,7 @@ async function refreshSpotifySession() {
 
         // Guardamos los nuevos tokens
         localStorage.setItem('spotifyToken', data.access_token);
-        
+
         // Si el backend nos dio un refresh token nuevo, lo actualizamos. Si no, mantenemos el viejo.
         if (data.refresh_token) {
             localStorage.setItem('spotifyRefreshToken', data.refresh_token);
@@ -64,7 +64,7 @@ async function refreshSpotifySession() {
 // 3. LA FUNCIÓN FETCH MAESTRA
 // ---------------------------------------------------------
 export async function apiCall(serverName, endpoint, method, body = null) {
-    
+
     const config = SERVERS[serverName];
     if (!config) throw new Error(`Servidor "${serverName}" no configurado.`);
 
@@ -94,7 +94,7 @@ export async function apiCall(serverName, endpoint, method, body = null) {
 
         // --- INTERCEPTOR DE ERROR 401 (Solo para Spotify) ---
         if (response.status === 401 && serverName === 'spotify') {
-            
+
             if (isRefreshing) {
                 // Si ya se está refrescando, podríamos poner una lógica de espera aquí,
                 // pero por simplicidad lanzamos error para reintentar luego.
@@ -150,10 +150,10 @@ export async function apiCall(serverName, endpoint, method, body = null) {
 /* public/js/refactored/fetch.js */
 
 export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, body = null) {
-    
+
     // 1. CONFIGURACIÓN DE CLAVES
     const tokenKeys = {
-        'neuro': 'token',        
+        'neuro': 'token',
         'spotify': 'spotifyToken',
         'local': null // 👈 AGREGADO: null indica que no requiere buscar token
     };
@@ -166,7 +166,7 @@ export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, 
     const storageKey = tokenKeys[serverKey];
 
     // 2. PREPARACIÓN DE URL
-    const cleanBase = dynamicBaseUrl.replace(/\/$/, ''); 
+    const cleanBase = dynamicBaseUrl.replace(/\/$/, '');
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${cleanBase}${cleanEndpoint}`;
 
@@ -178,7 +178,7 @@ export async function testsApiCall(dynamicBaseUrl, serverKey, endpoint, method, 
 
     // 4. HEADERS
     const headers = { 'Content-Type': 'application/json' };
-    
+
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     } else {

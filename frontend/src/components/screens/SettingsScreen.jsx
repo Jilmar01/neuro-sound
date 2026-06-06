@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Button from '../common/Button';
+import CryptoJS from 'crypto-js';
 import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
 
 /* ─── Avatar generativo ─── */
@@ -33,11 +34,11 @@ const GENRE_PALETTE = [
 
 /* ─── Info del estado de Hawkins ─── */
 const getHawkinsInfo = (freq) => {
-  if (freq < 100) return { name: 'Apatía/Miedo',  emoji: '😶', color: '#adb5bd' };
-  if (freq < 200) return { name: 'Ira/Orgullo',   emoji: '😠', color: '#ff6b6b' };
-  if (freq < 310) return { name: 'Coraje',         emoji: '💪', color: '#51cf66' };
-  if (freq < 500) return { name: 'Voluntad/Paz',  emoji: '🧘', color: '#0d6efd' };
-  if (freq < 600) return { name: 'Amor/Alegría',  emoji: '💙', color: '#fc5c7d' };
+  if (freq < 100) return { name: 'Apatía/Miedo', emoji: '😶', color: '#adb5bd' };
+  if (freq < 200) return { name: 'Ira/Orgullo', emoji: '😠', color: '#ff6b6b' };
+  if (freq < 310) return { name: 'Coraje', emoji: '💪', color: '#51cf66' };
+  if (freq < 500) return { name: 'Voluntad/Paz', emoji: '🧘', color: '#0d6efd' };
+  if (freq < 600) return { name: 'Amor/Alegría', emoji: '💙', color: '#fc5c7d' };
   return { name: 'Paz/Iluminación', emoji: '✨', color: '#a9e34b' };
 };
 
@@ -57,7 +58,7 @@ const SettingsScreen = ({
   selectedArtistsData = [],
 }) => {
   const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -70,10 +71,10 @@ const SettingsScreen = ({
           if (response.ok) {
             const data = await response.json();
             setUserProfile({
-              name:  data.display_name || 'Usuario de Spotify',
+              name: data.display_name || 'Usuario de Spotify',
               email: data.email || '',
               photo: data.images?.[0]?.url || null,
-              type:  'Spotify Premium'
+              type: 'Spotify Premium'
             });
             setLoading(false);
             return;
@@ -84,10 +85,10 @@ const SettingsScreen = ({
         if (cached) {
           const u = JSON.parse(cached);
           setUserProfile({
-            name:  `${u.name || ''} ${u.last_name || ''}`.trim() || 'Usuario',
+            name: `${u.name || ''} ${u.last_name || ''}`.trim() || 'Usuario',
             email: u.email || '',
             photo: u.photo || null,
-            type:  'Cuenta Local'
+            type: 'Cuenta Local'
           });
           setLoading(false);
           return;
@@ -103,11 +104,40 @@ const SettingsScreen = ({
     fetchProfile();
   }, []);
 
-  const handleSpotifyConnect = () => {
-    const clientId   = 'f5e7f1f0a25642a8a1d7f57561f7db91';
-    const redirectUri = window.location.origin + '/';
-    const scopes = ['user-read-private','user-read-email','user-modify-playback-state','user-read-playback-state'].join(' ');
-    window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+  const handleSpotifyConnect = async () => {
+    const clientId = 'f94cd594219c4d11abc5a2ab15472b9c';
+    const redirectUri = 'http://127.0.0.1:5173/callback';
+    const scopes = ['user-read-private', 'user-read-email', 'user-modify-playback-state', 'user-read-playback-state', 'streaming'].join(' ');
+
+    const generateCodeVerifier = (length = 128) => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      const arr = new Uint8Array(length);
+      crypto.getRandomValues(arr);
+      return Array.from(arr).map(v => chars[v % chars.length]).join('');
+    };
+
+    const generateCodeChallenge = async (verifier) => {
+      const hash = CryptoJS.SHA256(verifier);
+      const base64 = CryptoJS.enc.Base64.stringify(hash);
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    };
+
+    const verifier = generateCodeVerifier();
+    const challenge = await generateCodeChallenge(verifier);
+
+    localStorage.setItem('spotifyCodeVerifier', verifier);
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      response_type: 'code',
+      redirect_uri: redirectUri,
+      scope: scopes,
+      code_challenge_method: 'S256',
+      code_challenge: challenge,
+      show_dialog: 'false'
+    });
+
+    window.location.href = `https://accounts.spotify.com/authorize?${params}`;
   };
 
   return (
@@ -154,13 +184,23 @@ const SettingsScreen = ({
             <p className="text-muted mb-3" style={{ fontSize: '12px' }}>
               Conecta tu cuenta de Spotify Premium para sintonizar pistas directo desde su base de datos.
             </p>
-            <Button onClick={handleSpotifyConnect} className="w-100 py-3"
-              style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}>
-              <span className="d-inline-flex align-items-center gap-2 justify-content-center">
-                <img src={spotifyLogo} alt="Spotify Logo" style={{ width: '20px', height: '20px' }} />
-                <span>Conectar a Spotify</span>
-              </span>
-            </Button>
+            {localStorage.getItem('spotifyToken') ? (
+              <div className="w-100 py-3 rounded text-center" style={{ backgroundColor: 'rgba(29, 185, 84, 0.1)', border: '1px solid #1DB954' }}>
+                <span className="d-inline-flex align-items-center gap-2 justify-content-center text-success fw-bold">
+                  <img src={spotifyLogo} alt="Spotify Logo" style={{ width: '20px', height: '20px' }} />
+                  <span>Spotify Conectado</span>
+                  <span className="material-symbols-outlined fs-5" translate="no">check_circle</span>
+                </span>
+              </div>
+            ) : (
+              <Button onClick={handleSpotifyConnect} className="w-100 py-3"
+                style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}>
+                <span className="d-inline-flex align-items-center gap-2 justify-content-center">
+                  <img src={spotifyLogo} alt="Spotify Logo" style={{ width: '20px', height: '20px' }} />
+                  <span>Conectar a Spotify</span>
+                </span>
+              </Button>
+            )}
           </div>
 
           {/* ══ 3. FOCO VISUAL ══ */}
@@ -188,10 +228,10 @@ const SettingsScreen = ({
             {themeMode === 'manual' && (
               <div className="d-flex justify-content-between gap-2">
                 {[
-                  { id: 'calma',     name: 'Calma',     color: '#0d6efd' },
-                  { id: 'relajacion',name: 'Relajación', color: '#198754' },
-                  { id: 'foco',      name: 'Foco',      color: '#fd7e14' },
-                  { id: 'zen',       name: 'Zen',       color: '#6f42c1' },
+                  { id: 'calma', name: 'Calma', color: '#0d6efd' },
+                  { id: 'relajacion', name: 'Relajación', color: '#198754' },
+                  { id: 'foco', name: 'Foco', color: '#fd7e14' },
+                  { id: 'zen', name: 'Zen', color: '#6f42c1' },
                 ].map(emo => {
                   const isSel = targetEmotion === emo.id;
                   return (
