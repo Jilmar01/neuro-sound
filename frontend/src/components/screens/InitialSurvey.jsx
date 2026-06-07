@@ -16,6 +16,10 @@ const InitialSurvey = ({ onSubmit, hideFrequencies = false, initialData = null }
   const [comoQuiere, setComoQuiere] = useState(() => initialData?.comoQuiere ?? 5);
   const [frequency, setFrequency] = useState(() => initialData?.volume ?? 200); // 200 Hz (Coraje/Neutralidad por defecto)
   const [isTonePlaying, setIsTonePlaying] = useState(false);
+  const [hasConsented, setHasConsented] = useState(() => {
+    if (hideFrequencies) return true; // Si es usuario recurrente, ya aceptó
+    return localStorage.getItem('dataConsent') === 'true';
+  });
 
   // Referencias persistentes para la Web Audio API
   const audioCtxRef = useRef(null);
@@ -344,6 +348,48 @@ const InitialSurvey = ({ onSubmit, hideFrequencies = false, initialData = null }
       box-shadow: 0 0 0 1px #fff, 0 0 0 0.25rem var(--theme-glow-1) !important;
     }
   `;
+
+  if (!hasConsented) {
+    return (
+      <div className="w-100 d-flex flex-column align-items-center justify-content-center vh-100 text-center">
+        <main className="w-100 max-w-[500px] d-flex flex-column align-items-center p-4 bg-white bg-opacity-75 backdrop-blur-sm rounded-4 border border-light-subtle shadow-sm animate-fade-in-up" style={{ maxWidth: '500px' }}>
+          <span className="material-symbols-outlined notranslate text-primary mb-3" translate="no" style={{ fontSize: '50px' }}>
+            privacy_tip
+          </span>
+          <h2 className="h4 text-dark mb-3 fw-bold">Privacidad y Uso de Datos</h2>
+          <p className="text-muted small mb-4 text-start" style={{ lineHeight: '1.6' }}>
+            Para ofrecerte una experiencia musical adaptada a tu estado emocional y frecuencia de conciencia, necesitamos recolectar tus respuestas en las encuestas de calibración. <br/><br/>
+            ¿Estás de acuerdo en que utilicemos estos datos <strong>única y exclusivamente para el funcionamiento de la aplicación</strong> y la personalización de tu perfil?
+          </p>
+          <div className="d-flex flex-column flex-sm-row gap-3 w-100 mt-2">
+            <Button
+              type="button"
+              variant="outline-secondary"
+              className="w-100 py-2 rounded-pill fw-semibold"
+              onClick={() => {
+                // Si no acepta, no puede avanzar. Lo redirigimos o cerramos sesión.
+                localStorage.clear();
+                window.location.href = '/login';
+              }}
+            >
+              No, cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              className="w-100 py-2 rounded-pill fw-semibold"
+              onClick={() => {
+                localStorage.setItem('dataConsent', 'true');
+                setHasConsented(true);
+              }}
+            >
+              Sí, acepto
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="w-100 py-2 d-flex flex-column align-items-center justify-content-center">

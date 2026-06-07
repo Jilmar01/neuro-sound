@@ -154,11 +154,18 @@ const ArtistSurvey = ({ onConfirm }) => {
     }
 
     try {
-      const res = await apiCall('neuro', `/api/artists/${id}/related?limit=6`, 'GET');
+      // Usamos el género principal del artista para buscar "relacionados" (similares)
+      const primaryGenre = (artist.genres && artist.genres.length > 0) ? artist.genres[0] : '';
+      const queryParams = new URLSearchParams({ limit: 6 });
+      if (primaryGenre) queryParams.set('genre', primaryGenre);
+      
+      const res = await apiCall('neuro', `/api/artists?${queryParams.toString()}`, 'GET');
       if (res?.success) {
-        // Filtrar los que ya estan en la base
+        // Filtrar los que ya estan en la base (y al propio artista)
         const baseIds = new Set(baseArtists.map(a => a.id));
-        const filtered = dedupe(res.data).filter(a => !baseIds.has(a.id)).slice(0, 6);
+        baseIds.add(id);
+        const artistsList = res.data?.artists || (Array.isArray(res.data) ? res.data : []);
+        const filtered = dedupe(artistsList).filter(a => !baseIds.has(a.id)).slice(0, 6);
         relatedCache.current[id] = filtered;
         setInjected(prev => ({ ...prev, [id]: filtered }));
       }

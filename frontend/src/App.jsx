@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Onboarding from './components/screens/Onboarding';
 import InitialSurvey from './components/screens/InitialSurvey';
 import ArtistSurvey from './components/screens/ArtistSurvey';
@@ -159,7 +161,7 @@ const fallbackPlaylist = [
  * Componente raiz de la app; orquesta navegacion, audio y encuestas.
  * @returns {JSX.Element}
  */
-function App() {
+function MainApp() {
   /**
    * Lee la encuesta almacenada en localStorage.
    * @returns {Object|null} datos de encuesta o null si no existe/parsea.
@@ -174,37 +176,89 @@ function App() {
     }
   };
 
-  // Navegacion y sesion
-  const [screen, setScreen] = useState(() => {
-    if (window.location.search.includes('code=')) {
-      return 'processing-spotify';
+  // Navegacion y sesion con React Router
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const screenMap = {
+    '/': 'onboarding',
+    '/login': 'onboarding',
+    '/callback': 'processing-spotify',
+    '/survey': 'initial-evaluation',
+    '/artists': 'artist-evaluation',
+    '/dashboard': 'dashboard',
+    '/settings': 'settings',
+    '/profile': 'profile',
+    '/profile-summary': 'profile-summary',
+    '/final-evaluation': 'final-evaluation'
+  };
+
+  const reverseScreenMap = {
+    'onboarding': '/login',
+    'processing-spotify': '/callback',
+    'initial-evaluation': '/survey',
+    'artist-evaluation': '/artists',
+    'dashboard': '/dashboard',
+    'settings': '/settings',
+    'profile': '/profile',
+    'profile-summary': '/profile-summary',
+    'final-evaluation': '/final-evaluation'
+  };
+
+  const screen = screenMap[location.pathname] || 'onboarding';
+
+  const setScreen = (s) => {
+    const path = reverseScreenMap[s] || '/login';
+    navigate(path);
+  };
+
+  // Redireccion inicial inteligente en la raiz
+  useEffect(() => {
+    if (location.pathname === '/') {
+      const token = localStorage.getItem('token');
+      const spotifyToken = localStorage.getItem('spotifyToken');
+      if (token || spotifyToken) {
+        const userCached = localStorage.getItem('user');
+        if (userCached) {
+          try {
+            const userObj = JSON.parse(userCached);
+            const hasSurvey = userObj.surveys && userObj.surveys.length > 0;
+            const hasArtists = userObj.selectedArtists && userObj.selectedArtists.length > 0;
+            if (hasSurvey && hasArtists) {
+              navigate('/dashboard', { replace: true });
+              return;
+            } else if (hasSurvey) {
+              navigate('/artists', { replace: true });
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        const survey = localStorage.getItem('surveyData');
+        if (survey) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+        navigate('/survey', { replace: true });
+      } else {
+        navigate('/login', { replace: true });
+      }
     }
+  }, [location.pathname, navigate]);
+
+  // Protección de rutas
+  useEffect(() => {
     const token = localStorage.getItem('token');
     const spotifyToken = localStorage.getItem('spotifyToken');
-    if (token || spotifyToken) {
-      const userCached = localStorage.getItem('user');
-      if (userCached) {
-        try {
-          const userObj = JSON.parse(userCached);
-          const hasSurvey = userObj.surveys && userObj.surveys.length > 0;
-          const hasArtists = userObj.selectedArtists && userObj.selectedArtists.length > 0;
-          if (hasSurvey && hasArtists) {
-            return 'dashboard';
-          } else if (hasSurvey) {
-            return 'artist-evaluation';
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      const survey = localStorage.getItem('surveyData');
-      if (survey) {
-        return 'dashboard';
-      }
-      return 'initial-evaluation';
+    const isAuth = token || spotifyToken;
+    
+    const protectedRoutes = ['/dashboard', '/settings', '/profile', '/profile-summary', '/final-evaluation'];
+    if (protectedRoutes.includes(location.pathname) && !isAuth) {
+      navigate('/login', { replace: true });
     }
-    return 'onboarding';
-  });
+  }, [location.pathname, navigate]);
+
   const [targetEmotion, setTargetEmotion] = useState('gris');
   const [themeMode, setThemeMode] = useState('auto');
   const [userType, setUserType] = useState(() => {
@@ -389,15 +443,26 @@ function App() {
     };
   }, [isTimerRunning]);
 
+  const spotifyProcessingRef = useRef(false);
+
   // Verifica el callback OAuth de Spotify (PKCE) al montar
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     const code = searchParams.get('code');
     const error = searchParams.get('error');
 
+    // Mover esta verificación ANTES del ref para que HMR o recargas forzadas no se queden atascadas
+    if (!code && location.pathname === '/callback') {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (spotifyProcessingRef.current) return;
+
     if (error) {
+      spotifyProcessingRef.current = true;
       console.error('❌ Spotify rechazó la autenticación:', error);
-      window.history.replaceState(null, null, '/');
+      navigate('/login', { replace: true });
       return;
     }
 
@@ -405,13 +470,15 @@ function App() {
 
     const verifier = localStorage.getItem('spotifyCodeVerifier');
     if (!verifier) {
-      console.error('❌ No se encontró code_verifier en localStorage');
-      window.history.replaceState(null, null, '/');
+      console.warn('⚠️ No se encontró code_verifier. La sesión pudo haber expirado, procesado previamente, o es una URL caducada.');
+      navigate('/login', { replace: true });
       return;
     }
 
-    // Limpiar la URL para que no se vuelva a procesar
-    window.history.replaceState(null, null, '/');
+    spotifyProcessingRef.current = true;
+
+    // Limpiar la URL para que no se vuelva a procesar el código si recarga
+    navigate('/callback', { replace: true });
     localStorage.removeItem('spotifyCodeVerifier');
 
     const exchangeAndSync = async () => {
@@ -450,6 +517,7 @@ function App() {
           // Ya hay sesión local → solo vinculamos Spotify
           setUserType('spotify');
           console.log('✅ Spotify vinculado a la sesión local activa.');
+          navigate('/', { replace: true });
           return;
         }
 
@@ -489,11 +557,15 @@ function App() {
             console.log('✅ Sesión local iniciada para el usuario de Spotify.');
           }
         }
+        
+        // Solo continuamos si todo fue exitoso
+        setUserType('spotify');
+        navigate('/survey', { replace: true });
+
       } catch (e) {
         console.error('❌ Error en el flujo PKCE de Spotify:', e);
-      } finally {
-        setUserType('spotify');
-        setScreen('initial-evaluation');
+        // Si hay error, regresamos al login
+        navigate('/login', { replace: true });
       }
     };
 
@@ -868,19 +940,27 @@ function App() {
    */
   const handleSurveySubmit = async (data) => {
     setSurveyData(data);
+    localStorage.setItem('surveyData', JSON.stringify(data)); // Guardado síncrono inmediato
     setInitialStress(data.estres * 2);
 
-    // Guardar encuesta en el backend para el usuario autenticado
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        console.log("💾 Registrando encuesta en el backend...");
-        const backendPayload = mapSurveyToBackendPayload(data);
-        await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
-        console.log("✅ Encuesta registrada exitosamente en base de datos.");
+    // Si el usuario ya tiene artistas guardados → es usuario recurrente
+    const cachedUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+    const hasArtists = cachedUser?.selectedArtists && cachedUser.selectedArtists.length > 0;
+
+    // Solo guardar la encuesta inmediatamente si el usuario YA está configurado completamente.
+    // Si es nuevo, esperaremos a que elija los artistas para guardar ambas cosas juntas.
+    if (hasArtists) {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          console.log("💾 Registrando encuesta de sesión en el backend...");
+          const backendPayload = mapSurveyToBackendPayload(data);
+          await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
+          console.log("✅ Encuesta registrada exitosamente en base de datos.");
+        }
+      } catch (e) {
+        console.error("❌ Error al guardar encuesta en backend:", e);
       }
-    } catch (e) {
-      console.error("❌ Error al guardar encuesta en backend:", e);
     }
 
     // Emocion por defecto segun nivel de estres
@@ -895,18 +975,14 @@ function App() {
     setTargetEmotion(defaultEmotion);
     setThemeMode('auto');
 
-    // Si el usuario ya tiene artistas guardados → ir directo al Dashboard
-    const cachedUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
-    const hasArtists = cachedUser?.selectedArtists && cachedUser.selectedArtists.length > 0;
-
     if (hasArtists) {
       // Usuario recurrente: usar sus preferencias guardadas y cargar playlist directamente
       console.log("🎵 Usuario con artistas guardados. Cargando playlist directamente al Dashboard...");
-      setScreen('dashboard');
+      navigate('/dashboard');
       await loadPlaylist(data);
     } else {
       // Primera vez: completar el flujo de selección de artistas
-      setScreen('artist-evaluation');
+      navigate('/artists');
     }
   };
 
@@ -1004,8 +1080,10 @@ function App() {
       if (token) {
         console.log("💾 Guardando artistas seleccionados en el backend...");
         const backendPayload = mapSurveyToBackendPayload(surveyData);
+        console.log("Datos de la encuesta que se enviarán:", backendPayload);
+        
         await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
-        console.log("✅ Artistas guardados exitosamente en la base de datos.");
+        console.log("✅ Encuesta y artistas iniciales guardados exitosamente en la base de datos.");
 
         // Actualizar el objeto de usuario local
         const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
@@ -1529,4 +1607,10 @@ const EmotionalSummaryModal = ({ surveyData, onClose, onUpdateSurvey }) => {
   );
 };
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <MainApp />
+    </BrowserRouter>
+  );
+}

@@ -8,9 +8,11 @@ const Onboarding = ({ onLogin }) => {
   const [mode, setMode] = useState('select'); // 'select' | 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,8 +45,12 @@ const Onboarding = ({ onLogin }) => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!name || !lastName || !email || !password) {
+    if (!name || !lastName || !email || !password || !confirmPassword) {
       setError('Todos los campos son obligatorios.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
       return;
     }
     if (password.length < 6) {
@@ -93,9 +99,18 @@ const Onboarding = ({ onLogin }) => {
 
     const generateCodeVerifier = (length = 128) => {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-      const arr = new Uint8Array(length);
-      crypto.getRandomValues(arr);
-      return Array.from(arr).map(v => chars[v % chars.length]).join('');
+      let result = '';
+      try {
+        const arr = new Uint8Array(length);
+        crypto.getRandomValues(arr);
+        result = Array.from(arr).map(v => chars[v % chars.length]).join('');
+      } catch (e) {
+        // Fallback para HTTP en LAN
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+      }
+      return result;
     };
 
     const generateCodeChallenge = async (verifier) => {
@@ -125,10 +140,12 @@ const Onboarding = ({ onLogin }) => {
   const resetForm = () => {
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setName('');
     setLastName('');
     setError('');
     setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   return (
@@ -347,7 +364,7 @@ const Onboarding = ({ onLogin }) => {
               </div>
 
               {/* Password */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="form-label small text-secondary fw-semibold mb-1">Contraseña</label>
                 <div className="input-group">
                   <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
@@ -368,6 +385,33 @@ const Onboarding = ({ onLogin }) => {
                   >
                     <span className="material-symbols-outlined notranslate text-[20px]" translate="no">
                       {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="mb-4">
+                <label className="form-label small text-secondary fw-semibold mb-1">Confirmar Contraseña</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white bg-opacity-20 border-end-0 border-light-subtle rounded-start-3 text-secondary">
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">lock_clock</span>
+                  </span>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`form-control bg-white bg-opacity-10 border-start-0 border-end-0 border-light-subtle py-2 text-secondary ${password && confirmPassword && password !== confirmPassword ? 'is-invalid border-danger' : ''}`}
+                    placeholder="Confirma tu contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={`btn bg-white bg-opacity-20 border border-start-0 border-light-subtle rounded-end-3 text-secondary d-flex align-items-center ${password && confirmPassword && password !== confirmPassword ? 'border-danger' : ''}`}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <span className="material-symbols-outlined notranslate text-[20px]" translate="no">
+                      {showConfirmPassword ? "visibility_off" : "visibility"}
                     </span>
                   </button>
                 </div>
