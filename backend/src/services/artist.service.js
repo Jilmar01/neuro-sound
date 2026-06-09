@@ -1,4 +1,5 @@
 import Artist from '../models/artist.model.js';
+import { HttpError } from '../utils/httpError.js';
 
 /**
  * Obtiene los artistas más populares 
@@ -58,4 +59,14 @@ export const getArtists = async ({page, limit, search, genre}) => {
             totalPages: Math.ceil(total / limit)
         }
     };
+};
+
+export const getGenreByArtistId = async (artistId) => {
+    const artist = await Artist.findOne({ id: artistId });
+    console.log("Artista encontrado:", artist);
+    if (!artist) {
+        throw new HttpError('No se encontró el artista', 404);
+    }
+
+    return artist.genres;
 };
