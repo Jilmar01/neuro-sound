@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Button from '../common/Button';
 import CryptoJS from 'crypto-js';
 import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
+import { apiCall } from '../../utils/fetch.js';
 
 /* ─── Avatar generativo ─── */
 const DynamicAvatar = ({ name, size = 40 }) => {
@@ -63,13 +64,10 @@ const SettingsScreen = ({
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('spotifyToken');
-        if (token) {
-          const response = await fetch('https://api.spotify.com/v1/me', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const data = await response.json();
+        const spotifyToken = localStorage.getItem('spotifyToken');
+        if (spotifyToken) {
+          try {
+            const data = await apiCall('spotify', '/me', 'GET');
             setUserProfile({
               name: data.display_name || 'Usuario de Spotify',
               email: data.email || '',
@@ -78,9 +76,34 @@ const SettingsScreen = ({
             });
             setLoading(false);
             return;
+          } catch (spotifyErr) {
+            console.warn('⚠️ No se pudo cargar perfil de Spotify, usando local fallback:', spotifyErr.message);
           }
         }
 
+        const localToken = localStorage.getItem('token');
+        if (localToken) {
+          try {
+            // Siempre solicitar los datos frescos al backend porque localStorage al inicio de sesión puede estar incompleto
+            const response = await apiCall('neuro', '/api/auth/me', 'GET');
+            if (response && response.success && response.data) {
+              const u = response.data;
+              localStorage.setItem('user', JSON.stringify(u)); // Actualizar cache
+              setUserProfile({
+                name: `${u.name || ''} ${u.last_name || ''}`.trim() || 'Usuario',
+                email: u.email || '',
+                photo: u.photo || null,
+                type: 'Cuenta Local'
+              });
+              setLoading(false);
+              return;
+            }
+          } catch (apiErr) {
+            console.error('Error al obtener perfil desde backend:', apiErr);
+          }
+        }
+
+        // Fallback al cache si falla la red
         const cached = localStorage.getItem('user');
         if (cached) {
           const u = JSON.parse(cached);
@@ -96,7 +119,7 @@ const SettingsScreen = ({
 
         setUserProfile({ name: 'Invitado', email: 'Sesión temporal sin sincronizar', photo: null, type: 'Invitado' });
       } catch (err) {
-        console.error('Error al cargar perfil:', err);
+        console.error('Error general al cargar perfil:', err);
       } finally {
         setLoading(false);
       }

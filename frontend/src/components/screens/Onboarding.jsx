@@ -1,20 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Button from '../common/Button';
 import spotifyLogo from '../../assets/logos/Spotify_logo_without_text.svg';
 import CryptoJS from 'crypto-js';
 import { apiCall } from '../../utils/fetch.js';
 
-const Onboarding = ({ onLogin }) => {
-  const [mode, setMode] = useState('select'); // 'select' | 'login' | 'register'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
-  const [lastName, setLastName] = useState('');
+const Onboarding = ({ onLogin, initialMode = 'select' }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [mode, setMode] = useState(initialMode); // 'select' | 'login' | 'register'
+
+  // Estados con persistencia en sessionStorage
+  const [email, setEmail] = useState(() => sessionStorage.getItem('onboarding_email') || '');
+  const [password, setPassword] = useState(() => sessionStorage.getItem('onboarding_password') || '');
+  const [confirmPassword, setConfirmPassword] = useState(() => sessionStorage.getItem('onboarding_confirmPassword') || '');
+  const [name, setName] = useState(() => sessionStorage.getItem('onboarding_name') || '');
+  const [lastName, setLastName] = useState(() => sessionStorage.getItem('onboarding_lastName') || '');
+
+  // Guardar en sessionStorage automáticamente al cambiar
+  useEffect(() => {
+    sessionStorage.setItem('onboarding_email', email);
+    sessionStorage.setItem('onboarding_password', password);
+    sessionStorage.setItem('onboarding_confirmPassword', confirmPassword);
+    sessionStorage.setItem('onboarding_name', name);
+    sessionStorage.setItem('onboarding_lastName', lastName);
+  }, [email, password, confirmPassword, name, lastName]);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Leer errores pasados por navegación
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      // Limpiar el estado de ubicación para no mostrar el error repetidamente al cambiar de modo
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleTraditionalLogin = async (e) => {
     e.preventDefault();
@@ -32,6 +56,7 @@ const Onboarding = ({ onLogin }) => {
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
         }
+        clearStorage();
         onLogin('traditional', response.data.user);
       } else {
         setError(response?.message || 'Error al iniciar sesión.');
@@ -76,6 +101,7 @@ const Onboarding = ({ onLogin }) => {
           if (loginResponse.data.user) {
             localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
           }
+          clearStorage();
           onLogin('traditional', loginResponse.data.user);
         } else {
           // If auto-login fails, redirect to login mode
@@ -137,6 +163,14 @@ const Onboarding = ({ onLogin }) => {
     window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
   };
 
+  const clearStorage = () => {
+    sessionStorage.removeItem('onboarding_email');
+    sessionStorage.removeItem('onboarding_password');
+    sessionStorage.removeItem('onboarding_confirmPassword');
+    sessionStorage.removeItem('onboarding_name');
+    sessionStorage.removeItem('onboarding_lastName');
+  };
+
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -146,6 +180,7 @@ const Onboarding = ({ onLogin }) => {
     setError('');
     setShowPassword(false);
     setShowConfirmPassword(false);
+    clearStorage();
   };
 
   return (
@@ -173,30 +208,36 @@ const Onboarding = ({ onLogin }) => {
         {/* 1. SELECT MODE */}
         {mode === 'select' && (
           <div className="w-100 d-flex flex-column gap-3 animate-fade-in-up" style={{ maxWidth: '360px' }}>
-            {/* Spotify Option */}
-            <Button
-              onClick={handleSpotifyLogin}
-              className="w-100 py-3"
-              style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}
-            >
-              <span className="d-inline-flex align-items-center gap-2 justify-content-center">
-                <img
-                  src={spotifyLogo}
-                  alt="Spotify Logo"
-                  style={{ width: '20px', height: '20px' }}
-                />
-                <span>Iniciar Sesión con Spotify</span>
-              </span>
-            </Button>
-
             {/* Traditional Login Option */}
             <Button
-              onClick={() => { setMode('login'); resetForm(); }}
+              onClick={() => { setMode('login'); navigate('/login', { replace: true }); resetForm(); }}
               className="w-100 py-3"
               variant="outline"
             >
               Iniciar Sesión
             </Button>
+
+            {
+              <div className="position-relative w-100">
+                <Button
+                  onClick={handleSpotifyLogin}
+                  className="w-100 py-3"
+                  style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}
+                >
+                  <span className="d-inline-flex align-items-center gap-2 justify-content-center">
+                    <img
+                      src={spotifyLogo}
+                      alt="Spotify Logo"
+                      style={{ width: '20px', height: '20px' }}
+                    />
+                    <span className="d-flex flex-column align-items-center" style={{ lineHeight: '1.2' }}>
+                      <span>Iniciar Sesión con Spotify</span>
+                      <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>(Aún en producción)</span>
+                    </span>
+                  </span>
+                </Button>
+              </div>
+            }
           </div>
         )}
 
@@ -207,7 +248,7 @@ const Onboarding = ({ onLogin }) => {
               <button
                 type="button"
                 className="btn btn-link p-0 text-secondary me-2 d-flex align-items-center"
-                onClick={() => setMode('select')}
+                onClick={() => { setMode('select'); navigate('/login', { replace: true }); }}
               >
                 <span className="material-symbols-outlined notranslate" translate="no">arrow_back</span>
               </button>
@@ -277,13 +318,9 @@ const Onboarding = ({ onLogin }) => {
             </form>
 
             <div className="text-center mt-3">
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-decoration-none text-primary fw-medium"
-                onClick={() => { setMode('register'); resetForm(); }}
-              >
-                ¿No tienes una cuenta? Regístrate
-              </button>
+              <p className="small text-secondary mb-0">
+                ¿No tienes una cuenta? <button type="button" className="btn btn-link p-0 text-primary fw-semibold" onClick={() => { setMode('register'); navigate('/register'); resetForm(); }}>Regístrate</button>
+              </p>
             </div>
           </div>
         )}
@@ -295,7 +332,7 @@ const Onboarding = ({ onLogin }) => {
               <button
                 type="button"
                 className="btn btn-link p-0 text-secondary me-2 d-flex align-items-center"
-                onClick={() => setMode('login')}
+                onClick={() => { setMode('login'); navigate('/login'); }}
               >
                 <span className="material-symbols-outlined notranslate" translate="no">arrow_back</span>
               </button>
@@ -428,13 +465,9 @@ const Onboarding = ({ onLogin }) => {
             </form>
 
             <div className="text-center mt-3">
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-decoration-none text-primary fw-medium"
-                onClick={() => { setMode('login'); resetForm(); }}
-              >
-                ¿Ya tienes una cuenta? Inicia Sesión
-              </button>
+              <p className="small text-secondary mb-0">
+                ¿Ya tienes una cuenta? <button type="button" className="btn btn-link p-0 text-primary fw-semibold" onClick={() => { setMode('login'); navigate('/login'); resetForm(); }}>Inicia Sesión</button>
+              </p>
             </div>
           </div>
         )}

@@ -1,6 +1,36 @@
 import { apiCall } from '../utils/fetch.js';
 
 /**
+ * Registra o actualiza la encuesta según si ya existe un _id.
+ * Una sola encuesta por usuario; en sesiones siguientes se actualiza.
+ * @param {Object} payload - Payload mapeado para el backend.
+ * @returns {Promise<Object>} Respuesta del backend.
+ */
+export async function registerOrUpdateSurvey(payload) {
+    try {
+        const stored = localStorage.getItem('surveyData');
+        const existing = stored ? JSON.parse(stored) : {};
+        const surveyId = existing?._id;
+
+        if (surveyId) {
+            const res = await apiCall('neuro', `/api/survey/update/${surveyId}`, 'PUT', payload);
+            return { ...res, surveyId };
+        }
+
+        const res = await apiCall('neuro', '/api/survey/register', 'POST', payload);
+        if (res?.success && res.data?.surveyId) {
+            const updated = { ...existing, ...payload, _id: res.data.surveyId };
+            localStorage.setItem('surveyData', JSON.stringify(updated));
+            return { ...res, surveyId: res.data.surveyId };
+        }
+        return res;
+    } catch (e) {
+        console.error("❌ Error registrando/actualizando encuesta:", e);
+        throw e;
+    }
+}
+
+/**
  * Mapea los datos de la encuesta del frontend al esquema de Survey esperado por el backend.
  * @param {Object} rawSurvey - Carga útil de la encuesta del frontend.
  * @returns {Object} Carga útil formateada para el backend.
@@ -70,27 +100,39 @@ export function mapSurveyToBackendPayload(rawSurvey) {
         least_favorite: "tone3"
     };
 
-    // 5. Mapear géneros y artistas de interés desde localStorage si están presentes
+    // 5. Mapear géneros y artistas de interés
     let genres = [];
     let artistInterest = [];
-    try {
-        const storedArtists = localStorage.getItem('selectedArtistsData');
-        if (storedArtists) {
-            const artistsList = JSON.parse(storedArtists);
-            artistInterest = artistsList.map(a => a.name).filter(Boolean);
-            artistsList.forEach(a => {
-                const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
-                artistGenres.forEach(g => {
-                    if (g && !genres.includes(g)) genres.push(g);
-                });
-            });
-        }
-    } catch (e) {
-        console.error("Error reading genres/artists for survey mapping:", e);
-    }
 
-    if (genres.length === 0) {
-        genres = ["Lofi", "Ambient"];
+    if (rawSurvey.artist_interest && rawSurvey.artist_interest.length > 0) {
+        // Usar los que vienen de la base de datos a través de rawSurvey
+        artistInterest = [...rawSurvey.artist_interest];
+        if (rawSurvey.genres && rawSurvey.genres.length > 0) {
+            genres = [...rawSurvey.genres];
+        } else {
+            genres = ["Lofi", "Ambient"];
+        }
+    } else {
+        // Fallback a localStorage si rawSurvey no los trae
+        try {
+            const storedArtists = localStorage.getItem('selectedArtistsData');
+            if (storedArtists) {
+                const artistsList = JSON.parse(storedArtists);
+                artistInterest = artistsList.map(a => a.name).filter(Boolean);
+                artistsList.forEach(a => {
+                    const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+                    artistGenres.forEach(g => {
+                        if (g && !genres.includes(g)) genres.push(g);
+                    });
+                });
+            }
+        } catch (e) {
+            console.error("Error reading genres/artists for survey mapping:", e);
+        }
+
+        if (genres.length === 0) {
+            genres = ["Lofi", "Ambient"];
+        }
     }
 
     // 6. Mapear tempo
@@ -120,41 +162,47 @@ export function mapSurveyToBackendPayload(rawSurvey) {
 export async function generateRecommendation(rawSurvey = null) {
     console.log("⚡ GENERANDO RECOMENDACIÓN EN EL BACKEND...", rawSurvey);
     try {
-        const payload = { ...(rawSurvey || {}) };
-        try {
-            const stored = localStorage.getItem('selectedArtists');
-            if (stored) {
-                payload.selectedArtists = JSON.parse(stored);
+        let survey = rawSurvey;
+        if (!survey) {
+            try {
+                const storedSurvey = localStorage.getItem('surveyData');
+                if (storedSurvey) {
+                    survey = JSON.parse(storedSurvey);
+                }
+            } catch (e) {
+                console.error("❌ Error reading surveyData from localStorage:", e);
             }
-        } catch (e) {
-            console.error("❌ Error reading selectedArtists from localStorage:", e);
-        }
-        try {
-            const storedDisliked = localStorage.getItem('dislikedTracks');
-            if (storedDisliked) {
-                payload.dislikedTracks = JSON.parse(storedDisliked);
-            }
-        } catch (e) {
-            console.error("❌ Error reading dislikedTracks from localStorage:", e);
-        }
-        try {
-            const storedPlayed = localStorage.getItem('playedTracks');
-            if (storedPlayed) {
-                payload.playedTracks = JSON.parse(storedPlayed);
-            }
-        } catch (e) {
-            console.error("❌ Error reading playedTracks from localStorage:", e);
         }
 
-        // Si hay una encuesta local, primero la registramos/guardamos en la base de datos
-        if (rawSurvey) {
+        if (survey) {
             console.log("💾 Registrando encuesta activa en el backend...");
-            const backendPayload = mapSurveyToBackendPayload(rawSurvey);
-            await apiCall('neuro', '/api/survey/register', 'POST', backendPayload);
-            console.log("✅ Encuesta registrada correctamente.");
+            const backendPayload = mapSurveyToBackendPayload(survey);
+
+            // Asegurar que artist_interest y emotion siempre estén poblados
+            if (!backendPayload.artist_interest || backendPayload.artist_interest.length === 0) {
+                try {
+                    const storedArtists = localStorage.getItem('selectedArtistsData');
+                    if (storedArtists) {
+                        const artistsList = JSON.parse(storedArtists);
+                        backendPayload.artist_interest = artistsList.map(a => a.name).filter(Boolean);
+                        artistsList.forEach(a => {
+                            const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+                            artistGenres.forEach(g => {
+                                if (g && !backendPayload.genres.includes(g)) backendPayload.genres.push(g);
+                            });
+                        });
+                    }
+                } catch (e) {
+                    console.error("❌ Error leyendo artistas de localStorage:", e);
+                }
+            }
+
+            await registerOrUpdateSurvey(backendPayload);
+            console.log("✅ Encuesta registrada/actualizada correctamente.");
+        } else {
+            console.warn("⚠️ No hay encuesta local disponible. El backend usará la última encuesta registrada.");
         }
 
-        // Luego solicitamos al backend que genere las recomendaciones usando GET
         const response = await apiCall('neuro', '/api/recommend/generate', 'GET');
         if (response && response.success) {
             return response.data;
@@ -194,30 +242,50 @@ export async function getLatestRecommendation() {
 export async function generateHybridPlaylist(spotifyTokenArg, rawSurvey) {
     console.log("🏭 SOLICITANDO RECOMENDACIONES AL BACKEND...");
     try {
-        // 1. Generar la recomendación en base al usuario autenticado
-        await generateRecommendation(rawSurvey);
+        // 1. Generar la recomendación y capturar su respuesta directa
+        const genResult = await generateRecommendation(rawSurvey);
+        const genData = genResult?.result || genResult?.songs || genResult;
 
-        // 2. Obtener los detalles de la última recomendación generada
-        const result = await getLatestRecommendation();
+        if (Array.isArray(genData) && genData.length > 0) {
+            if (typeof genData[0] === 'object') {
+                console.log(`✅ Playlist enriquecida desde generate: ${genData.length} pistas.`);
+                return genData.map((track) => ({
+                    id: track.id || track.track_id,
+                    uri: track.uri || track.spotify_link || track.preview_url,
+                    title: track.title || track.name || 'Canción Desconocida',
+                    artist: track.artist || track.artists?.map?.(a => a.name)?.join(', ') || 'Artista Desconocido',
+                    cover: track.cover || track.album?.images?.[0]?.url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
+                    preview_url: track.preview_url || null,
+                    energy: track.energy ?? 3,
+                    valence: track.valence ?? 7,
+                    bpm: track.bpm ?? 60,
+                    genre: track.genre || rawSurvey?.emotion || 'Calma'
+                }));
+            }
+            if (spotifyTokenArg) {
+                console.log(`✅ IDs recibidos: ${genData.length}. Obteniendo metadata de Spotify...`);
 
-        // El backend almacena las canciones en el campo 'result'
-        const playlistSongs = result?.result || result?.songs;
+                const idsString = genData.join(',');
+                const spotifyRes = await fetch(`https://api.spotify.com/v1/tracks?ids=${idsString}`, {
+                    headers: { 'Authorization': `Bearer ${spotifyTokenArg}` }
+                });
 
-        if (result && Array.isArray(playlistSongs)) {
-            console.log(`✅ Playlist recomendada recibida con ${playlistSongs.length} tracks.`);
+                if (!spotifyRes.ok) throw new Error("Fallo al obtener metadata de Spotify");
+                const spotifyData = await spotifyRes.json();
 
-            // Mapeamos las canciones del formato de MongoDB al formato enriquecido del reproductor
-            return playlistSongs.map((song, idx) => ({
-                id: song.id || song.track_id || `rec-${result.recommendationId || 'latest'}-${idx}`,
-                title: song.title || song.name || 'Canción Desconocida',
-                artist: Array.isArray(song.artists) ? song.artists.join(', ') : (song.artist || 'Artista Desconocido'),
-                cover: song.cover || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
-                preview_url: song.preview_url || song.file_url || null,
-                energy: song.energy || 3,
-                valence: song.valence || 7,
-                bpm: song.bpm || song.tempo || 60,
-                genre: song.genre || rawSurvey?.emotion || 'Calma'
-            }));
+                return spotifyData.tracks.map((track) => ({
+                    id: track.id,
+                    uri: track.uri,
+                    title: track.name || 'Canción Desconocida',
+                    artist: track.artists?.map(a => a.name).join(', ') || 'Artista Desconocido',
+                    cover: track.album?.images?.[0]?.url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
+                    preview_url: track.preview_url || null,
+                    energy: 3,
+                    valence: 7,
+                    bpm: 60,
+                    genre: rawSurvey?.emotion || 'Calma'
+                }));
+            }
         }
         throw new Error("Formato de respuesta de recomendación no válido");
     } catch (error) {

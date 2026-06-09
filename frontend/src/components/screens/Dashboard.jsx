@@ -96,8 +96,8 @@ const Dashboard = ({
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    let bufferLength = 0;
-    let dataArray = null;
+    let bufferLength = 128;
+    let dataArray = new Uint8Array(bufferLength);
     if (analyserNode) {
       bufferLength = analyserNode.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength);
@@ -106,8 +106,21 @@ const Dashboard = ({
     const draw = () => {
       animationRef.current = requestAnimationFrame(draw);
 
-      if (analyserNode && isPlaying) {
+      const isSpotifyTrack = currentTrack && currentTrack.uri;
+      if (analyserNode && isPlaying && !isSpotifyTrack) {
         analyserNode.getByteFrequencyData(dataArray);
+      } else if (isPlaying) {
+        // Simulación elegante de frecuencias si es Spotify o no hay analyserNode
+        const timeVal = Date.now() * 0.003;
+        for (let i = 0; i < bufferLength; i++) {
+          // Genera una onda armónica y fluida
+          const wave1 = Math.sin(i * 0.1 - timeVal * 2) * 0.5 + 0.5;
+          const wave2 = Math.cos(i * 0.25 + timeVal * 1.5) * 0.5 + 0.5;
+          const noise = Math.random() * 0.12;
+          // Frecuencias bajas (i pequeños) tienen más amplitud
+          const freqFactor = Math.max(0.15, 1 - (i / bufferLength) * 0.7);
+          dataArray[i] = Math.round((wave1 * 0.65 + wave2 * 0.25 + noise * 0.1) * 255 * freqFactor);
+        }
       } else if (dataArray) {
         // Decae suavemente las frecuencias cuando esta en pausa
         for (let i = 0; i < bufferLength; i++) {

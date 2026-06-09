@@ -18,7 +18,7 @@ let isRefreshing = false;
 // ---------------------------------------------------------
 // 2. FUNCIÓN DE REFRESCO (La Magia)
 // ---------------------------------------------------------
-async function refreshSpotifySession() {
+export async function refreshSpotifySession() {
     const refreshToken = localStorage.getItem('spotifyRefreshToken');
 
     if (!refreshToken) {
@@ -121,12 +121,31 @@ export async function apiCall(serverName, endpoint, method, body = null) {
             }
         }
 
+        // --- INTERCEPTOR DE ERROR 401 (Para Backend NeuroSound) ---
+        if (response.status === 401 && serverName === 'neuro') {
+            const isAuthRoute = url.includes('/api/auth/login') || url.includes('/api/user/register');
+            if (!isAuthRoute) {
+                console.warn("⚠️ Sesión expirada o no autorizada en el backend. Cerrando sesión...");
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('spotifyToken');
+                localStorage.removeItem('spotifyRefreshToken');
+                localStorage.removeItem('surveyData');
+
+                if (!window.location.pathname.includes('/login')) {
+                    window.location.href = '/login';
+                }
+            }
+        }
+
         if (response.status === 204) return null;
 
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-            throw new Error(data.message || data.error?.message || `Error HTTP ${response.status}`);
+            const errorObj = new Error(data.message || data.error?.message || `Error HTTP ${response.status}`);
+            errorObj.status = response.status;
+            throw errorObj;
         }
 
         return data;

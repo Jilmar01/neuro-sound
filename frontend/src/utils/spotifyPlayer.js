@@ -1,167 +1,303 @@
-/* ==========================================
-   js/spotifyPlayer.js
-   Reproductor SDK de Spotify (Con soporte de Playlist)
-   ========================================== */
+import { apiCall, refreshSpotifySession } from './fetch.js';
 
-import { apiCall } from '/js/refactored/fetch.js';
-import UIController from '/js/uicontroller.js'; // Asegúrate que el nombre coincida (Mayús/Minús)
+const SDK_SCRIPT_ID = 'spotify-sdk';
 
 const SpotifyPlayerWrapper = {
     player: null,
     deviceId: null,
-    
-    // 👇 NUEVO: Estado interno para manejar la lista
+    isReady: false,
     playlist: [],
     currentIndex: 0,
+    callbacks: {},
+    progressInterval: null,
+    lastTrackEndUri: null,
+    reconnectAttempts: 0,
+    maxReconnectAttempts: 5,
+    wasPlaying: false,
+    reconnecting: false,
 
-    init() {
+    init(callbacks = {}) {
+        this.callbacks = { ...this.callbacks, ...callbacks };
+
         const token = localStorage.getItem('spotifyToken');
         if (!token) {
-            console.warn("⚠️ [SpotifyPlayer] No hay token disponible.");
-            return;
+            console.warn('[SpotifyPlayer] No hay token disponible.');
+            return this;
         }
 
         window.onSpotifyWebPlaybackSDKReady = () => {
-            this.setupPlayer(token);
+            this.setupPlayer();
         };
 
-        if (!document.getElementById('spotify-sdk')) {
-            console.log("📥 Descargando SDK de Spotify...");
+        if (!document.getElementById(SDK_SCRIPT_ID)) {
             const script = document.createElement('script');
-            script.id = 'spotify-sdk';
-            script.src = "https://sdk.scdn.co/spotify-player.js";
+            script.id = SDK_SCRIPT_ID;
+            script.src = 'https://sdk.scdn.co/spotify-player.js';
+            script.async = true;
             document.body.appendChild(script);
-        } else {
-            if (window.Spotify) {
-                this.setupPlayer(token);
-            }
+        } else if (window.Spotify) {
+            this.setupPlayer();
         }
+
         return this;
     },
 
-    setupPlayer(token) {
-        console.log("🎵 [SpotifyPlayer] Inicializando...");
-        
-        this.player = new Spotify.Player({
-            name: 'Neuro-Sound Web',
-            getOAuthToken: cb => { cb(token); },
+    async setupPlayer() {
+        if (this.player) return;
+
+        try {
+            const freshToken = await refreshSpotifySession();
+            if (!freshToken) throw new Error('refresh returned empty');
+        } catch (e) {
+            console.warn('[SpotifyPlayer] No se pudo refrescar token inicial, usando el almacenado.');
+        }
+
+        this.player = new window.Spotify.Player({
+            name: 'Neuro-Sound Web Player',
+            getOAuthToken: async cb => {
+                let t = localStorage.getItem('spotifyToken');
+                const rt = localStorage.getItem('spotifyRefreshToken');
+                if (t && rt) {
+                    try {
+                        const fresh = await refreshSpotifySession();
+                        if (fresh) t = fresh;
+                    } catch (e) {
+                        // silent fail, use existing
+                    }
+                }
+                cb(t);
+            },
             volume: 0.5
         });
 
-        // --- LISTENERS ---
         this.player.addListener('player_state_changed', state => {
             if (!state) return;
-            const track = state.track_window.current_track;
+
             const isPlaying = !state.paused;
+            const currentTrackUri = state.track_window?.current_track?.uri;
 
-            // Detectar fin de canción para pasar a la siguiente
-            // (Si estaba sonando, ahora está pausado y la posición es 0)
-            if (state.paused && state.position === 0 && !state.loading && state.restrictions.disallow_resuming_reasons?.includes('not_paused')) {
-               // Nota: El SDK es caprichoso con el auto-next, pero esto ayuda.
-               // Lo ideal es manejarlo manualmente o dejar que el usuario pulse next.
-            }
+            this.callbacks.onPlayerStateChange?.(state);
+            this.callbacks.onPlayingChange?.(isPlaying);
+            this.callbacks.onProgressChange?.(state.position / 1000);
+            this.callbacks.onDurationChange?.(state.duration / 1000);
 
-            if (typeof UIController !== 'undefined') {
-                UIController.updatePlayIcon(isPlaying);
-                UIController.updateMetadata(
-                    track.name,
-                    track.artists.map(a => a.name).join(', '),
-                    track.album.images[0]?.url,
-                    state.duration
-                );
-                UIController.updateProgress(state.position, state.duration);
+            if (currentTrackUri && this.playlist.length > 0) {
+                const matchedIdx = this.playlist.findIndex(track => track.uri === currentTrackUri);
+                if (matchedIdx !== -1 && matchedIdx !== this.currentIndex) {
+                    this.currentIndex = matchedIdx;
+                    this.callbacks.onTrackIndexChange?.(matchedIdx);
+                }
             }
         });
 
         this.player.addListener('ready', async ({ device_id }) => {
-            console.log('✅ Spotify Listo. Device ID:', device_id);
             this.deviceId = device_id;
+            this.isReady = true;
+            this.reconnectAttempts = 0;
+            this.reconnecting = false;
+            this.callbacks.onReady?.(device_id);
             await this.transferPlayback(device_id);
+
+            if (this.wasPlaying) {
+                console.log('▶️ Reanudando reproducción tras reconexión...');
+                await new Promise(r => setTimeout(r, 1000));
+                await this.playTrackAtIndex(this.currentIndex);
+            }
         });
 
-        this.player.addListener('initialization_error', ({ message }) => console.error("❌ Init Error:", message));
-        this.player.addListener('authentication_error', ({ message }) => console.error("❌ Auth Error:", message));
+        this.player.addListener('not_ready', ({ device_id }) => {
+            console.warn('[SpotifyPlayer] ⚠️ Dispositivo desconectado (not_ready). Intentando reconectar...');
+            this.isReady = false;
+            if (this.deviceId === device_id) this.deviceId = null;
+            this.callbacks.onNotReady?.(device_id);
+            this.attemptReconnect();
+        });
+
+        this.player.addListener('initialization_error', ({ message }) => console.error('Spotify init error:', message));
+        this.player.addListener('authentication_error', ({ message }) => console.error('Spotify auth error:', message));
+        this.player.addListener('playback_error', ({ message }) => console.error('Spotify playback error:', message));
+        this.player.addListener('account_error', ({ message }) => {
+            console.error('Spotify account error:', message);
+            this.callbacks.onAccountError?.(message);
+        });
 
         this.player.connect();
+        this.startProgressPolling();
+    },
 
-        setInterval(async () => {
-            if(this.player) {
-                const state = await this.player.getCurrentState();
-                if (state && !state.paused) {
-                    UIController.updateProgress(state.position, state.duration);
+    startProgressPolling() {
+        if (this.progressInterval) clearInterval(this.progressInterval);
+
+        this.progressInterval = setInterval(async () => {
+            if (!this.player) return;
+
+            const state = await this.player.getCurrentState();
+            if (!state) return;
+
+            const position = state.position / 1000;
+            const duration = state.duration / 1000;
+            const currentTrackUri = state.track_window?.current_track?.uri;
+
+            this.callbacks.onPlayingChange?.(!state.paused);
+            this.callbacks.onProgressChange?.(position);
+            this.callbacks.onDurationChange?.(duration);
+
+            if (!state.paused && state.duration > 0 && state.position >= state.duration - 750) {
+                if (this.lastTrackEndUri !== currentTrackUri) {
+                    this.lastTrackEndUri = currentTrackUri;
+                    this.callbacks.onTrackEnd?.();
                 }
+            } else if (currentTrackUri !== this.lastTrackEndUri) {
+                this.lastTrackEndUri = null;
             }
         }, 1000);
     },
 
     async transferPlayback(deviceId) {
-        console.log(`🔀 Transfiriendo a: ${deviceId}`);
         try {
             await apiCall('spotify', '/me/player', 'PUT', {
                 device_ids: [deviceId],
-                play: false 
+                play: true
             });
-            console.log("✅ Transferencia Exitosa.");
-        } catch (e) {
-            console.warn("⚠️ Error en transferencia:", e);
+        } catch (error) {
+            console.warn('No se pudo transferir la reproduccion a Neuro-Sound:', error);
         }
     },
 
-    // 👇 NUEVO: Método para recibir la lista de canciones (Igual que LocalPlayer)
     updatePlaylist(songs) {
-        if (!songs || !Array.isArray(songs)) return;
+        if (!Array.isArray(songs)) return;
         this.playlist = songs;
-        console.log(`📋 SpotifyWrapper: Playlist actualizada con ${songs.length} canciones.`);
     },
 
-    // 👇 NUEVO: Método interno para reproducir por índice
+    isSpotifyTrackUri(uri) {
+        return typeof uri === 'string' && uri.startsWith('spotify:track:');
+    },
+
+    async attemptReconnect() {
+        if (this.reconnecting) return;
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('[SpotifyPlayer] Máximo de reintentos alcanzado. La reconexión falló.');
+            this.reconnecting = false;
+            return;
+        }
+
+        this.reconnecting = true;
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 8000);
+
+        await new Promise(r => setTimeout(r, delay));
+
+        try {
+            const connected = await this.player?.connect();
+            if (connected) {
+                console.log('[SpotifyPlayer] Reconexión exitosa, esperando evento ready...');
+            } else {
+                console.warn(`[SpotifyPlayer] Reintento ${this.reconnectAttempts} fallido (connect=false).`);
+                this.reconnecting = false;
+                this.attemptReconnect();
+            }
+        } catch (error) {
+            console.error('[SpotifyPlayer] Error en reconexión:', error);
+            this.reconnecting = false;
+            this.attemptReconnect();
+        }
+    },
+
     async playTrackAtIndex(index) {
-        if (index < 0 || index >= this.playlist.length) return;
-        
+        if (index < 0 || index >= this.playlist.length) return false;
+
+        this.wasPlaying = true;
         this.currentIndex = index;
         const track = this.playlist[index];
-        
-        console.log(`▶️ Spotify Next/Prev: ${track.title}`);
-        
-        // Llamamos a la API para tocar esta canción específica
-        await apiCall('spotify', `/me/player/play?device_id=${this.deviceId}`, 'PUT', { 
-            uris: [track.uri] 
-        });
+        const spotifyUri = this.isSpotifyTrackUri(track?.uri) ? track.uri : null;
+
+        if (!spotifyUri) {
+            console.warn(`⚠️ "${track?.title || 'Pista'}" no tiene URI de Spotify reproducible.`);
+            return false;
+        }
+
+        if (!this.player || !this.deviceId) {
+            console.warn('⚠️ Spotify player no está listo.');
+            return false;
+        }
+
+        console.log(`▶️ Spotify ejecutando índice ${index}: ${track.title}`);
+
+        // Transferir playback y esperar a que el dispositivo se active en Spotify Connect
+        await this.transferPlayback(this.deviceId);
+        await new Promise(r => setTimeout(r, 800));
+
+        try {
+            await apiCall('spotify', '/me/player/play', 'PUT', {
+                uris: [spotifyUri]
+            });
+            return true;
+        } catch (error) {
+            const isRestriction = error.status === 403 ||
+                (error.message && error.message.includes('Restriction violated'));
+            if (isRestriction) {
+                console.warn('⚠️ Spotify API rechazó la reproducción (403). Verifica que el dispositivo "Neuro-Sound" esté visible en Spotify Connect y que tu cuenta tenga Premium.');
+                this.callbacks.onAccountError?.(
+                    'No se pudo reproducir en Spotify. Verifica que el dispositivo "Neuro-Sound" esté visible en Spotify Connect y que tu cuenta tenga Premium.'
+                );
+            } else {
+                console.error("❌ Error enviando comando a Spotify:", error);
+            }
+            return false;
+        }
     },
 
-    // --- CONTROLES PÚBLICOS (Actualizados) ---
-
-    togglePlay() { 
-        this.player?.togglePlay(); 
+    togglePlay() {
+        return this.player?.togglePlay();
     },
 
-    // Ahora next() calcula el índice y manda la orden
-    next() { 
+    resume() {
+        return this.player?.resume();
+    },
+
+    pause() {
+        this.wasPlaying = false;
+        return this.player?.pause();
+    },
+
+    next() {
         if (this.playlist.length > 0) {
             const nextIndex = (this.currentIndex + 1) % this.playlist.length;
-            this.playTrackAtIndex(nextIndex);
-        } else {
-            this.player?.nextTrack(); // Fallback por si no hay playlist cargada
+            return this.playTrackAtIndex(nextIndex);
         }
+        return this.player?.nextTrack();
     },
 
-    // Ahora prev() calcula el índice y manda la orden
-    prev() { 
+    prev() {
         if (this.playlist.length > 0) {
             const prevIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
-            this.playTrackAtIndex(prevIndex);
-        } else {
-            this.player?.previousTrack();
+            return this.playTrackAtIndex(prevIndex);
         }
+        return this.player?.previousTrack();
     },
 
-    seek(percent) { 
-        this.player?.getCurrentState().then(state => {
-            if(state) {
-                const seekTo = (percent / 100) * state.duration;
-                this.player.seek(seekTo);
-            }
-        });
+    seek(seconds) {
+        return this.player?.seek(seconds * 1000);
+    },
+
+    setVolume(volume) {
+        return this.player?.setVolume(volume);
+    },
+
+    disconnect() {
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+            this.progressInterval = null;
+        }
+
+        this.player?.disconnect();
+        this.player = null;
+        this.deviceId = null;
+        this.isReady = false;
+        this.wasPlaying = false;
+        this.reconnectAttempts = 0;
+        this.reconnecting = false;
+        this.lastTrackEndUri = null;
     }
 };
 
