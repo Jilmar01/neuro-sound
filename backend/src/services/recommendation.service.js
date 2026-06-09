@@ -11,7 +11,11 @@ export const saveRecommendation = async (userId, surveyId, result) => {
 }
 
 export const getRecommendationBySurvey = async (userId, surveyId) => {
-  return await Recommendation.findOne({ userId, surveyId });
+  const recommendation = await Recommendation.findOne({ userId, surveyId });
+    if (!recommendation) {
+        throw new HttpError('No existe recomendación para esta encuesta', 404);
+    }
+    return recommendation;
 };
 
 export const getRecommendation = async (userId) => {
