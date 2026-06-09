@@ -1,5 +1,6 @@
 import { getRecommendationBySurvey, saveRecommendation } from '../services/recommendation.service.js';
 import { generateHybridPlaylist } from '../services/recommendationEngine/NECv2.js';
+import { getRecommendationEngine } from '../services/engine.service.js';
 import { getProfileUser } from '../services/survey.service.js';
 import { HttpError } from '../utils/httpError.js';
 import { sendError, sendSuccess } from '../utils/response.util.js';
@@ -12,26 +13,14 @@ export const recommendMusic = async (req, res) => {
         const userId = req.user?._id;
 
         const survey = await getProfileUser(userId);
-        if (!survey) {
-            throw new HttpError('No existe encuesta asociada al usuario', 404);
-        }
         const surveyId = survey._id;
 
-        const recommend = await generateHybridPlaylist(survey);
-        if (!recommend) {
-            console.log("Entra al tratar de generar recomendacion");
-            throw new HttpError('Error al generar la recomendacion de canciones', 400);
-        }
-        console.log(recommend);
-
-        const recommendation = await saveRecommendation(userId, surveyId, recommend);
+        // Consume el motor de recomendación para obtener las canciones recomendadas
+        const recommend = await getRecommendationEngine(survey);
+        const track_Ids = recommend.recomendacionGenerada;
         
-        if(!recommendation) {
-            console.log("Entra al tratar de guardar la recomendacion");
-            
-            throw new HttpError('Error al generar la recomendacion de canciones', 400);
-        }
-
+        const recommendation = await saveRecommendation(userId, surveyId, track_Ids);
+        
         return sendSuccess(res, recommendation, 'Recomendaciones generadas correctamente', 200);
 
     } catch (error) {
@@ -47,18 +36,28 @@ export const getRecommendation = async (req, res) => {
         const userId = req.user?._id;
 
         const survey = await getProfileUser(userId);
-        if (!survey) {
-            throw new HttpError('No existe encuesta asociada al usuario', 404);
-        }
 
         const recommendation = await getRecommendationBySurvey(userId, survey._id);
-        if (!recommendation) {
-            throw new HttpError('No existe recomendación para esta encuesta', 404);
-        }
 
         return sendSuccess(res, recommendation, 'Recomendación obtenida correctamente', 200);
    
     } catch (error) {
-        return sendError(res, 'Error al obtener la recomendacion previa', error.status, error.error);
+        return sendError(res, 'Error al obtener la recomendacion previa', error.status, error.message);
+    }
+}
+
+export const saveRecommendationBySurvey = async (req, res) => {
+    try {
+        const userId = req.user?._id;
+        const { surveyId, result } = req.body;
+
+        const recommendation = await saveRecommendation(userId, surveyId, result);
+        
+        if(!recommendation) {
+            throw new HttpError('Error al generar la recomendacion de canciones', 400);
+        }
+        return sendSuccess(res, recommendation, 'Recomendación guardada correctamente', 200);
+    } catch (error) {
+        return sendError(res, 'Error al guardar la recomendacion', error.status, error.message);
     }
 }
