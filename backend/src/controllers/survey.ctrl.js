@@ -49,13 +49,24 @@ export const updateSurvey = async (req, res) => {
 
     const survey = await getProfileUser(userId);
 
-    await updateSurveyById(survey._id, surveyData);
+    const updatedSurvey = await updateSurveyById(survey._id, surveyData);
 
-    return sendSuccess(res, { surveyId: survey._id }, "Encuesta actualizada correctamente", 200);
+    return sendSuccess(res, updatedSurvey, "Encuesta actualizada correctamente", 200);
 
   } catch (error) {
     return sendError(res, "Error actualizando la encuesta", error.status || 500, error.message);
   }
 }
 
+export const updateSurveyId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const surveyData = { ...req.body };
 
+    const updatedSurvey = await updateSurveyById(id, surveyData);
+
+    return sendSuccess(res, updatedSurvey, "Encuesta actualizada correctamente", 200);
+  } catch (error) {
+    return sendError(res, "Error actualizando la encuesta", error.status || 500, error.message);
+  }
+};
