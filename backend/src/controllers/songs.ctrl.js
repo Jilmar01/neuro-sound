@@ -19,7 +19,18 @@ export const getSongsPaginated = async (req, res) => {
 
         let songsWithGenres = [];
         for (const song of response) {
-            song.genres = await getGenreByArtistId(song.id_artists[0]);
+            let genres = [];
+
+            for (const artistId of song.id_artists) {
+                const artistGenres = await getGenreByArtistId(artistId);
+                
+                if (artistGenres && artistGenres.length > 0) {
+                    genres = artistGenres;
+                    break;
+                }
+            }
+
+            song.genres = genres;
             songsWithGenres.push(song);
         }
 
@@ -35,7 +46,7 @@ export const getSongById = async (req, res) => {
         const song = await getTrackById(track_id);
         if (!song) {
             return sendError(res, "Canción no encontrada", 404);
-        }   
+        }
         return sendSuccess(res, song, "Canción obtenida correctamente", 200);
     } catch (error) {
         return sendError(res, error.message || "Error interno del servidor", 500);
@@ -44,10 +55,10 @@ export const getSongById = async (req, res) => {
 
 export const getTracksByIds = async (req, res) => {
     try {
-        const { track_ids } = req.body; 
+        const { track_ids } = req.body;
         const track = await findSongsByIds(track_ids);
         return sendSuccess(res, track, "Canciones obtenidas correctamente", 200);
     } catch (error) {
         return sendError(res, "Error al obtener las canciones", error.status, error.message);
-    }  
+    }
 }
