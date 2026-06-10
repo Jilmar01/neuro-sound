@@ -63,9 +63,8 @@ export const getArtists = async ({page, limit, search, genre}) => {
 
 export const getGenreByArtistId = async (artistId) => {
     const artist = await Artist.findOne({ id: artistId });
-    console.log("Artista encontrado:", artist);
     if (!artist) {
-        throw new HttpError('No se encontró el artista', 404);
+        return null;
     }
 
     return artist.genres;
