@@ -6,15 +6,18 @@ const recommendationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+
   surveyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Survey',
     required: true
   },
-  result: {
+
+  tracks: {
     type: Object,
     required: true
   },
+  
   createdAt: {
     type: Date,
     default: Date.now
