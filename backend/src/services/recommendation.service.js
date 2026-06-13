@@ -2,7 +2,7 @@ import Recommendation from "../models/recommendation.model.js"
 import { HttpError } from "../utils/httpError.js";
 
 export const saveRecommendation = async (userId, surveyId, tracks) => {
-    if (!result) {
+    if (!tracks) {
         throw new HttpError('Datos incompletos para registrar la recomendación', 400);
     }
 
