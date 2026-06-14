@@ -19,3 +19,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_NEURO_SOUND_7AF10 }}
           channelId: live
           projectId: neuro-sound-7af10
+          entryPoint: ./frontend
