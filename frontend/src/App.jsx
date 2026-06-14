@@ -16,6 +16,75 @@ import { apiCall } from './utils/fetch.js';
 import SpotifyPlayerWrapper from './utils/spotifyPlayer.js';
 import Slider from './components/common/Slider';
 
+// Redirigir de forma transparente las claves de sesión de localStorage a sessionStorage
+const keysToSession = ['token', 'spotifyToken', 'spotifyRefreshToken', 'user', 'userData', 'userCached'];
+
+const originalGetItem = Storage.prototype.getItem;
+const originalSetItem = Storage.prototype.setItem;
+const originalRemoveItem = Storage.prototype.removeItem;
+
+Storage.prototype.getItem = function (key) {
+  if (this === window.localStorage && keysToSession.includes(key)) {
+    return sessionStorage.getItem(key);
+  }
+  return originalGetItem.call(this, key);
+};
+
+Storage.prototype.setItem = function (key, value) {
+  if (this === window.localStorage && keysToSession.includes(key)) {
+    return sessionStorage.setItem(key, value);
+  }
+  return originalSetItem.call(this, key, value);
+};
+
+Storage.prototype.removeItem = function (key) {
+  if (this === window.localStorage && keysToSession.includes(key)) {
+    return sessionStorage.removeItem(key);
+  }
+  return originalRemoveItem.call(this, key);
+};
+
+// Limpieza de caché, almacenamiento local/sesión y cookies residuales al iniciar la aplicación
+// Solo si NO hay una sesión activa en sessionStorage (evita desloguear al usuario en F5)
+const hasActiveSession = sessionStorage.getItem('token') || sessionStorage.getItem('spotifyToken');
+
+if (!hasActiveSession) {
+  try {
+    console.log("🧹 Iniciando la aplicación. Limpiando almacenamiento y cachés residuales...");
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch (e) {
+    console.error("Error al limpiar storage en inicio:", e);
+  }
+
+  try {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+      document.cookie = name.trim() + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    }
+  } catch (e) {
+    console.error("Error al limpiar cookies en inicio:", e);
+  }
+
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    try {
+      caches.keys().then((names) => {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    } catch (e) {
+      console.error("Error al limpiar caché en inicio:", e);
+    }
+  }
+} else {
+  console.log("🔄 Sesión activa detectada en sessionStorage. Preservando estado en F5.");
+}
+
 // Mapa de temas visuales por emocion/estado.
 const emotionThemes = {
   gris: {
@@ -366,53 +435,6 @@ function MainApp() {
           if (response && response.success && response.data) {
             const userObj = response.data;
             localStorage.setItem('user', JSON.stringify(userObj));
-
-            // Sincronizar encuestas si existen
-            if (userObj.surveys && userObj.surveys.length > 0) {
-              const lastSurvey = userObj.surveys[userObj.surveys.length - 1];
-              setSurveyData(lastSurvey);
-              localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
-
-              // Buscar los artistas en el historial de encuestas (de más reciente a más antigua)
-              // porque las encuestas diarias previas al parche pudieron guardarse sin artistas.
-              let surveyWithArtists = null;
-              for (let i = userObj.surveys.length - 1; i >= 0; i--) {
-                if (userObj.surveys[i].artist_interest && userObj.surveys[i].artist_interest.length > 0) {
-                  surveyWithArtists = userObj.surveys[i];
-                  break;
-                }
-              }
-
-              if (surveyWithArtists) {
-                // Conservar datos completos de artistas (con imágenes, IDs de Spotify) si ya existen en localStorage
-                let artistsData = [];
-                try {
-                  const storedFull = localStorage.getItem('selectedArtistsData');
-                  if (storedFull) {
-                    const parsed = JSON.parse(storedFull);
-                    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.name) {
-                      artistsData = parsed;
-                    }
-                  }
-                } catch (_) {}
-                // Solo reconstruir desde nombres si no hay datos completos en localStorage
-                if (artistsData.length === 0) {
-                  const dbGenres = surveyWithArtists.genres || [];
-                  artistsData = surveyWithArtists.artist_interest.map((name, idx) => ({
-                    id: name,
-                    name: name,
-                    img: null,
-                    genres: dbGenres.length > 0 ? [dbGenres[idx % dbGenres.length]] : []
-                  }));
-                }
-                localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
-                setSelectedArtistsData(artistsData);
-
-                // Guardar retro-compatibilidad para el resto de la app
-                const fakeIds = artistsData.map(a => a.id);
-                localStorage.setItem('selectedArtists', JSON.stringify(fakeIds));
-              }
-            }
           }
         } catch (e) {
           console.error("❌ Error al sincronizar el perfil:", e);
@@ -421,6 +443,43 @@ function MainApp() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
           }
+        }
+
+        // Obtener la última encuesta desde la BD (solo para restaurar artistas)
+        try {
+          const surveyRes = await apiCall('neuro', '/api/survey/get-register', 'GET');
+          if (surveyRes?.success && surveyRes.data) {
+            const dbSurvey = surveyRes.data;
+
+            // Poblar selectedArtistsData si la encuesta tiene artistas
+            if (dbSurvey.artist_interest && dbSurvey.artist_interest.length > 0) {
+              let artistsData = [];
+              try {
+                const storedFull = localStorage.getItem('selectedArtistsData');
+                if (storedFull) {
+                  const parsed = JSON.parse(storedFull);
+                  if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.name) {
+                    artistsData = parsed;
+                  }
+                }
+              } catch (_) {}
+              if (artistsData.length === 0) {
+                const dbGenres = dbSurvey.genres || [];
+                artistsData = dbSurvey.artist_interest.map((name, idx) => ({
+                  id: name,
+                  name,
+                  img: null,
+                  genres: dbGenres.length > 0 ? [dbGenres[idx % dbGenres.length]] : []
+                }));
+              }
+              localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
+              setSelectedArtistsData(artistsData);
+              const fakeIds = artistsData.map(a => a.id);
+              localStorage.setItem('selectedArtists', JSON.stringify(fakeIds));
+            }
+          }
+        } catch (e) {
+          console.warn("⚠️ No se pudo obtener la encuesta desde la BD:", e.message);
         }
       }
     };
@@ -433,7 +492,7 @@ function MainApp() {
       console.log("🔄 Carga automática de playlist al recargar en Dashboard...");
       loadPlaylist(surveyData || readStoredSurvey());
     }
-  }, [screen, playlist.length, isLoading]);
+  }, [screen, playlist.length, isLoading, surveyData]);
 
   /**
    * Inicializa el grafo de Web Audio y conecta el audio HTML5.
@@ -517,7 +576,7 @@ function MainApp() {
       onTrackIndexChange: setCurrentIndex,
       onTrackEnd: () => spotifyTrackEndHandlerRef.current?.(),
       onAccountError: () => {
-        alert("La reproduccion mediante el SDK requiere una cuenta Spotify Premium activa.");
+        console.warn("⚠️ La cuenta de Spotify no tiene Premium. La reproducción puede fallar.");
       }
     });
 
@@ -693,6 +752,12 @@ useEffect(() => {
         localStorage.setItem('token', loginRes.data.token);
         if (loginRes.data.user) {
           localStorage.setItem('user', JSON.stringify(loginRes.data.user));
+          const surveys = loginRes.data.user.surveys;
+          if (surveys && surveys.length > 0) {
+            const lastSurvey = surveys[surveys.length - 1];
+            setSurveyData(lastSurvey);
+            localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
+          }
         }
         console.log('✅ Sesión local iniciada para el usuario de Spotify.');
       } else {
@@ -701,11 +766,7 @@ useEffect(() => {
 
       // Solo continuamos si todo fue exitoso
       setUserType('spotify');
-      if (loginRes && loginRes.data && loginRes.data.user && loginRes.data.user.form === true) {
-        navigate('/dashboard', { replace: true });
-      } else {
-        navigate('/survey', { replace: true });
-      }
+      navigate('/survey', { replace: true });
 
     } catch (e) {
       console.error('❌ Error en el flujo PKCE de Spotify:', e);
@@ -1000,16 +1061,21 @@ useEffect(() => {
  * Alterna reproduccion/pausa del audio.
  * @returns {void}
  */
-const handlePlayPause = () => {
+const handlePlayPause = async () => {
   if (userType === 'spotify') {
     const currentTrack = playlist[currentIndex];
     if (!isPlaying && currentTrack?.uri && progress === 0) {
-      SpotifyPlayerWrapper.playTrackAtIndex(currentIndex);
-      setIsPlaying(true);
+      const ok = await SpotifyPlayerWrapper.playTrackAtIndex(currentIndex);
+      if (ok) setIsPlaying(true);
       return;
     }
 
     SpotifyPlayerWrapper.togglePlay();
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      setIsPlaying(true);
+    }
     return;
   }
 
@@ -1043,7 +1109,10 @@ const handleNext = async (isManual = false) => {
     console.log("🏁 Fin de la playlist. Cargando siguiente tanda...");
     setIsPlaying(false);
     setIsLoading(true);
-    await loadPlaylist(surveyData || {});
+    const newPlaylist = await loadPlaylist(surveyData || {});
+    if (userType === 'spotify' && newPlaylist?.length > 0) {
+      await SpotifyPlayerWrapper.playTrackAtIndex(0);
+    }
     setIsPlaying(true);
     return;
   }
@@ -1189,12 +1258,7 @@ const handleLogin = (type, userObj = null) => {
   setUserType(type);
   const user = userObj || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
 
-  // Si el usuario ya completó el proceso inicial (form: true), llevarlo a la encuesta emocional diaria
-  if (user && user.form === true) {
-    navigate('/survey');
-    return;
-  }
-
+  // Restaurar surveyData desde el usuario ANTES de cualquier navegación
   if (user) {
     const hasSurvey = user.surveys && user.surveys.length > 0;
     let surveyWithArtists = null;
@@ -1212,6 +1276,12 @@ const handleLogin = (type, userObj = null) => {
       const lastSurvey = user.surveys[user.surveys.length - 1];
       setSurveyData(lastSurvey);
       localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
+    }
+
+    // Si el usuario ya completó el proceso inicial (form: true), llevarlo a la encuesta emocional diaria
+    if (user.form === true) {
+      navigate('/survey');
+      return;
     }
 
     if (hasArtists) {
@@ -1233,6 +1303,10 @@ const handleLogin = (type, userObj = null) => {
  * Obtiene la encuesta mezclada con los artistas y géneros previos del usuario,
  * buscando tanto en la base de datos como en localStorage.
  */
+const getExistingSurveyId = () => {
+  try { const s = localStorage.getItem('surveyData'); return s ? JSON.parse(s)._id : undefined; } catch (_) {}
+};
+
 const getMergedSurveyData = async (rawSurveyData) => {
   let finalArtists = [];
   let finalGenres = [];
@@ -1281,12 +1355,41 @@ const getMergedSurveyData = async (rawSurveyData) => {
     }
   }
 
+  // Último fallback: leer del surveyData actual en localStorage (antes de sobrescribir)
+  if (finalArtists.length === 0) {
+    try {
+      const currSurvey = localStorage.getItem('surveyData');
+      if (currSurvey) {
+        const parsed = JSON.parse(currSurvey);
+        if (parsed.artist_interest && parsed.artist_interest.length > 0) {
+          finalArtists = parsed.artist_interest;
+          finalGenres = parsed.genres || [];
+        }
+      }
+    } catch (e) {
+      console.error("❌ Error al leer surveyData actual de localStorage:", e);
+    }
+  }
+
+  // Si no se encontraron artistas, no enviar estos campos al backend
+  // para que preserve los valores existentes en la BD
+  if (finalArtists.length === 0) {
+    const { artist_interest, genres, ...rest } = rawSurveyData;
+    return {
+      ...rest,
+      _id: rawSurveyData._id || getExistingSurveyId(),
+      artist_interest: undefined,
+      genres: undefined
+    };
+  }
+
   if (finalGenres.length === 0) {
     finalGenres = ["Lofi", "Ambient"];
   }
 
   return {
     ...rawSurveyData,
+    _id: rawSurveyData._id || getExistingSurveyId(),
     artist_interest: finalArtists,
     genres: finalGenres
   };
@@ -1335,19 +1438,8 @@ const handleSurveySubmit = async (data) => {
   setThemeMode('auto');
 
   const hasArtists = completeSurvey.artist_interest && completeSurvey.artist_interest.length > 0;
-  const needsCalibration = !surveyData;
 
-  if (needsCalibration) {
-    console.log("🎧 Primera vez. Navegando a calibración de auriculares...");
-    navigate('/calibrate');
-  } else if (hasArtists) {
-    console.log("🎵 Usuario con artistas guardados. Navegando al Dashboard...");
-    navigate('/dashboard');
-    await loadPlaylist(null);
-  } else {
-    console.log("🆕 Sin artistas. Navegando a la selección de artistas...");
-    navigate('/artists');
-  }
+  navigate('/calibrate');
 };
 
 /**
@@ -1546,6 +1638,23 @@ const handleCalibrationConfirm = async ({ volume }) => {
 const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = true) => {
   const track = trackToFeedback || playlist[currentIndex];
   if (!track) return;
+
+  const feedbackVal = type === 'positive' ? true : (type === 'negative' ? false : null);
+
+  // Sincronizar feedback con el backend
+  if (track.recommendationId) {
+    try {
+      console.log(`Sending feedback to backend: recommendationId=${track.recommendationId}, trackId=${track.id}, feedback=${feedbackVal}`);
+      await apiCall('neuro', `/api/recommend/feedback/${track.recommendationId}`, 'POST', {
+        trackId: track.id,
+        feedback: feedbackVal
+      });
+      // Actualizar la playlist local para reflejar el estado del feedback
+      setPlaylist(prev => prev.map(t => t.id === track.id ? { ...t, feedback: feedbackVal } : t));
+    } catch (e) {
+      console.error("❌ Error al enviar feedback al backend:", e);
+    }
+  }
 
   // Feedback local: el backend en producción no expone /api/user/feedback
   if (type === 'negative') {
@@ -1847,9 +1956,11 @@ const isOnboarding = onboardingScreens.includes(screen);
 
 const activeThemeKey = isOnboarding
   ? 'gris'
-  : currentTrack
-    ? getTrackThemeKey(currentTrack)
-    : targetEmotion;
+  : themeMode === 'manual'
+    ? targetEmotion
+    : currentTrack
+      ? getTrackThemeKey(currentTrack)
+      : targetEmotion;
 
 const theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
 

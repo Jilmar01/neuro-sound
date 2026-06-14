@@ -307,12 +307,17 @@ const Dashboard = ({
    * @returns {void}
    */
   const handleFeedbackClick = (type) => {
+    const isCurrentlyPositive = currentTrack.feedback === true;
+    const isCurrentlyNegative = currentTrack.feedback === false;
+
     if (type === 'positive') {
-      showToast('¡Validado! Guardando sintonía óptima.', 'success');
-      onFeedback('positive');
+      const nextType = isCurrentlyPositive ? 'none' : 'positive';
+      showToast(isCurrentlyPositive ? 'Sintonía óptima removida.' : '¡Validado! Guardando sintonía óptima.', 'success');
+      onFeedback(nextType);
     } else {
-      showToast('Ajustando algoritmo. Cargando nuevas frecuencias...', 'warning');
-      onFeedback('negative');
+      const nextType = isCurrentlyNegative ? 'none' : 'negative';
+      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Ajustando algoritmo. Cargando nuevas frecuencias...', 'warning');
+      onFeedback(nextType);
     }
   };
 
@@ -527,19 +532,19 @@ const Dashboard = ({
               <div className="d-flex gap-2 mb-3 justify-content-center w-100 px-3 animate-fade-in-up" style={{ maxWidth: '280px' }}>
                 <button
                   onClick={() => handleFeedbackClick('negative')}
-                  className="btn btn-outline-secondary rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1"
+                  className={`btn ${currentTrack.feedback === false ? 'btn-danger text-white' : 'btn-outline-secondary'} rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1`}
                   style={{ fontSize: '11px' }}
                 >
-                  <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '15px' }}>thumb_down</span>
+                  <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === false ? 'filled' : ''}`} translate="no" style={{ fontSize: '15px' }}>thumb_down</span>
                   <span>No ayuda</span>
                 </button>
 
                 <button
                   onClick={() => handleFeedbackClick('positive')}
-                  className="btn btn-primary-container rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1"
+                  className={`btn ${currentTrack.feedback === true ? 'btn-success text-white' : 'btn-primary-container'} rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1`}
                   style={{ fontSize: '11px' }}
                 >
-                  <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '15px' }}>thumb_up</span>
+                  <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no" style={{ fontSize: '15px' }}>thumb_up</span>
                   <span>Me ayuda</span>
                 </button>
               </div>

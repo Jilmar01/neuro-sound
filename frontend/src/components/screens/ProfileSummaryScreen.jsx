@@ -112,7 +112,7 @@ const ArtistEditor = ({ preselected = [], onSave, onCancel }) => {
 
   const dedupe = (list) => {
     const seen = new Set();
-    return list.filter(a => { if (!a?.id || seen.has(a.id)) return false; seen.add(a.id); return true; });
+    return list.filter(a => { const id = a?.id || a?._id; if (!id || seen.has(id)) return false; seen.add(id); return true; });
   };
 
   useEffect(() => {
@@ -142,11 +142,13 @@ const ArtistEditor = ({ preselected = [], onSave, onCancel }) => {
     const id = artistObj.id || artistObj._id;
     setSelected(prev => {
       const next = new Set(prev);
+      if (artistObj.name && next.has(artistObj.name)) next.delete(artistObj.name);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
     setSelectedMap(prev => {
       const next = new Map(prev);
+      if (artistObj.name && next.has(artistObj.name)) next.delete(artistObj.name);
       next.has(id) ? next.delete(id) : next.set(id, artistObj);
       return next;
     });
@@ -204,9 +206,9 @@ const ArtistEditor = ({ preselected = [], onSave, onCancel }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '16px 10px' }}>
             {baseArtists.map(artist => (
               <ArtistCard
-                key={artist.id}
+                key={artist.id || artist._id}
                 artist={artist}
-                isSelected={selected.has(artist.id)}
+                isSelected={selected.has(artist.id || artist._id) || (artist.name && selected.has(artist.name))}
                 onClick={toggleArtist}
               />
             ))}
@@ -387,21 +389,46 @@ const ProfileSummaryScreen = ({
                       <span className="material-symbols-outlined notranslate text-primary" translate="no" style={{ fontSize: 20 }}>equalizer</span>
                       <span className="fw-semibold text-dark small text-uppercase" style={{ letterSpacing: '0.6px' }}>Géneros Predominantes</span>
                     </div>
-                    <div className="d-flex flex-column gap-3">
-                      {genreData.map((g) => (
-                        <div key={g.name}>
-                          <div className="d-flex justify-content-between align-items-center mb-1">
-                            <div className="d-flex align-items-center gap-2">
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: g.dot, flexShrink: 0 }} />
-                              <span className="small fw-semibold text-dark text-capitalize">{g.name}</span>
-                            </div>
-                            <span className="small text-muted">{g.count} {g.count === 1 ? 'artista' : 'artistas'}</span>
+                    <div className="d-flex flex-wrap align-items-center gap-4">
+                      {/* Donut chart SVG */}
+                      <svg width="140" height="140" viewBox="0 0 140 140" style={{ flexShrink: 0 }}>
+                        {(() => {
+                          const total = genreData.reduce((s, g) => s + g.count, 0);
+                          if (total === 0) return null;
+                          let cumAngle = -90;
+                          const cx = 70, cy = 70, r = 55, sw = 22;
+                          return genreData.map((g, i) => {
+                            const angle = (g.count / total) * 360;
+                            const startRad = (cumAngle * Math.PI) / 180;
+                            const endRad = ((cumAngle + angle) * Math.PI) / 180;
+                            const x1 = cx + r * Math.cos(startRad);
+                            const y1 = cy + r * Math.sin(startRad);
+                            const x2 = cx + r * Math.cos(endRad);
+                            const y2 = cy + r * Math.sin(endRad);
+                            const largeArc = angle > 180 ? 1 : 0;
+                            cumAngle += angle;
+                            return (
+                              <path key={g.name}
+                                d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${cx} ${cy} Z`}
+                                fill={g.dot}
+                                stroke="white"
+                                strokeWidth="1.5"
+                              />
+                            );
+                          });
+                        })()}
+                        <circle cx="70" cy="70" r="34" fill="white" />
+                      </svg>
+                      {/* Leyenda */}
+                      <div className="d-flex flex-column gap-1">
+                        {genreData.map((g, i) => (
+                          <div key={g.name} className="d-flex align-items-center gap-2">
+                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: g.dot, flexShrink: 0 }} />
+                            <span className="small text-dark text-capitalize" style={{ fontWeight: 500 }}>{g.name}</span>
+                            <span className="small text-muted">{g.count}</span>
                           </div>
-                          <div style={{ height: 6, background: '#f0f2f5', borderRadius: 99, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${g.pct}%`, background: g.bar, borderRadius: 99, transition: 'width 0.8s ease' }} />
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -489,8 +516,8 @@ const ProfileSummaryScreen = ({
                     </div>
                   ) : (
                     <div className="d-flex gap-3 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-                      {localArtists.map(artist => {
-                        const key = artist.id || artist._id || artist.artist_id || artist.name;
+                      {localArtists.map((artist, idx) => {
+                        const key = artist.id || artist._id || artist.artist_id || `artist-${idx}`;
                         const name = artist.name || '?';
                         return (
                           <div key={key} className="d-flex flex-column align-items-center flex-shrink-0" style={{ width: 68 }}>

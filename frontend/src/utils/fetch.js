@@ -130,7 +130,6 @@ export async function apiCall(serverName, endpoint, method, body = null) {
                 localStorage.removeItem('user');
                 localStorage.removeItem('spotifyToken');
                 localStorage.removeItem('spotifyRefreshToken');
-                localStorage.removeItem('surveyData');
 
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';

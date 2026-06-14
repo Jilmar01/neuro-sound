@@ -226,7 +226,33 @@ const SettingsScreen = ({
             )}
           </div>
 
-          {/* ══ 3. FOCO VISUAL ══ */}
+          {/* ══ 3. ARTISTAS ══ */}
+          {selectedArtistsData.length > 0 && (
+            <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
+              <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
+                Tus Artistas
+              </h3>
+              <p className="text-muted mb-2" style={{ fontSize: '12px' }}>
+                Artistas seleccionados para tus recomendaciones.
+              </p>
+              <div className="d-flex flex-wrap gap-2">
+                {selectedArtistsData.map((artist, idx) => (
+                  <span key={idx}
+                    className="badge d-inline-flex align-items-center gap-1 px-3 py-2 rounded-pill"
+                    style={{ backgroundColor: GENRE_PALETTE[idx % GENRE_PALETTE.length].dot, color: '#fff', fontSize: '12px' }}>
+                    {artist.img ? (
+                      <img src={artist.img} alt="" className="rounded-circle" style={{ width: '18px', height: '18px', objectFit: 'cover' }} />
+                    ) : (
+                      <span className="material-symbols-outlined notranslate" style={{ fontSize: '16px' }} translate="no">artist</span>
+                    )}
+                    {artist.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ══ 4. FOCO VISUAL ══ */}
           <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
             <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               Foco Visual y Tema
@@ -270,7 +296,7 @@ const SettingsScreen = ({
             )}
           </div>
 
-          {/* ══ 4. SESIÓN ══ */}
+          {/* ══ 5. SESIÓN ══ */}
           <div className="bg-white bg-opacity-75 rounded-4 p-4 border border-light-subtle shadow-sm">
             <h3 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
               Sesión

@@ -45,13 +45,6 @@ const SpotifyPlayerWrapper = {
     async setupPlayer() {
         if (this.player) return;
 
-        try {
-            const freshToken = await refreshSpotifySession();
-            if (!freshToken) throw new Error('refresh returned empty');
-        } catch (e) {
-            console.warn('[SpotifyPlayer] No se pudo refrescar token inicial, usando el almacenado.');
-        }
-
         this.player = new window.Spotify.Player({
             name: 'Neuro-Sound Web Player',
             getOAuthToken: async cb => {
