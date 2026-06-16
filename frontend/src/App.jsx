@@ -290,7 +290,7 @@ function MainApp() {
 
   // Redirección inteligente de rutas
   useEffect(() => {
-    const onboardingPaths = ['/', '/login', '/register', '/survey', '/artists'];
+    const onboardingPaths = ['/', '/login', '/register', '/survey', '/artists', '/calibrate'];
 
     if (onboardingPaths.includes(location.pathname)) {
       const token = localStorage.getItem('token');
@@ -309,8 +309,8 @@ function MainApp() {
                 navigate('/survey', { replace: true });
                 return;
               }
-              // Si intenta ir a '/artists' manualmente, lo bloqueamos y lo mandamos al dashboard
-              if (location.pathname === '/artists') {
+              // Si intenta ir a '/artists' o '/calibrate' manualmente, lo bloqueamos y lo mandamos al dashboard
+              if (location.pathname === '/artists' || location.pathname === '/calibrate') {
                 navigate('/dashboard', { replace: true });
                 return;
               }
@@ -1437,9 +1437,20 @@ const handleSurveySubmit = async (data) => {
   setTargetEmotion(defaultEmotion);
   setThemeMode('auto');
 
-  const hasArtists = completeSurvey.artist_interest && completeSurvey.artist_interest.length > 0;
+  const userCached = localStorage.getItem('user');
+  let isFormCompleted = false;
+  if (userCached) {
+    try {
+      const userObj = JSON.parse(userCached);
+      isFormCompleted = userObj.form === true;
+    } catch (_) {}
+  }
 
-  navigate('/calibrate');
+  if (isFormCompleted) {
+    navigate('/dashboard');
+  } else {
+    navigate('/calibrate');
+  }
 };
 
 /**

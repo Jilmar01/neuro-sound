@@ -252,7 +252,7 @@ export async function getLatestRecommendation() {
         try {
             // 1. Generar la recomendación y capturar su respuesta directa
             const genResult = await generateRecommendation(rawSurvey);
-            const genData = genResult?.result || genResult?.songs || genResult;
+            const genData = genResult?.tracks || genResult?.result || genResult?.songs || genResult;
 
             if (Array.isArray(genData) && genData.length > 0) {
                 if (typeof genData[0] === 'object') {
