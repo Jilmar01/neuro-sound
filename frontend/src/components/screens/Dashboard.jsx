@@ -84,11 +84,25 @@ const Dashboard = ({
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
   const [showTimerPanel, setShowTimerPanel] = useState(false);
+  const [showMobileVolume, setShowMobileVolume] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
 
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
 
   const currentTrack = tracks[currentIndex] || null;
+
+  useEffect(() => {
+    const handleSidebarToggle = () => {
+      setIsSidebarCollapsed(localStorage.getItem('sidebarCollapsed') === 'true');
+    };
+    window.addEventListener('sidebar-collapse-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('sidebar-collapse-toggle', handleSidebarToggle);
+    };
+  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -334,8 +348,17 @@ const Dashboard = ({
   };
 
   return (
-    <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-center p-3 relative">
-
+    <div
+      className="w-100 d-flex flex-column align-items-center justify-content-start p-3 position-relative"
+      style={{ minHeight: '100%' }}
+    >
+      <style>{`
+        /* Contenedor de scroll de playlist */
+        .playlist-scroll-container {
+          max-height: none !important;
+          overflow: visible !important;
+        }
+      `}</style>
       {/* Botones flotantes: Estado Emocional y Temporizador */}
       <div className="position-absolute top-0 end-0 m-3 z-3 d-flex gap-2">
         {surveyData && (
@@ -448,19 +471,19 @@ const Dashboard = ({
         </div>
       )}
 
-      {/* Canvas principal */}
+      {/* Contenido Principal */}
       {currentTrack ? (
-        <div className="container-fluid max-w-[1050px] mx-auto">
-          <div className="row justify-content-center align-items-center g-4">
+        <div className="container-fluid max-w-[1050px] mx-auto mt-5 mt-md-3">
+          <div className="row justify-content-center align-items-start g-4">
 
-            {/* Columna izquierda: visualizador y controles */}
-            <div className="col-12 col-md-6 d-flex flex-column align-items-center">
+            {/* Columna izquierda: visualizador circular y métricas científicas */}
+            <div className="col-12 col-md-5 d-flex flex-column align-items-center">
 
               {/* Visualizador circular de arte */}
               <div
                 className={`position-relative rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center ${isPlaying && !isLoading ? 'animate-subtle-pulse' : ''
                   }`}
-                style={{ width: '240px', height: '240px', background: isDefaultCover(currentTrack.cover) ? 'transparent' : '#eceef0' }}
+                style={{ width: '220px', height: '220px', background: isDefaultCover(currentTrack.cover) ? 'transparent' : '#eceef0' }}
               >
                 {isLoading && (
                   <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column align-items-center justify-content-center z-3 p-2 text-center text-white">
@@ -480,8 +503,8 @@ const Dashboard = ({
                 {/* Visualizador en tiempo real con Web Audio */}
                 <canvas
                   ref={canvasRef}
-                  width="240"
-                  height="240"
+                  width="220"
+                  height="220"
                   className="position-absolute top-0 start-0 w-100 h-100 z-1"
                 />
 
@@ -489,8 +512,8 @@ const Dashboard = ({
                 <div
                   className="rounded-circle overflow-hidden position-relative z-2 d-flex align-items-center justify-content-center"
                   style={{
-                    width: '145px',
-                    height: '145px',
+                    width: '130px',
+                    height: '130px',
                     background: isDefaultCover(currentTrack.cover) ? 'transparent' : '#eceef0',
                     border: isDefaultCover(currentTrack.cover) ? 'none' : '1px solid rgba(255,255,255,0.25)',
                     boxShadow: isDefaultCover(currentTrack.cover) ? 'none' : 'inset 0 2px 4px rgba(0,0,0,0.1)'
@@ -502,7 +525,7 @@ const Dashboard = ({
                     <span
                       className="material-symbols-outlined notranslate text-white select-none animate-subtle-pulse z-3" translate="no"
                       style={{
-                        fontSize: '38px',
+                        fontSize: '32px',
                         color: '#ffffff',
                         textShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 30px var(--bs-primary)',
                         opacity: isPlaying ? 0.95 : 0.65,
@@ -522,54 +545,21 @@ const Dashboard = ({
                 </div>
               </div>
 
-              {/* Titulo y artista */}
+              {/* Titulo y artista (Visualizador principal) */}
               <div className="text-center mt-3 mb-2 w-100">
                 <h4 className="h6 fw-bold mb-1 truncate px-3 text-on-surface">{currentTrack.title}</h4>
-                <p className="text-muted small mb-1 truncate">{currentTrack.artist}</p>
+                <p className="text-muted small mb-0 truncate">{currentTrack.artist}</p>
               </div>
 
-              {/* Botones de feedback colocados cerca de la canción que suena */}
-              <div className="d-flex gap-2 mb-3 justify-content-center w-100 px-3 animate-fade-in-up" style={{ maxWidth: '280px' }}>
-                <button
-                  onClick={() => handleFeedbackClick('negative')}
-                  className={`btn ${currentTrack.feedback === false ? 'btn-danger text-white' : 'btn-outline-secondary'} rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1`}
-                  style={{ fontSize: '11px' }}
-                >
-                  <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === false ? 'filled' : ''}`} translate="no" style={{ fontSize: '15px' }}>thumb_down</span>
-                  <span>No ayuda</span>
-                </button>
+              {/* Estadisticas científicas en tarjeta translúcida */}
+              <div className="w-100 p-3 glass-panel rounded-4 shadow-sm border border-light-subtle d-flex flex-column gap-2 mt-2">
+                <span className="text-uppercase text-muted fw-bold font-monospace mb-1 d-block" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                  Métricas de Frecuencia
+                </span>
 
-                <button
-                  onClick={() => handleFeedbackClick('positive')}
-                  className={`btn ${currentTrack.feedback === true ? 'btn-success text-white' : 'btn-primary-container'} rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 small fw-semibold flex-grow-1`}
-                  style={{ fontSize: '11px' }}
-                >
-                  <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no" style={{ fontSize: '15px' }}>thumb_up</span>
-                  <span>Me ayuda</span>
-                </button>
-              </div>
-
-              {/* Slider de progreso */}
-              <div className="w-100 px-3 mb-3">
-                <input
-                  type="range"
-                  className="form-range"
-                  min={0}
-                  max={duration || 30}
-                  value={progress}
-                  onChange={(e) => onSeek(Number(e.target.value))}
-                />
-                <div className="d-flex justify-content-between text-muted small" style={{ fontSize: '10px' }}>
-                  <span>{formatTime(progress)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-              </div>
-
-              {/* Estadisticas (barras de progreso) */}
-              <div className="w-100 px-3 d-flex flex-column gap-2 mb-3">
                 {/* Energia */}
                 <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '11px' }}>
+                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
                     <span>Energía</span>
                     <span className="fw-semibold">{currentTrack.energy || 3}/10</span>
                   </div>
@@ -580,7 +570,7 @@ const Dashboard = ({
 
                 {/* Valencia */}
                 <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '11px' }}>
+                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
                     <span>Valencia</span>
                     <span className="fw-semibold">{currentTrack.valence || 7}/10</span>
                   </div>
@@ -591,8 +581,8 @@ const Dashboard = ({
 
                 {/* Tempo */}
                 <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '11px' }}>
-                    <span>BPM (Tempo)</span>
+                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
+                    <span>Tempo (BPM)</span>
                     <span className="fw-semibold">{currentTrack.bpm || 60} BPM</span>
                   </div>
                   <div className="progress" style={{ height: '4px' }}>
@@ -601,65 +591,18 @@ const Dashboard = ({
                 </div>
               </div>
 
-              {/* Controles */}
-              <div className="d-flex align-items-center justify-content-center gap-3">
-                <button
-                  onClick={onPrev}
-                  className="btn btn-light rounded-circle shadow-sm border-0 p-2 d-flex align-items-center justify-content-center"
-                  style={{ width: '48px', height: '48px' }}
-                >
-                  <span className="material-symbols-outlined notranslate fs-4" translate="no">skip_previous</span>
-                </button>
-
-                <button
-                  onClick={onPlayPause}
-                  className="btn btn-primary rounded-circle shadow p-3 d-flex align-items-center justify-content-center"
-                  style={{ width: '64px', height: '64px' }}
-                >
-                  <span className="material-symbols-outlined notranslate fs-3 filled" translate="no">
-                    {isPlaying ? 'pause' : 'play_arrow'}
-                  </span>
-                </button>
-
-                <button
-                  onClick={onNext}
-                  className="btn btn-light rounded-circle shadow-sm border-0 p-2 d-flex align-items-center justify-content-center"
-                  style={{ width: '48px', height: '48px' }}
-                >
-                  <span className="material-symbols-outlined notranslate fs-4" translate="no">skip_next</span>
-                </button>
-              </div>
-
-              {/* Modulador de volumen */}
-              <div className="w-100 px-3 mt-4 mb-2 d-flex align-items-center gap-2 text-muted justify-content-center" style={{ maxWidth: '320px' }}>
-                <span className="material-symbols-outlined notranslate select-none" translate="no" style={{ fontSize: '18px' }}>
-                  {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
-                </span>
-                <input
-                  type="range"
-                  className="form-range flex-grow-1"
-                  min={0}
-                  max={100}
-                  value={volume}
-                  onChange={(e) => onVolumeChange(Number(e.target.value))}
-                  style={{ height: '4px' }}
-                />
-                <span className="fw-semibold" style={{ fontSize: '10px', width: '28px', textAlign: 'right' }}>
-                  {volume}%
-                </span>
-              </div>
             </div>
 
-            {/* Columna derecha: recomendaciones */}
-            <div className="col-12 col-md-6 d-flex flex-column align-items-stretch">
+            {/* Columna derecha: recomendaciones (playlist) */}
+            <div className="col-12 col-md-7 d-flex flex-column align-items-stretch">
 
               {/* Encabezado */}
               <h5 className="h6 text-uppercase text-muted fw-bold mb-3 text-center text-md-start tracking-wider">
                 Selección Personalizada
               </h5>
 
-              {/* Lista (Bootstrap sin bordes) */}
-              <div className="list-group w-100 overflow-y-auto mb-2 px-1" style={{ maxHeight: '290px' }}>
+              {/* Lista (Bootstrap sin bordes, mostrando todas las canciones) */}
+              <div className="list-group w-100 mb-2 px-1 playlist-scroll-container">
                 {tracks.map((track, index) => {
                   const isCurrent = index === currentIndex;
 
@@ -678,10 +621,10 @@ const Dashboard = ({
 
                   // Mapa de color segun energia emocional del genero
                   const tagColors = {
-                    Ambient: 'bg-info-subtle text-info border border-info-subtle', // Calma/atmosferico (azul)
-                    'Clásica': 'bg-success-subtle text-success border border-success-subtle', // Zen/restaurativo (verde)
-                    Chillout: 'bg-warning-subtle text-warning border border-warning-subtle', // Calido/relajante (amarillo)
-                    'Electrónica': 'bg-danger-subtle text-danger border border-danger-subtle', // Energia/foco (rojo)
+                    Ambient: 'bg-info-subtle text-info border border-info-subtle',
+                    'Clásica': 'bg-success-subtle text-success border border-success-subtle',
+                    Chillout: 'bg-warning-subtle text-warning border border-warning-subtle',
+                    'Electrónica': 'bg-danger-subtle text-danger border border-danger-subtle',
                     Calma: 'bg-info-subtle text-info border border-info-subtle',
                     Foco: 'bg-warning-subtle text-warning border border-warning-subtle',
                     Zen: 'bg-success-subtle text-success border border-success-subtle'
@@ -692,8 +635,8 @@ const Dashboard = ({
                       key={track.id}
                       onClick={() => onSelectTrack(index)}
                       className={`list-group-item list-group-item-action d-flex align-items-center justify-content-between border-0 rounded-4 mb-2 p-2 shadow-sm ${isCurrent
-                          ? 'bg-primary-container border-start border-3 border-primary'
-                          : 'bg-white'
+                        ? 'bg-primary-container border-start border-3 border-primary'
+                        : 'bg-white'
                         }`}
                     >
                       <div className="d-flex align-items-center gap-2 min-w-0">
@@ -749,11 +692,14 @@ const Dashboard = ({
             </div>
 
           </div>
+          {/* Spacer para que el player bar fijo no tape las últimas canciones */}
+          <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />
         </div>
       ) : (
         <div className="text-center py-5">
           <div className="spinner-border text-primary mb-3" role="status" />
           <p className="text-muted">Generando tu playlist adaptada...</p>
+          {/* (Barra de reproducción fija removida, ahora renderizada globalmente por App.jsx) */}
         </div>
       )}
     </div>
@@ -761,3 +707,4 @@ const Dashboard = ({
 };
 
 export default Dashboard;
+

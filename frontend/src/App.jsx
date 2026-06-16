@@ -394,6 +394,55 @@ function MainApp() {
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [showMobileVolume, setShowMobileVolume] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState('success');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
+
+  const showToast = (msg, type = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
+  const formatTime = (secs) => {
+    if (isNaN(secs)) return '0:00';
+    const minutes = Math.floor(secs / 60);
+    const seconds = Math.floor(secs % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const handleFeedbackClickGlobal = (type) => {
+    const track = playlist[currentIndex] || null;
+    if (!track) return;
+    const isCurrentlyPositive = track.feedback === true;
+    const isCurrentlyNegative = track.feedback === false;
+
+    if (type === 'positive') {
+      const nextType = isCurrentlyPositive ? 'none' : 'positive';
+      showToast(isCurrentlyPositive ? 'Sintonía óptima removida.' : '¡Validado! Guardando sintonía óptima.', 'success');
+      handleFeedback(nextType);
+    } else {
+      const nextType = isCurrentlyNegative ? 'none' : 'negative';
+      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Ajustando algoritmo. Cargando nuevas frecuencias...', 'warning');
+      handleFeedback(nextType, null, true);
+    }
+  };
+
+  useEffect(() => {
+    const handleSidebarToggle = () => {
+      setIsSidebarCollapsed(localStorage.getItem('sidebarCollapsed') === 'true');
+    };
+    window.addEventListener('sidebar-collapse-toggle', handleSidebarToggle);
+    return () => {
+      window.removeEventListener('sidebar-collapse-toggle', handleSidebarToggle);
+    };
+  }, []);
+
   const audioRef = useRef(null);
   const isFadingOut = useRef(false);
   const fadeIntervalRef = useRef(null);
@@ -2017,6 +2066,15 @@ const themeStyle = `
       background: radial-gradient(circle, var(--theme-glow-2) 0%, transparent 70%) !important;
       transition: background 0.8s ease-in-out !important;
     }
+    .main-content-area {
+      min-height: 0 !important;
+      padding-bottom: ${currentTrack ? '105px' : '0px'} !important;
+    }
+    @media (max-width: 767.98px) {
+      .main-content-area {
+        height: calc(100vh - 60px${currentTrack ? ' - 105px' : ''}) !important;
+      }
+    }
   `;
 
 const mainScreens = ['dashboard', 'music-code', 'timer', 'settings', 'final-evaluation', 'profile'];
@@ -2045,9 +2103,10 @@ if (showSidebar) {
       />
 
       {/* Main Content Area - Locked Height, Independently Scrollable */}
-      <div className="flex-grow-1 h-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-4 position-relative z-1">
+      <div className="main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1">
         <MouseGradient />
         {renderScreen()}
+        {currentTrack && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
       </div>
 
       {/* Modal de Resumen de Estado Emocional */}
@@ -2057,6 +2116,406 @@ if (showSidebar) {
           onClose={() => setShowEmotionalSummary(false)}
           onUpdateSurvey={handleUpdateSurveyInline}
         />
+      )}
+
+      {/* Notificacion toast (estilo Bootstrap) */}
+      {toastMessage && (
+        <div
+          className={`position-fixed top-0 start-50 translate-middle-x mt-4 alert ${toastType === 'success' ? 'alert-success' : 'alert-warning'
+            } shadow-sm rounded-pill px-4 py-2 z-3`}
+          role="alert"
+          style={{ transition: 'opacity 0.5s' }}
+        >
+          <div className="d-flex align-items-center gap-2">
+            <span className="material-symbols-outlined notranslate filled" translate="no">
+              {toastType === 'success' ? 'check_circle' : 'change_circle'}
+            </span>
+            <span className="fw-semibold" style={{ fontSize: '13px' }}>{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
+      {/* BARRA DE REPRODUCCIÓN FIJA */}
+      {currentTrack && (
+        <div className="player-bar-fixed d-flex align-items-center justify-content-between px-1 px-md-4 py-2" style={{
+          position: 'fixed',
+          bottom: 0,
+          height: '105px',
+          zIndex: 1050,
+          transition: 'left 0.3s ease, width 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          {/* Estilos inline dinámicos y de personalización */}
+          <style>{`
+            .player-bar-fixed {
+              left: 0 !important;
+              width: 100% !important;
+              height: 105px !important;
+              background: rgba(255, 255, 255, 0.45) !important;
+              backdrop-filter: blur(20px) !important;
+              -webkit-backdrop-filter: blur(20px) !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
+              box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.03) !important;
+            }
+            @media (min-width: 768px) {
+              .player-bar-fixed {
+                left: ${isSidebarCollapsed ? '80px' : '240px'} !important;
+                width: calc(100% - ${isSidebarCollapsed ? '80px' : '240px'}) !important;
+              }
+            }
+            
+            /* Custom thin range slider styling for the player */
+            .player-range {
+              -webkit-appearance: none !important;
+              width: 100% !important;
+              background: transparent !important;
+              height: 12px !important;
+              display: flex !important;
+              align-items: center !important;
+            }
+            
+            .player-range::-webkit-slider-runnable-track {
+              width: 100% !important;
+              height: 4px !important;
+              cursor: pointer !important;
+              background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
+              border-radius: 9999px !important;
+              border: none !important;
+            }
+            
+            .player-range::-webkit-slider-thumb {
+              -webkit-appearance: none !important;
+              height: 10px !important;
+              width: 10px !important;
+              border-radius: 50% !important;
+              background: var(--bs-primary) !important;
+              cursor: pointer !important;
+              margin-top: -3px !important;
+              opacity: 1 !important;
+              transition: transform 0.15s ease !important;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+              border: none !important;
+            }
+            
+            .player-range:hover::-webkit-slider-thumb {
+              transform: scale(1.3) !important;
+              opacity: 1 !important;
+            }
+ 
+            .player-range::-moz-range-track {
+              width: 100% !important;
+              height: 4px !important;
+              cursor: pointer !important;
+              background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
+              border-radius: 9999px !important;
+              border: none !important;
+            }
+ 
+            .player-range::-moz-range-thumb {
+              height: 10px !important;
+              width: 10px !important;
+              border-radius: 50% !important;
+              background: var(--bs-primary) !important;
+              cursor: pointer !important;
+              opacity: 1 !important;
+              transition: transform 0.15s ease !important;
+              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+              border: none !important;
+            }
+ 
+            .player-range:hover::-moz-range-thumb {
+              transform: scale(1.3) !important;
+            }
+ 
+            /* Estilo para el range slider vertical de volumen en mobile */
+            .player-range-vertical {
+              -webkit-appearance: none !important;
+              width: 80px !important;
+              height: 20px !important;
+              background: transparent !important;
+              transform: rotate(-90deg) !important;
+              outline: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              cursor: pointer !important;
+            }
+            
+            .player-range-vertical::-webkit-slider-runnable-track {
+              width: 100% !important;
+              height: 4px !important;
+              background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
+              border-radius: 9999px !important;
+              border: none !important;
+            }
+            
+            .player-range-vertical::-webkit-slider-thumb {
+              -webkit-appearance: none !important;
+              height: 10px !important;
+              width: 10px !important;
+              border-radius: 50% !important;
+              background: var(--bs-primary) !important;
+              margin-top: -3px !important;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+              border: none !important;
+            }
+ 
+            .player-range-vertical::-moz-range-track {
+              width: 100% !important;
+              height: 4px !important;
+              background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
+              border-radius: 9999px !important;
+              border: none !important;
+            }
+            
+            .player-range-vertical::-moz-range-thumb {
+              height: 10px !important;
+              width: 10px !important;
+              border-radius: 50% !important;
+              background: var(--bs-primary) !important;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+              border: none !important;
+            }
+ 
+            /* Material symbols adjustments inside player bar */
+             .player-btn {
+               background: none !important;
+               border: none !important;
+               color: #526069 !important;
+               padding: 10px !important;
+               display: flex !important;
+               align-items: center !important;
+               justify-content: center !important;
+               transition: color 0.2s, transform 0.2s !important;
+               cursor: pointer !important;
+             }
+             .player-btn span {
+               font-size: 26px !important;
+             }
+             @media (min-width: 576px) {
+               .player-btn {
+                 padding: 12px !important;
+               }
+               .player-btn span {
+                 font-size: 30px !important;
+               }
+             }
+             @media (min-width: 768px) {
+               .player-btn {
+                 padding: 16px !important;
+               }
+               .player-btn span {
+                 font-size: 34px !important;
+               }
+             }
+             .player-btn:hover {
+               color: #191c1e !important;
+               transform: scale(1.08) !important;
+             }
+             .player-btn.active {
+               color: var(--bs-primary) !important;
+             }
+             .player-btn-play {
+               background: var(--bs-primary) !important;
+               color: #ffffff !important;
+               border-radius: 50% !important;
+               width: 52px !important;
+               height: 52px !important;
+               margin: 0 6px !important;
+               box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
+             }
+             .player-btn-play span {
+               font-size: 30px !important;
+             }
+             .player-btn-play:hover {
+               background: var(--bs-primary) !important;
+               color: #ffffff !important;
+               transform: scale(1.08) !important;
+               opacity: 0.95;
+             }
+             
+             @media (min-width: 576px) {
+               .player-btn-play {
+                 width: 58px !important;
+                 height: 58px !important;
+                 margin: 0 8px !important;
+               }
+               .player-btn-play span {
+                 font-size: 34px !important;
+               }
+             }
+             @media (min-width: 768px) {
+               .player-btn-play {
+                 width: 66px !important;
+                 height: 66px !important;
+                 margin: 0 10px !important;
+               }
+               .player-btn-play span {
+                 font-size: 38px !important;
+               }
+             }
+             
+             /* Time display style */
+             .player-time {
+               font-size: 11px !important;
+               color: #526069 !important;
+               min-width: 32px !important;
+               text-align: center !important;
+               font-family: monospace !important;
+             }
+          `}</style>
+
+          {/* LADO IZQUIERDO: Espacio vacío para centrar los controles en pantallas grandes */}
+          <div className="d-none d-md-block" style={{ flex: '1 1 20%', maxWidth: '200px' }} />
+
+          {/* CENTRO: Controles y Slider de progreso */}
+          <div className="d-flex flex-column align-items-center justify-content-center px-1 px-md-3" style={{ flex: '2 1 60%', minWidth: '120px' }}>
+            {/* Botones de reproducción */}
+            <div className="d-flex align-items-center justify-content-center mb-1">
+              {/* Anterior */}
+              <button onClick={() => handlePrev(true)} className="player-btn" title="Anterior">
+                <span className="material-symbols-outlined notranslate" translate="no">skip_previous</span>
+              </button>
+
+              {/* Play / Pause circular */}
+              <button onClick={handlePlayPause} className="player-btn player-btn-play shadow" title={isPlaying ? 'Pausar' : 'Reproducir'}>
+                <span className="material-symbols-outlined notranslate filled" translate="no">
+                  {isPlaying ? 'pause' : 'play_arrow'}
+                </span>
+              </button>
+
+              {/* Siguiente */}
+              <button onClick={() => handleNext(true)} className="player-btn" title="Siguiente">
+                <span className="material-symbols-outlined notranslate" translate="no">skip_next</span>
+              </button>
+            </div>
+
+            {/* Slider de tiempo */}
+            <div className="d-flex align-items-center w-100 gap-2">
+              <span className="player-time d-none d-sm-inline">{formatTime(progress)}</span>
+              <input
+                type="range"
+                className="player-range flex-grow-1"
+                min={0}
+                max={duration || 30}
+                value={progress}
+                onChange={(e) => handleSeek(Number(e.target.value))}
+                style={{
+                  '--progress-percent': `${duration ? (progress / duration) * 100 : 0}%`
+                }}
+              />
+              <span className="player-time d-none d-sm-inline">{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* LADO DERECHO: Feedback secundario y volumen */}
+          <div className="d-flex align-items-center justify-content-end gap-1 gap-md-2" style={{ flex: '1 1 20%', minWidth: '80px', maxWidth: '200px' }}>
+
+            {/* Feedback Thumbs (funcional de la app) */}
+            <button
+              onClick={() => handleFeedbackClickGlobal('negative')}
+              className={`player-btn ${currentTrack.feedback === false ? 'text-danger' : ''}`}
+              title="No ayuda"
+              style={{ opacity: currentTrack.feedback === false ? 1 : 0.5 }}
+            >
+              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === false ? 'filled' : ''}`} translate="no">
+                thumb_down
+              </span>
+            </button>
+            <button
+              onClick={() => handleFeedbackClickGlobal('positive')}
+              className={`player-btn ${currentTrack.feedback === true ? 'text-success' : ''}`}
+              title="Me ayuda"
+              style={{ opacity: currentTrack.feedback === true ? 1 : 0.5 }}
+            >
+              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no">
+                thumb_up
+              </span>
+            </button>
+
+            {/* Control de volumen (Responsivo: horizontal en desktop, popover vertical en mobile) */}
+            <div className="position-relative d-flex align-items-center">
+              {/* En mobile: popover vertical del volumen */}
+              {showMobileVolume && (
+                <div
+                  className="position-absolute bottom-100 start-50 translate-middle-x mb-2 p-2 rounded-3 d-flex d-sm-none flex-column align-items-center"
+                  style={{
+                    height: '110px',
+                    width: '36px',
+                    zIndex: 1100,
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+                    background: 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(0,0,0,0.08)'
+                  }}
+                  onMouseLeave={() => setShowMobileVolume(false)}
+                >
+                  <div
+                    style={{
+                      height: '80px',
+                      width: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <input
+                      type="range"
+                      className="player-range-vertical"
+                      min={0}
+                      max={100}
+                      value={volume}
+                      onChange={(e) => setVolume(Number(e.target.value))}
+                      style={{
+                        '--progress-percent': `${volume}%`
+                      }}
+                    />
+                  </div>
+                  <span className="text-muted fw-bold mt-1" style={{ fontSize: '9px', fontFamily: 'monospace', lineHeight: 1 }}>
+                    {volume}
+                  </span>
+                </div>
+              )}
+
+              {/* Botón de altavoz (siempre visible) */}
+              <button
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setShowMobileVolume(!showMobileVolume);
+                  } else {
+                    setVolume(volume === 0 ? 50 : 0);
+                  }
+                }}
+                className="player-btn"
+                title={volume === 0 ? "Activar sonido" : "Silenciar"}
+                style={{ padding: '4px' }}
+              >
+                <span className="material-symbols-outlined notranslate" translate="no">
+                  {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
+                </span>
+              </button>
+
+              {/* Slider horizontal (solo visible de sm en adelante) */}
+              <div className="d-none d-sm-block">
+                <input
+                  type="range"
+                  className="player-range"
+                  style={{
+                    width: '60px',
+                    '--progress-percent': `${volume}%`
+                  }}
+                  min={0}
+                  max={100}
+                  value={volume}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+
+        </div>
       )}
     </div>
   );

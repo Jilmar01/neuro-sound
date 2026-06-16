@@ -27,6 +27,7 @@ const Sidebar = ({
     const next = !isCollapsed;
     setIsCollapsed(next);
     localStorage.setItem('sidebarCollapsed', String(next));
+    window.dispatchEvent(new Event('sidebar-collapse-toggle'));
   };
 
   const tabs = [
@@ -68,24 +69,67 @@ const Sidebar = ({
     { id: 'zen', name: 'Zen', color: '#6f42c1', icon: 'self_improvement' }
   ];
 
-  const sidebarWidth = isCollapsed ? '70px' : '220px';
+  const sidebarWidth = isCollapsed ? '80px' : '240px';
   const displayClass = isCollapsed ? 'd-none' : 'd-none d-md-inline';
   const displayBlockClass = isCollapsed ? 'd-none' : 'd-none d-md-block';
 
   return (
-    <div className="sidebar-container d-flex flex-column flex-shrink-0 bg-white border-end border-light-subtle h-100 py-4 align-items-center align-items-md-start" style={{ width: '70px', transition: 'width 0.3s' }}>
-      {/* Variable inline para ancho responsivo */}
+    <div className="sidebar-container d-flex bg-white py-2 py-md-4 align-items-center align-items-md-start" style={{ transition: 'width 0.3s' }}>
       <style>{`
+        .sidebar-container {
+          width: 100% !important;
+          height: 60px !important;
+          flex-direction: row !important;
+          padding: 0.5rem 1rem !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+          border-right: none !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+        }
+        .theme-controls-container {
+          border-top: none !important;
+        }
         @media (min-width: 768px) {
           .sidebar-container {
             width: ${sidebarWidth} !important;
+            flex-shrink: 0 !important;
+            height: 100% !important;
+            flex-direction: column !important;
+            padding: 1.5rem 0 !important;
+            border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+            border-bottom: none !important;
+            justify-content: flex-start !important;
+            align-items: ${isCollapsed ? 'center' : 'flex-start'} !important;
+          }
+          .theme-controls-container {
+            border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+          }
+          .sidebar-nav-btn-collapsed {
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            justify-content: center !important;
+            margin: 0 auto !important;
+          }
+          .sidebar-mode-btn-collapsed {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            justify-content: center !important;
+            margin: 0 auto !important;
           }
         }
       `}</style>
 
       {/* Encabezado de marca */}
-      <div className={`d-flex align-items-center ${isCollapsed ? 'flex-column gap-2 justify-content-center' : 'justify-content-between'} w-100 px-3 mb-4`}>
-        <div className="d-flex align-items-center gap-2">
+      <div className={`d-flex align-items-center w-auto w-md-100 mb-0 mb-md-4 ${
+        isCollapsed 
+          ? 'flex-md-column justify-content-center gap-2 px-1' 
+          : 'justify-content-between px-1 px-md-3'
+      }`}>
+        <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-2'}`}>
           <span className="material-symbols-outlined notranslate text-primary fs-3" translate="no">headphones</span>
           <span className={`font-headline-md text-headline-md text-on-surface fw-bold ${displayClass}`}>
             NeuroSound
@@ -105,17 +149,17 @@ const Sidebar = ({
       </div>
 
       {/* Lista de navegacion */}
-      <ul className="nav nav-pills flex-column mb-auto w-100 px-2 gap-2">
+      <ul className="nav nav-pills flex-nowrap flex-row flex-md-column mb-0 mb-md-auto w-auto w-md-100 px-1 px-md-2 gap-1 gap-md-2">
         {tabs.map((tab) => {
           const isActive = currentActive === tab.id;
           return (
-            <li key={tab.id} className="nav-item">
+            <li key={tab.id} className="nav-item w-md-100">
               <button
                 onClick={() => handleTabClick(tab.id)}
-                className={`nav-link w-100 d-flex align-items-center gap-3 justify-content-center justify-content-md-start py-3 px-3 rounded-pill transition-all ${isActive
+                className={`nav-link w-auto w-md-100 d-flex align-items-center gap-2 gap-md-3 justify-content-center justify-content-md-start py-2 py-md-3 px-2 px-md-3 rounded-pill transition-all ${isActive
                     ? 'active bg-primary text-white shadow-sm'
                     : 'text-secondary hover-bg-light'
-                  }`}
+                  } ${isCollapsed ? 'sidebar-nav-btn-collapsed' : ''}`}
                 style={{ border: 'none' }}
               >
                 <span className={`material-symbols-outlined notranslate ${isActive ? 'filled' : ''}`} translate="no">
@@ -128,9 +172,10 @@ const Sidebar = ({
         })}
       </ul>
 
-
       {/* Controles de tema/emocion */}
-      <div className="px-2 py-3 w-100 border-top border-light-subtle d-flex flex-column align-items-center align-items-md-start">
+      <div className={`theme-controls-container px-1 px-md-2 py-0 py-md-3 w-auto w-md-100 d-flex flex-row flex-md-column align-items-center gap-2 gap-md-0 ${
+        isCollapsed ? 'align-items-md-center' : 'align-items-md-start'
+      }`}>
         {/* Titulo de seccion en desktop */}
         <div className={`px-2 mb-2 ${displayBlockClass}`}>
           <span className="text-muted text-uppercase fw-semibold" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>
@@ -139,13 +184,13 @@ const Sidebar = ({
         </div>
 
         {/* Interruptor de modo */}
-        <div className="mb-3 px-1">
+        <div className={`mb-0 mb-md-3 px-0 px-md-1 w-md-100 ${isCollapsed ? 'd-flex justify-content-center' : ''}`}>
           <button
             onClick={() => onThemeModeChange(themeMode === 'auto' ? 'manual' : 'auto')}
             className={`btn btn-sm d-flex align-items-center gap-1.5 rounded-pill border-0 px-2.5 py-1 transition-all ${themeMode === 'auto'
                 ? 'btn-primary text-white shadow-sm'
                 : 'bg-light text-secondary'
-              }`}
+              } ${isCollapsed ? 'sidebar-mode-btn-collapsed' : ''}`}
             style={{ fontSize: '10px' }}
             title={themeMode === 'auto' ? "Cambiando según canción" : "Fijo por emoción"}
           >
@@ -159,7 +204,11 @@ const Sidebar = ({
         </div>
 
         {/* Botones de color para seleccionar emocion */}
-        <div className={`d-flex ${isCollapsed ? 'flex-column' : 'flex-column flex-md-row'} gap-2 justify-content-center align-items-center px-1`}>
+        <div className={`d-flex align-items-center justify-content-center px-0 px-md-1 ${
+          isCollapsed 
+            ? 'flex-row flex-md-column gap-2 w-md-100' 
+            : 'flex-row flex-md-column flex-lg-row gap-1.5 gap-md-2'
+        }`}>
           {emotionsList.map((emo) => {
             const isActive = themeMode === 'manual' && targetEmotion === emo.id;
             return (
@@ -190,9 +239,9 @@ const Sidebar = ({
       </div>
 
       {/* Marca en el pie (desktop) */}
-      <div className={`px-3 mt-auto ${displayBlockClass} opacity-50`}>
-        <p className="text-muted text-center mb-0" style={{ fontSize: '10px' }}>
-          v2.0 • Terapia Sonora
+      <div className="px-1 px-md-3 mt-auto d-none d-md-block opacity-50 w-100 text-center">
+        <p className="text-muted text-center mb-0" style={{ fontSize: '10px', whiteSpace: 'nowrap' }}>
+          {isCollapsed ? 'v2.0' : 'v2.0 • Terapia Sonora'}
         </p>
       </div>
     </div>
