@@ -2,7 +2,10 @@ import { HttpError } from "../utils/httpError.js";
 
 export const getRecommendationEngine = async (survey) => {
     try {
-        const response = await fetch(`http://172.210.237.82:5050/recommend`, {
+
+        const URI_ENGINE = process.env.URI_ENGINE;
+
+        const response = await fetch(`${URI_ENGINE}motor/recommend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
