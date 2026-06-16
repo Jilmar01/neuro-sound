@@ -184,7 +184,7 @@ const Onboarding = ({ onLogin, initialMode = 'select' }) => {
   };
 
   return (
-    <div className="vh-100 position-relative overflow-hidden d-flex flex-column align-items-center justify-content-start w-100 bg-surface" style={{ paddingTop: '8vh' }}>
+    <div className="min-vh-100 position-relative d-flex flex-column align-items-center justify-content-start w-100 bg-surface pb-5" style={{ paddingTop: '5vh', overflowY: 'auto' }}>
       {/* Ambient Background Effects */}
       <div className="ambient-glow" />
       <div className="ambient-glow-bottom" />
@@ -476,8 +476,8 @@ const Onboarding = ({ onLogin, initialMode = 'select' }) => {
         )}
       </main>
 
-      <footer className="position-absolute bottom-0 start-0 w-100 text-center z-3 pb-3 opacity-75">
-        <p className="small text-secondary mb-0">
+      <footer className="mt-auto w-100 text-center z-3 pt-4 pb-3 opacity-75">
+        <p className="small text-secondary mb-0" style={{ fontSize: '12px' }}>
           Al continuar, aceptas nuestros términos de servicio.
         </p>
       </footer>

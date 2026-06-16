@@ -77,6 +77,10 @@ const Sidebar = ({
     <div className="sidebar-container d-flex bg-white py-2 py-md-4 align-items-center align-items-md-start" style={{ transition: 'width 0.3s' }}>
       <style>{`
         .sidebar-container {
+          position: sticky !important;
+          top: 0 !important;
+          z-index: 1000 !important;
+          background: #ffffff !important;
           width: 100% !important;
           height: 60px !important;
           flex-direction: row !important;
@@ -91,9 +95,13 @@ const Sidebar = ({
         }
         @media (min-width: 768px) {
           .sidebar-container {
+            position: sticky !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1000 !important;
             width: ${sidebarWidth} !important;
             flex-shrink: 0 !important;
-            height: 100% !important;
+            height: 100vh !important;
             flex-direction: column !important;
             padding: 1.5rem 0 !important;
             border-right: 1px solid rgba(0, 0, 0, 0.08) !important;

@@ -2580,6 +2580,10 @@ if (showSidebar) {
                     <div 
                       className={`volume-slider-vertical-popover ${showMobileVolume ? 'show' : ''}`}
                       style={{ bottom: '40px' }}
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                      onWheel={(e) => e.stopPropagation()}
                     >
                       <input
                         type="range"
@@ -2591,6 +2595,10 @@ if (showSidebar) {
                         max={100}
                         value={volume}
                         onChange={(e) => setVolume(Number(e.target.value))}
+                        onTouchMove={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
+                        onWheel={(e) => e.stopPropagation()}
                       />
                     </div>
 
@@ -2683,6 +2691,10 @@ if (showSidebar) {
               {/* Popover con slider vertical */}
               <div 
                 className={`volume-slider-vertical-popover ${showDesktopVolume ? 'show' : ''}`}
+                onTouchMove={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                onWheel={(e) => e.stopPropagation()}
               >
                 <input
                   type="range"
@@ -2694,6 +2706,10 @@ if (showSidebar) {
                   max={100}
                   value={volume}
                   onChange={(e) => setVolume(Number(e.target.value))}
+                  onTouchMove={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
+                  onWheel={(e) => e.stopPropagation()}
                 />
               </div>
 
