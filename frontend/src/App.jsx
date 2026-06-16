@@ -403,6 +403,8 @@ function MainApp() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [showMobileVolume, setShowMobileVolume] = useState(false);
+  const [showDesktopVolume, setShowDesktopVolume] = useState(false);
+  const [showMobileTrackInfo, setShowMobileTrackInfo] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -428,7 +430,7 @@ function MainApp() {
     const track = playlist[currentIndex] || null;
     if (!track) return;
     const isCurrentlyPositive = track.feedback === true;
-    const isCurrentlyNegative = track.feedback === false;
+    const isCurrentlyNegative = track.feedback === null;
 
     if (type === 'positive') {
       const nextType = isCurrentlyPositive ? 'none' : 'positive';
@@ -1748,7 +1750,7 @@ const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = t
   const track = trackToFeedback || playlist[currentIndex];
   if (!track) return;
 
-  const feedbackVal = type === 'positive' ? true : (type === 'negative' ? false : null);
+  const feedbackVal = type === 'positive' ? true : (type === 'negative' ? null : false);
 
   // Sincronizar feedback con el backend
   if (track.recommendationId) {
@@ -1837,7 +1839,9 @@ const handleFinalAction = (action) => {
   setIsPlaying(false);
   setProgress(0);
 
-  if (action === 'new') {
+  if (action === 'new' || action === 'finish') {
+    setPlaylist([]);
+    setCurrentIndex(0);
     setScreen('initial-evaluation');
   } else {
     setScreen('onboarding');
@@ -2028,7 +2032,7 @@ const renderScreen = () => {
       return (
         <SettingsScreen
           onNavigate={setScreen}
-          onLogout={() => handleFinalAction('finish')}
+          onLogout={() => handleFinalAction('logout')}
           targetEmotion={targetEmotion}
           surveyData={surveyData}
           selectedArtistsData={selectedArtistsData}
@@ -2046,6 +2050,15 @@ const renderScreen = () => {
           initialStress={initialStress}
           onAction={handleFinalAction}
           onNavigate={setScreen}
+          onSubmit={async (finalSurveyData) => {
+            try {
+              console.log("💾 Enviando encuesta final IAE al backend...", finalSurveyData);
+              await apiCall('neuro', '/api/iae-survey/register', 'POST', finalSurveyData);
+              console.log("✅ Encuesta final IAE registrada con éxito");
+            } catch (e) {
+              console.error("❌ Error al registrar encuesta final IAE:", e);
+            }
+          }}
         />
       );
     case 'register':
@@ -2214,6 +2227,70 @@ if (showSidebar) {
                 width: calc(100% - ${isSidebarCollapsed ? '80px' : '240px'}) !important;
               }
             }
+
+            .player-track-info-desktop {
+              display: none !important;
+            }
+            .player-track-info-mobile-trigger {
+              display: flex !important;
+            }
+            .player-controls-right {
+              display: none !important;
+            }
+            @media (min-width: 1001px) {
+              .player-track-info-desktop {
+                display: flex !important;
+              }
+              .player-track-info-mobile-trigger {
+                display: none !important;
+              }
+              .player-controls-right {
+                display: flex !important;
+                padding-right: 80px !important;
+              }
+            }
+            
+            .volume-container-vertical {
+              position: relative !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+            
+            .volume-slider-vertical-popover {
+              position: absolute !important;
+              bottom: 60px !important;
+              left: 50% !important;
+              transform: translateX(-50%) !important;
+              background: rgba(255, 255, 255, 0.95) !important;
+              backdrop-filter: blur(10px) !important;
+              -webkit-backdrop-filter: blur(10px) !important;
+              border: 1px solid rgba(0, 0, 0, 0.1) !important;
+              padding: 15px 0 !important;
+              border-radius: 12px !important;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+              display: none !important;
+              height: 150px !important;
+              width: 42px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              z-index: 1200 !important;
+            }
+            
+            .volume-container-vertical:hover .volume-slider-vertical-popover,
+            .volume-slider-vertical-popover.show {
+              display: flex !important;
+            }
+            @keyframes playerFadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
             
             /* Custom thin range slider styling for the player */
             .player-range {
@@ -2281,8 +2358,8 @@ if (showSidebar) {
             /* Estilo para el range slider vertical de volumen en mobile */
             .player-range-vertical {
               -webkit-appearance: none !important;
-              width: 80px !important;
-              height: 20px !important;
+              width: 120px !important;
+              height: 24px !important;
               background: transparent !important;
               transform: rotate(-90deg) !important;
               outline: none !important;
@@ -2293,7 +2370,7 @@ if (showSidebar) {
             
             .player-range-vertical::-webkit-slider-runnable-track {
               width: 100% !important;
-              height: 4px !important;
+              height: 6px !important;
               background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
               border-radius: 9999px !important;
               border: none !important;
@@ -2301,26 +2378,26 @@ if (showSidebar) {
             
             .player-range-vertical::-webkit-slider-thumb {
               -webkit-appearance: none !important;
-              height: 10px !important;
-              width: 10px !important;
+              height: 14px !important;
+              width: 14px !important;
               border-radius: 50% !important;
               background: var(--bs-primary) !important;
-              margin-top: -3px !important;
+              margin-top: -4px !important;
               box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
               border: none !important;
             }
  
             .player-range-vertical::-moz-range-track {
               width: 100% !important;
-              height: 4px !important;
+              height: 6px !important;
               background: linear-gradient(to right, var(--bs-primary) var(--progress-percent, 0%), rgba(0, 0, 0, 0.08) var(--progress-percent, 0%)) !important;
               border-radius: 9999px !important;
               border: none !important;
             }
             
             .player-range-vertical::-moz-range-thumb {
-              height: 10px !important;
-              width: 10px !important;
+              height: 14px !important;
+              width: 14px !important;
               border-radius: 50% !important;
               background: var(--bs-primary) !important;
               box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
@@ -2332,7 +2409,7 @@ if (showSidebar) {
                background: none !important;
                border: none !important;
                color: #526069 !important;
-               padding: 10px !important;
+               padding: 12px !important;
                display: flex !important;
                align-items: center !important;
                justify-content: center !important;
@@ -2340,22 +2417,22 @@ if (showSidebar) {
                cursor: pointer !important;
              }
              .player-btn span {
-               font-size: 26px !important;
+               font-size: 30px !important;
              }
              @media (min-width: 576px) {
                .player-btn {
-                 padding: 12px !important;
+                 padding: 14px !important;
                }
                .player-btn span {
-                 font-size: 30px !important;
+                 font-size: 36px !important;
                }
              }
              @media (min-width: 768px) {
                .player-btn {
-                 padding: 16px !important;
+                 padding: 18px !important;
                }
                .player-btn span {
-                 font-size: 34px !important;
+                 font-size: 42px !important;
                }
              }
              .player-btn:hover {
@@ -2369,13 +2446,13 @@ if (showSidebar) {
                background: var(--bs-primary) !important;
                color: #ffffff !important;
                border-radius: 50% !important;
-               width: 52px !important;
-               height: 52px !important;
+               width: 60px !important;
+               height: 60px !important;
                margin: 0 6px !important;
                box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
              }
              .player-btn-play span {
-               font-size: 30px !important;
+               font-size: 32px !important;
              }
              .player-btn-play:hover {
                background: var(--bs-primary) !important;
@@ -2386,22 +2463,22 @@ if (showSidebar) {
              
              @media (min-width: 576px) {
                .player-btn-play {
-                 width: 58px !important;
-                 height: 58px !important;
+                 width: 70px !important;
+                 height: 70px !important;
                  margin: 0 8px !important;
                }
                .player-btn-play span {
-                 font-size: 34px !important;
+                 font-size: 40px !important;
                }
              }
              @media (min-width: 768px) {
                .player-btn-play {
-                 width: 66px !important;
-                 height: 66px !important;
+                 width: 80px !important;
+                 height: 80px !important;
                  margin: 0 10px !important;
                }
                .player-btn-play span {
-                 font-size: 38px !important;
+                 font-size: 48px !important;
                }
              }
              
@@ -2415,8 +2492,122 @@ if (showSidebar) {
              }
           `}</style>
 
-          {/* LADO IZQUIERDO: Espacio vacío para centrar los controles en pantallas grandes */}
-          <div className="d-none d-md-block" style={{ flex: '1 1 20%', maxWidth: '200px' }} />
+          {/* LADO IZQUIERDO: Información de la canción (Responsivo) */}
+          {/* En desktop >= 1001px: Muestra título y artista directamente */}
+          <div className="player-track-info-desktop flex-column align-items-start justify-content-center min-w-0" style={{ flex: '1 1 20%', maxWidth: '220px' }}>
+            <p className="mb-0 fw-bold text-dark text-truncate w-100" style={{ fontSize: '13.5px', lineHeight: '1.2' }}>
+              {currentTrack.title}
+            </p>
+            <p className="mb-0 text-muted text-truncate w-100" style={{ fontSize: '10.5px', marginTop: '2px' }}>
+              {currentTrack.artist}
+            </p>
+          </div>
+
+          {/* En mobile < 1001px: Muestra un botón que abre un popover con la info, feedback y volumen */}
+          <div className="player-track-info-mobile-trigger position-relative align-items-center justify-content-start" style={{ flex: '1 1 20%', maxWidth: '60px' }}>
+            <button
+              onClick={() => setShowMobileTrackInfo(prev => !prev)}
+              className={`player-btn ${showMobileTrackInfo ? 'text-primary' : ''}`}
+              title="Información de la canción"
+              style={{ padding: '8px' }}
+            >
+              <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '24px' }}>
+                info
+              </span>
+            </button>
+
+            {showMobileTrackInfo && (
+              <div 
+                className="position-absolute bg-white bg-opacity-95 backdrop-blur-md border border-light-subtle rounded-4 p-3 shadow-lg"
+                style={{
+                  bottom: '80px',
+                  left: '10px',
+                  width: '260px',
+                  zIndex: 1100,
+                  animation: 'playerFadeInUp 0.2s ease-out'
+                }}
+              >
+                <div className="d-flex justify-content-between align-items-start mb-1">
+                  <span className="badge bg-primary text-white rounded-pill px-2" style={{ fontSize: '9px', fontWeight: 600 }}>Sonando ahora</span>
+                  <button 
+                    onClick={() => setShowMobileTrackInfo(false)} 
+                    className="btn-close" 
+                    style={{ fontSize: '8px', padding: '2px' }}
+                    aria-label="Close"
+                  />
+                </div>
+                <p className="mb-0 fw-bold text-dark text-truncate" style={{ fontSize: '13px', lineHeight: '1.25' }}>
+                  {currentTrack.title}
+                </p>
+                <p className="mb-0 text-muted text-truncate mb-2" style={{ fontSize: '11px', marginTop: '1px' }}>
+                  {currentTrack.artist}
+                </p>
+
+                {/* Botones que "se mueven" a mobile */}
+                <div className="d-flex align-items-center justify-content-between border-top pt-2 mt-2 gap-2">
+                  <div className="d-flex align-items-center gap-1">
+                    {/* Thumbs down (Dislike) */}
+                    <button
+                      onClick={() => handleFeedbackClickGlobal('negative')}
+                      className={`btn btn-sm p-1.5 rounded-circle border-0 ${currentTrack.feedback === null ? 'bg-danger bg-opacity-10 text-danger' : 'bg-light text-secondary'}`}
+                      title="No ayuda"
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === null ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
+                        thumb_down
+                      </span>
+                    </button>
+                    
+                    {/* Thumbs up (Like) */}
+                    <button
+                      onClick={() => handleFeedbackClickGlobal('positive')}
+                      className={`btn btn-sm p-1.5 rounded-circle border-0 ${currentTrack.feedback === true ? 'bg-success bg-opacity-10 text-success' : 'bg-light text-secondary'}`}
+                      title="Me ayuda"
+                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
+                        thumb_up
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Sonido / Volumen en Mobile */}
+                  <div 
+                    className="volume-container-vertical ms-auto"
+                    style={{ position: 'relative' }}
+                  >
+                    {/* Popover con slider vertical en Mobile */}
+                    <div 
+                      className={`volume-slider-vertical-popover ${showMobileVolume ? 'show' : ''}`}
+                      style={{ bottom: '40px' }}
+                    >
+                      <input
+                        type="range"
+                        className="player-range-vertical"
+                        style={{
+                          '--progress-percent': `${volume}%`
+                        }}
+                        min={0}
+                        max={100}
+                        value={volume}
+                        onChange={(e) => setVolume(Number(e.target.value))}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => setShowMobileVolume(prev => !prev)}
+                      className="btn btn-sm p-1 text-muted border-0 bg-transparent"
+                      title={volume === 0 ? "Activar sonido" : "Silenciar"}
+                    >
+                      <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '20px' }}>
+                        {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* CENTRO: Controles y Slider de progreso */}
           <div className="d-flex flex-column align-items-center justify-content-center px-1 px-md-3" style={{ flex: '2 1 60%', minWidth: '120px' }}>
@@ -2458,17 +2649,17 @@ if (showSidebar) {
             </div>
           </div>
 
-          {/* LADO DERECHO: Feedback secundario y volumen */}
-          <div className="d-flex align-items-center justify-content-end gap-1 gap-md-2" style={{ flex: '1 1 20%', minWidth: '80px', maxWidth: '200px' }}>
+          {/* LADO DERECHO: Feedback secundario y volumen (Solo en desktop >= 1001px) */}
+          <div className="player-controls-right align-items-center justify-content-end gap-1 gap-md-2" style={{ flex: '1 1 20%', minWidth: '80px', maxWidth: '200px' }}>
 
             {/* Feedback Thumbs (funcional de la app) */}
             <button
               onClick={() => handleFeedbackClickGlobal('negative')}
-              className={`player-btn ${currentTrack.feedback === false ? 'text-danger' : ''}`}
+              className={`player-btn ${currentTrack.feedback === null ? 'text-danger' : ''}`}
               title="No ayuda"
-              style={{ opacity: currentTrack.feedback === false ? 1 : 0.5 }}
+              style={{ opacity: currentTrack.feedback === null ? 1 : 0.5 }}
             >
-              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === false ? 'filled' : ''}`} translate="no">
+              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === null ? 'filled' : ''}`} translate="no">
                 thumb_down
               </span>
             </button>
@@ -2483,76 +2674,20 @@ if (showSidebar) {
               </span>
             </button>
 
-            {/* Control de volumen (Responsivo: horizontal en desktop, popover vertical en mobile) */}
-            <div className="position-relative d-flex align-items-center">
-              {/* En mobile: popover vertical del volumen */}
-              {showMobileVolume && (
-                <div
-                  className="position-absolute bottom-100 start-50 translate-middle-x mb-2 p-2 rounded-3 d-flex d-sm-none flex-column align-items-center"
-                  style={{
-                    height: '110px',
-                    width: '36px',
-                    zIndex: 1100,
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-                    background: 'rgba(255, 255, 255, 0.85)',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(0,0,0,0.08)'
-                  }}
-                  onMouseLeave={() => setShowMobileVolume(false)}
-                >
-                  <div
-                    style={{
-                      height: '80px',
-                      width: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <input
-                      type="range"
-                      className="player-range-vertical"
-                      min={0}
-                      max={100}
-                      value={volume}
-                      onChange={(e) => setVolume(Number(e.target.value))}
-                      style={{
-                        '--progress-percent': `${volume}%`
-                      }}
-                    />
-                  </div>
-                  <span className="text-muted fw-bold mt-1" style={{ fontSize: '9px', fontFamily: 'monospace', lineHeight: 1 }}>
-                    {volume}
-                  </span>
-                </div>
-              )}
-
-              {/* Botón de altavoz (siempre visible) */}
-              <button
-                onClick={() => {
-                  if (window.innerWidth < 768) {
-                    setShowMobileVolume(!showMobileVolume);
-                  } else {
-                    setVolume(volume === 0 ? 50 : 0);
-                  }
-                }}
-                className="player-btn"
-                title={volume === 0 ? "Activar sonido" : "Silenciar"}
-                style={{ padding: '4px' }}
+            {/* Control de volumen en Desktop */}
+            <div 
+              className="volume-container-vertical"
+              onMouseEnter={() => setShowDesktopVolume(true)}
+              onMouseLeave={() => setShowDesktopVolume(false)}
+            >
+              {/* Popover con slider vertical */}
+              <div 
+                className={`volume-slider-vertical-popover ${showDesktopVolume ? 'show' : ''}`}
               >
-                <span className="material-symbols-outlined notranslate" translate="no">
-                  {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
-                </span>
-              </button>
-
-              {/* Slider horizontal (solo visible de sm en adelante) */}
-              <div className="d-none d-sm-block">
                 <input
                   type="range"
-                  className="player-range"
+                  className="player-range-vertical"
                   style={{
-                    width: '60px',
                     '--progress-percent': `${volume}%`
                   }}
                   min={0}
@@ -2561,8 +2696,24 @@ if (showSidebar) {
                   onChange={(e) => setVolume(Number(e.target.value))}
                 />
               </div>
+
+              {/* Botón de altavoz */}
+              <button
+                onClick={() => {
+                  setVolume(volume === 0 ? 50 : 0);
+                }}
+                className="player-btn"
+                title={volume === 0 ? "Activar sonido" : "Silenciar"}
+              >
+                <span className="material-symbols-outlined notranslate" translate="no">
+                  {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
+                </span>
+              </button>
             </div>
           </div>
+
+          {/* Espaciador derecho simétrico en mobile para centrar los controles */}
+          <div className="player-track-info-mobile-trigger" style={{ flex: '1 1 20%', maxWidth: '60px' }} />
 
         </div>
       )}

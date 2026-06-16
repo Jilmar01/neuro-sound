@@ -9,12 +9,32 @@ const ratings = [
   { val: 5, icon: 'sentiment_very_satisfied', label: 'PERFECTO' },
 ];
 
-const FinalSurvey = ({ initialStress = 8, onAction, onNavigate }) => {
+const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
   const [q1, setQ1] = useState(3);
   const [q2, setQ2] = useState(3);
   const [q3, setQ3] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const satisfaction = ((q1 + q2 + (q3 === 'si' ? 5 : q3 === 'no' ? 1 : 0)) / 11 * 100).toFixed(0);
+
+  const handleAction = async (actionType) => {
+    if (q3 !== null && onSubmit) {
+      setIsSubmitting(true);
+      try {
+        await onSubmit({
+          M1: q1,
+          M2: q2,
+          M3: q3 === 'si' ? 1 : 0,
+          satisfaction: Number(satisfaction)
+        });
+      } catch (err) {
+        console.error("Error submitting final survey:", err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+    onAction(actionType);
+  };
 
   const renderRating = (value, setter) => (
     <div className="w-100 d-flex justify-content-between my-1">
@@ -108,16 +128,17 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate }) => {
         <div className="d-flex flex-column gap-2 w-100 mt-3">
           <Button
             variant="primary"
-            icon="check_circle"
-            onClick={() => onAction('finish')}
+            icon={isSubmitting ? undefined : "check_circle"}
+            onClick={() => handleAction('finish')}
             className="w-100 py-3 rounded-pill fw-semibold shadow-sm"
-            disabled={q3 === null}>
-            Finalizar Sesion
+            disabled={q3 === null || isSubmitting}>
+            {isSubmitting ? "Enviando..." : "Finalizar Sesion"}
           </Button>
           <Button
             variant="outline"
-            onClick={() => onAction('new')}
-            className="w-100 py-3 rounded-pill fw-semibold">
+            onClick={() => handleAction('new')}
+            className="w-100 py-3 rounded-pill fw-semibold"
+            disabled={isSubmitting}>
             Nueva Sintonia
           </Button>
         </div>

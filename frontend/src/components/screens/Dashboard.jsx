@@ -322,7 +322,7 @@ const Dashboard = ({
    */
   const handleFeedbackClick = (type) => {
     const isCurrentlyPositive = currentTrack.feedback === true;
-    const isCurrentlyNegative = currentTrack.feedback === false;
+    const isCurrentlyNegative = currentTrack.feedback === null;
 
     if (type === 'positive') {
       const nextType = isCurrentlyPositive ? 'none' : 'positive';
@@ -353,10 +353,25 @@ const Dashboard = ({
       style={{ minHeight: '100%' }}
     >
       <style>{`
-        /* Contenedor de scroll de playlist */
+        /* Contenedor de scroll de playlist limitado a 5 items con scroll premium */
         .playlist-scroll-container {
-          max-height: none !important;
-          overflow: visible !important;
+          max-height: 295px !important;
+          overflow-y: auto !important;
+          padding-right: 6px;
+        }
+        .playlist-scroll-container::-webkit-scrollbar {
+          width: 5px;
+        }
+        .playlist-scroll-container::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: 10px;
+        }
+        .playlist-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.3);
+          border-radius: 10px;
+        }
+        .playlist-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.5);
         }
       `}</style>
       {/* Botones flotantes: Estado Emocional y Temporizador */}
