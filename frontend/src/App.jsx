@@ -387,7 +387,15 @@ function MainApp() {
   const [initialStress, setInitialStress] = useState(8);
 
   // Estado persistente de audio
-  const [playlist, setPlaylist] = useState([]);
+  const [playlist, setPlaylist] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('cachedPlaylist');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      console.error("Error reading cachedPlaylist from sessionStorage:", e);
+      return [];
+    }
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -446,6 +454,7 @@ function MainApp() {
   const audioRef = useRef(null);
   const isFadingOut = useRef(false);
   const fadeIntervalRef = useRef(null);
+  const hasAttemptedPlaylistLoad = useRef(false);
 
   const [analyserNode, setAnalyserNode] = useState(null);
   const audioContextRef = useRef(null);
@@ -535,13 +544,21 @@ function MainApp() {
     loadProfileAndSync();
   }, [userType]);
 
+  // Resetear el control de carga automática de playlist al salir del Dashboard
+  useEffect(() => {
+    if (screen !== 'dashboard') {
+      hasAttemptedPlaylistLoad.current = false;
+    }
+  }, [screen]);
+
   // Carga automática de playlist si se recarga la página directo en el Dashboard
   useEffect(() => {
-    if (screen === 'dashboard' && playlist.length === 0 && !isLoading) {
-      console.log("🔄 Carga automática de playlist al recargar en Dashboard...");
+    if (screen === 'dashboard' && !isLoading && !hasAttemptedPlaylistLoad.current) {
+      hasAttemptedPlaylistLoad.current = true;
+      console.log("🔄 Carga automática/actualización de playlist en Dashboard...");
       loadPlaylist(surveyData || readStoredSurvey());
     }
-  }, [screen, playlist.length, isLoading, surveyData]);
+  }, [screen, isLoading, surveyData]);
 
   /**
    * Inicializa el grafo de Web Audio y conecta el audio HTML5.
@@ -1573,27 +1590,59 @@ const loadPlaylist = async (survey) => {
     setIsLoading(true);
     const token = userType === 'spotify' ? localStorage.getItem('spotifyToken') : null;
     const nextPlaylist = await generateHybridPlaylist(token, survey);
+    let playlistToSet = null;
     if (nextPlaylist && nextPlaylist.length > 0) {
+      playlistToSet = nextPlaylist;
       setPlaylist(nextPlaylist);
+      try {
+        sessionStorage.setItem('cachedPlaylist', JSON.stringify(nextPlaylist));
+      } catch (err) {
+        console.error("Error caching playlist:", err);
+      }
     } else {
-      console.warn("⚠️ API de NeuroSound no responde. Activando playlist de respaldo local.");
-      setPlaylist(fallbackPlaylist);
+      const cached = sessionStorage.getItem('cachedPlaylist');
+      if (!cached) {
+        console.warn("⚠️ API de NeuroSound no responde. Activando playlist de respaldo local.");
+        playlistToSet = fallbackPlaylist;
+        setPlaylist(fallbackPlaylist);
+      } else {
+        console.warn("⚠️ API de NeuroSound no responde. Manteniendo playlist cacheada.");
+        try {
+          playlistToSet = JSON.parse(cached);
+          setPlaylist(playlistToSet);
+        } catch {
+          playlistToSet = fallbackPlaylist;
+          setPlaylist(fallbackPlaylist);
+        }
+      }
     }
-    if (userType === 'spotify') {
-      SpotifyPlayerWrapper.updatePlaylist(nextPlaylist);
+    if (userType === 'spotify' && playlistToSet) {
+      SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
     }
     setCurrentIndex(0);
     setProgress(0);
-    return nextPlaylist;
+    return playlistToSet;
   } catch (e) {
-    console.error("Error loading playlist, using fallback:", e);
-    setPlaylist(fallbackPlaylist);
+    console.error("Error loading playlist, checking cache/fallback:", e);
+    const cached = sessionStorage.getItem('cachedPlaylist');
+    let playlistToSet = fallbackPlaylist;
+    if (cached) {
+      try {
+        playlistToSet = JSON.parse(cached);
+        console.warn("Manteniendo playlist cacheada debido al error.");
+      } catch {
+        playlistToSet = fallbackPlaylist;
+      }
+    } else {
+      console.warn("Activando playlist de respaldo local debido al error.");
+    }
+    setPlaylist(playlistToSet);
     if (userType === 'spotify') {
-      SpotifyPlayerWrapper.updatePlaylist(fallbackPlaylist);
+      SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
     }
     setCurrentIndex(0);
     setProgress(0);
-    return fallbackPlaylist;
+    return playlistToSet;
   } finally {
     setIsLoading(false);
   }
@@ -1705,7 +1754,7 @@ const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = t
   if (track.recommendationId) {
     try {
       console.log(`Sending feedback to backend: recommendationId=${track.recommendationId}, trackId=${track.id}, feedback=${feedbackVal}`);
-      await apiCall('neuro', `/api/recommend/feedback/${track.recommendationId}`, 'POST', {
+      await apiCall('neuro', `/api/recommend/feedback/${track.recommendationId}`, 'PATCH', {
         trackId: track.id,
         feedback: feedbackVal
       });

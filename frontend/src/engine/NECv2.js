@@ -205,11 +205,23 @@ export async function generateRecommendation(rawSurvey = null) {
 
         console.log("💾 Usando encuesta activa para generar recomendación...");
         // El backend internamente hace getProfileUser(userId) y lee la última encuesta de la BD
-        const response = await apiCall('neuro', '/api/recommend/generate', 'GET');
-        if (response && (response.success || response.status === 'success')) {
-            return response.data || response.recomendacionGenerada || response;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.warn("⏳ apiCall GET /api/recommend/generate superó el límite de 60s. Abortando...");
+            controller.abort();
+        }, 60000);
+
+        try {
+            const response = await apiCall('neuro', '/api/recommend/generate', 'GET', null, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (response && (response.success || response.status === 'success')) {
+                return response.data || response.recomendacionGenerada || response;
+            }
+            throw new Error(response?.message || "Error en respuesta del servidor");
+        } catch (err) {
+            clearTimeout(timeoutId);
+            throw err;
         }
-        throw new Error(response?.message || "Error en respuesta del servidor");
 
         /*return [
             { id: "41sGC22d62AApd4dbiwhfr", uri: "http://172.210.237.82:8000/songs/Limbo.mp3", title: "Limbo", artists: ["Fernando Pessoa"], neuro_score: 95.8 },
@@ -217,7 +229,11 @@ export async function generateRecommendation(rawSurvey = null) {
             { id: "3QkuxlHi5RXa2YBr6S52n3", uri: "http://172.210.237.82:8000/songs/Royalty.mp3", title: "Royalty", artists: ["Fernando Pessoa"], neuro_score: 93.4 },
         ];*/
     } catch (error) {
-        console.error("❌ Error en generateRecommendation:", error);
+        if (error.name === 'AbortError') {
+            console.error("❌ La solicitud de recomendación fue cancelada por timeout de 60s.");
+        } else {
+            console.error("❌ Error en generateRecommendation:", error);
+        }
         return null;
     }
 }

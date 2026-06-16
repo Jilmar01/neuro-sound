@@ -63,7 +63,7 @@ export async function refreshSpotifySession() {
 // ---------------------------------------------------------
 // 3. LA FUNCIÓN FETCH MAESTRA
 // ---------------------------------------------------------
-export async function apiCall(serverName, endpoint, method, body = null) {
+export async function apiCall(serverName, endpoint, method, body = null, options = {}) {
 
     const config = SERVERS[serverName];
     if (!config) throw new Error(`Servidor "${serverName}" no configurado.`);
@@ -79,7 +79,8 @@ export async function apiCall(serverName, endpoint, method, body = null) {
 
     const fetchOptions = {
         method: method.toUpperCase(),
-        headers: headers
+        headers: headers,
+        ...options
     };
     if (body && method.toUpperCase() !== 'GET') {
         fetchOptions.body = JSON.stringify(body);
