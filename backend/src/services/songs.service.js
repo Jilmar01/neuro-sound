@@ -43,7 +43,7 @@ export const getAllSongs = async () => {
     return songs;
 }
 
-export const getSongsPaginatedService = async ({skip = 0, limit = 1000} = {}) => {
+export const getSongsPaginatedService = async ({ skip = 0, limit = 1000 } = {}) => {
 
     const songs = await Song.find()
         .skip(Number(skip))
@@ -58,7 +58,7 @@ export const findSongsByIds = async (track_ids = []) => {
         throw new HttpError('Track_ids must be an array', 400);
     }
     return Song.find({
-        track_id: { $in: track_ids }
+        id: { $in: track_ids }
     });
 };
 
