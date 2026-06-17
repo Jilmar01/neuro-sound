@@ -269,46 +269,47 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
     const hash = getDeterministicHash(trackId || trackTitle || "");
     const genre = (trackGenre || 'Calma').toLowerCase();
     
-    let energyMin = 3, energyMax = 5;
-    let valenceMin = 6, valenceMax = 8;
+    let energyMin = 0.3, energyMax = 0.5;
+    let valenceMin = 0.6, valenceMax = 0.8;
     let bpmMin = 60, bpmMax = 80;
 
     if (genre.includes('electr')) {
-        energyMin = 7; energyMax = 9;
-        valenceMin = 6; valenceMax = 8;
+        energyMin = 0.7; energyMax = 0.9;
+        valenceMin = 0.6; valenceMax = 0.8;
         bpmMin = 115; bpmMax = 128;
     } else if (genre.includes('amb')) {
-        energyMin = 2; energyMax = 4;
-        valenceMin = 6; valenceMax = 8;
+        energyMin = 0.2; energyMax = 0.4;
+        valenceMin = 0.6; valenceMax = 0.8;
         bpmMin = 60; bpmMax = 70;
     } else if (genre.includes('class') || genre.includes('clás') || genre.includes('clas')) {
-        energyMin = 3; energyMax = 6;
-        valenceMin = 5; valenceMax = 8;
+        energyMin = 0.3; energyMax = 0.6;
+        valenceMin = 0.5; valenceMax = 0.8;
         bpmMin = 65; bpmMax = 85;
     } else if (genre.includes('chill')) {
-        energyMin = 4; energyMax = 6;
-        valenceMin = 6; valenceMax = 8;
+        energyMin = 0.4; energyMax = 0.6;
+        valenceMin = 0.6; valenceMax = 0.8;
         bpmMin = 80; bpmMax = 95;
     } else if (genre.includes('calma')) {
-        energyMin = 2; energyMax = 4;
-        valenceMin = 6; valenceMax = 8;
+        energyMin = 0.2; energyMax = 0.4;
+        valenceMin = 0.6; valenceMax = 0.8;
         bpmMin = 55; bpmMax = 65;
     } else if (genre.includes('foco') || genre.includes('concentr')) {
-        energyMin = 4; energyMax = 6;
-        valenceMin = 7; valenceMax = 9;
+        energyMin = 0.4; energyMax = 0.6;
+        valenceMin = 0.7; valenceMax = 0.9;
         bpmMin = 65; bpmMax = 75;
     } else if (genre.includes('zen') || genre.includes('medit')) {
-        energyMin = 1; energyMax = 3;
-        valenceMin = 5; valenceMax = 7;
+        energyMin = 0.1; energyMax = 0.3;
+        valenceMin = 0.5; valenceMax = 0.7;
         bpmMin = 50; bpmMax = 60;
     } else { // Relajacion o general
-        energyMin = 3; energyMax = 5;
-        valenceMin = 6; valenceMax = 8;
+        energyMin = 0.3; energyMax = 0.5;
+        valenceMin = 0.6; valenceMax = 0.8;
         bpmMin = 60; bpmMax = 72;
     }
 
-    const energy = energyMin + (hash % (energyMax - energyMin + 1));
-    const valence = valenceMin + ((hash >> 2) % (valenceMax - valenceMin + 1));
+    // Se usa (hash % 3) / 10 para sumar un float 0-0.2
+    const energy = parseFloat((energyMin + ((hash % 3) / 10)).toFixed(3));
+    const valence = parseFloat((valenceMin + (((hash >> 2) % 3) / 10)).toFixed(3));
     const bpm = bpmMin + ((hash >> 4) % (bpmMax - bpmMin + 1));
 
     return { energy, valence, bpm };
@@ -331,7 +332,34 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
             if (Array.isArray(genData) && genData.length > 0) {
                 if (typeof genData[0] === 'object') {
                     console.log(`✅ Playlist enriquecida desde generate: ${genData.length} pistas.`);
+                    
+                    // 1.5 Interceptar IDs para pedir la data cruda a la base de datos
+                    let dbTracksMap = {};
+                    try {
+                        const songIds = genData.map(t => t.id || t.track_id).filter(Boolean);
+                        if (songIds.length > 0) {
+                            console.log(`📡 Consultando metadata cruda a la BD para ${songIds.length} canciones...`);
+                            // Reusando apiCall para llegar al backend Node local
+                            const dbRes = await apiCall('neuro', '/api/songs/tracks', 'POST', { track_ids: songIds });
+                            
+                            // El endpoint responde usando sendSuccess que envuelve en { success: true, data: [...] }
+                            if (dbRes && dbRes.success && Array.isArray(dbRes.data)) {
+                                console.log("🔍 [DEBUG] DATOS CRUDOS DE MONGODB:", JSON.parse(JSON.stringify(dbRes.data)));
+                                dbRes.data.forEach(t => dbTracksMap[t.id || t._id] = t);
+                            } else if (Array.isArray(dbRes)) {
+                                console.log("🔍 [DEBUG] DATOS CRUDOS DE MONGODB:", JSON.parse(JSON.stringify(dbRes)));
+                                dbRes.forEach(t => dbTracksMap[t.id || t._id] = t);
+                            }
+                            console.log(`✅ Extraídos ${Object.keys(dbTracksMap).length} documentos puros de la BD.`);
+                        }
+                    } catch (e) {
+                        console.error("❌ Error al obtener datos reales de la BD:", e);
+                    }
+
                     return genData.map((track) => {
+                        // Buscar la data cruda en el mapa recién bajado
+                        const rawDbTrack = dbTracksMap[track.id] || dbTracksMap[track.track_id];
+
                         const audioUrl = track.uri || track.preview_url || track.spotify_link || '';
                         const fileName = decodeURIComponent(audioUrl.split('/').pop()?.replace(/\.mp3$/, '') || '').replace(/_/g, ' ') || 'Canción';
                         const neuroScore = track.neuro_score ?? track.score ?? 50;
@@ -345,9 +373,12 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
                             artist: track.artist || (Array.isArray(track.artists) ? track.artists.map(a => typeof a === 'string' ? a : a.name).join(', ') : 'NeuroSound'),
                             cover: track.cover || track.album?.images?.[0]?.url || '',
                             preview_url: audioUrl || null,
-                            energy: track.energy ?? metrics.energy,
-                            valence: track.valence ?? metrics.valence,
-                            bpm: track.bpm ?? metrics.bpm,
+                            
+                            // AQUI ESTA LA MAGIA: usamos el valor CRUDO de la BD si existe, de lo contrario fallback
+                            energy: rawDbTrack?.energy !== undefined ? rawDbTrack.energy : (track.energy !== undefined ? track.energy : metrics.energy),
+                            valence: rawDbTrack?.valence !== undefined ? rawDbTrack.valence : (track.valence !== undefined ? track.valence : metrics.valence),
+                            tempo: rawDbTrack?.tempo !== undefined ? rawDbTrack.tempo : (track.tempo !== undefined ? track.tempo : (track.bpm !== undefined ? track.bpm : metrics.bpm)),
+                            
                             genre: genre,
                             recommendationId: genResult?._id || null,
                             feedback: track.feedback !== undefined ? track.feedback : false
@@ -377,9 +408,9 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
                             artist: track.artists?.map(a => a.name).join(', ') || 'Artista Desconocido',
                             cover: track.album?.images?.[0]?.url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
                             preview_url: track.preview_url || null,
-                            energy: metrics.energy,
-                            valence: metrics.valence,
-                            bpm: metrics.bpm,
+                            energy: originalTrack?.energy !== undefined ? originalTrack.energy : metrics.energy,
+                            valence: originalTrack?.valence !== undefined ? originalTrack.valence : metrics.valence,
+                            tempo: originalTrack?.tempo !== undefined ? originalTrack.tempo : (originalTrack?.bpm !== undefined ? originalTrack.bpm : metrics.bpm),
                             genre: genre,
                             recommendationId: genResult?._id || null,
                             feedback: originalTrack && originalTrack.feedback !== undefined ? originalTrack.feedback : false

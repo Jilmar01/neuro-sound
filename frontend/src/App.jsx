@@ -88,12 +88,12 @@ if (!hasActiveSession) {
 // Mapa de temas visuales por emocion/estado.
 const emotionThemes = {
   gris: {
-    primary: '#6c757d',
-    primaryRgb: '108, 117, 125',
-    bgSubtle: '#eef2f3',
-    borderSubtle: '#d5dbdb',
-    glow1: 'rgba(108, 117, 125, 0.2)',
-    glow2: 'rgba(108, 117, 125, 0.08)'
+    primary: '#2b4b71',
+    primaryRgb: '43, 75, 113',
+    bgSubtle: '#f4f7fb',
+    borderSubtle: '#d3e0f0',
+    glow1: 'rgba(43, 75, 113, 0.15)',
+    glow2: 'rgba(43, 75, 113, 0.05)'
   },
   calma: {
     primary: '#0d6efd',
@@ -189,9 +189,9 @@ const fallbackPlaylist = [
     artist: 'Ondas Theta 432Hz',
     cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
     preview_url: '/fallback-1.mp3',
-    energy: 3,
-    valence: 8,
-    bpm: 60,
+    energy: 0.3,
+    valence: 0.8,
+    tempo: 60,
     genre: 'Calma'
   },
   {
@@ -200,9 +200,9 @@ const fallbackPlaylist = [
     artist: 'Ondas Delta',
     cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
     preview_url: '/fallback-2.mp3',
-    energy: 2,
-    valence: 7,
-    bpm: 55,
+    energy: 0.2,
+    valence: 0.7,
+    tempo: 55,
     genre: 'Calma'
   },
   {
@@ -211,9 +211,9 @@ const fallbackPlaylist = [
     artist: 'Ruido Rosa',
     cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
     preview_url: '/fallback-3.mp3',
-    energy: 4,
-    valence: 9,
-    bpm: 70,
+    energy: 0.4,
+    valence: 0.9,
+    tempo: 70,
     genre: 'Foco'
   },
   {
@@ -222,9 +222,9 @@ const fallbackPlaylist = [
     artist: 'Atmósfera Zen',
     cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjwpnpx7xR1WpHvUx8LUi2gZ6v3_Kwo235vwHux1GFHRpvFfQgjc2hroz00aWkf76aKfexB3-HFEXyhN2-Wy1ni3zOuFba7NYyKc2EMXafI-CRCKi0R-O4VOi-UV4RujbFto4TrVuUyWXycomJutNpNaFzSZiru9KDz_NHGhQPrrN7hXcoQHo_3jDu_TgYMvWJIM4Er55XPC16u_-gYPPUmlV4pzhcDWP0AD35dcMjy623l5HayeAwHKjVInj3G_fcubP6AACMrUo',
     preview_url: '/fallback-4.mp3',
-    energy: 3,
-    valence: 6,
-    bpm: 65,
+    energy: 0.3,
+    valence: 0.6,
+    tempo: 65,
     genre: 'Zen'
   }
 ];
@@ -907,23 +907,71 @@ useEffect(() => {
   };
 
   const onLoadedMetadata = () => {
-    setDuration(audio.duration || 30);
+    if (audio.duration !== Infinity && !isNaN(audio.duration)) {
+      setDuration(audio.duration);
+    }
     setIsLoading(false);
   };
 
   const onEnded = () => {
     if (isFadingOut.current) return; // Ya manejado por el fin del fade-out
+
+    // Protección contra fin prematuro de stream (microcortes de red)
+    if (audio.duration && audio.duration - audio.currentTime > 10) {
+      console.warn(`⚠️ Stream cortado prematuramente a los ${audio.currentTime}s de ${audio.duration}s. Reconectando...`);
+      const currentTime = audio.currentTime;
+      setIsLoading(true);
+      audio.load();
+      audio.currentTime = currentTime;
+      audio.play().catch(e => console.error("Error al reconectar stream:", e));
+      return;
+    }
+
     handleNext();
+  };
+
+  const onError = (e) => {
+    console.error("❌ Error en el reproductor de audio:", audio.error);
+    // Código 2: MEDIA_ERR_NETWORK (Problema de red descargando el stream)
+    if (audio.error && audio.error.code === 2) {
+      console.log("🔄 Intento de recuperación de red en curso...");
+      const currentTime = audio.currentTime;
+      setIsLoading(true);
+      setTimeout(() => {
+        audio.load();
+        audio.currentTime = currentTime;
+        audio.play().catch(console.error);
+      }, 1000); // Esperar 1 segundo antes de reintentar
+    } else if (audio.error && audio.error.code === 3) {
+      // MEDIA_ERR_DECODE - A veces pasa si el stream se corrompe. Intentamos saltar a la siguiente si es irrecuperable.
+      console.warn("⚠️ Error de decodificación. Saltando track...");
+      handleNext();
+    }
+  };
+
+  const onWaiting = () => {
+    console.log("⏳ Esperando más datos del stream...");
+    setIsLoading(true);
+  };
+
+  const onPlaying = () => {
+    setIsLoading(false);
   };
 
   audio.addEventListener('timeupdate', onTimeUpdate);
   audio.addEventListener('loadedmetadata', onLoadedMetadata);
   audio.addEventListener('ended', onEnded);
+  audio.addEventListener('error', onError);
+  audio.addEventListener('waiting', onWaiting);
+  audio.addEventListener('playing', onPlaying);
 
   return () => {
     audio.removeEventListener('timeupdate', onTimeUpdate);
     audio.removeEventListener('loadedmetadata', onLoadedMetadata);
     audio.removeEventListener('ended', onEnded);
+    audio.removeEventListener('error', onError);
+    audio.removeEventListener('waiting', onWaiting);
+    audio.removeEventListener('playing', onPlaying);
   };
 }, [currentIndex, playlist, volume]);
 
@@ -1174,10 +1222,10 @@ const handleNext = async (isManual = false) => {
   }
 
   if (currentIndex === playlist.length - 1) {
-    console.log("🏁 Fin de la playlist. Cargando siguiente tanda...");
+    console.log("🏁 Fin de la playlist. Cargando siguiente tanda (ignorando caché)...");
     setIsPlaying(false);
     setIsLoading(true);
-    const newPlaylist = await loadPlaylist(surveyData || {});
+    const newPlaylist = await loadPlaylist(surveyData || {}, true);
     if (userType === 'spotify' && newPlaylist?.length > 0) {
       await SpotifyPlayerWrapper.playTrackAtIndex(0);
     }
@@ -1587,17 +1635,42 @@ const handleUpdateSurveyInline = async (sienteVal, quiereVal) => {
  * @param {Object} survey - Datos usados para la recomendacion.
  * @returns {Promise<void>}
  */
-const loadPlaylist = async (survey) => {
+const loadPlaylist = async (survey, forceRegenerate = false) => {
   try {
     setIsLoading(true);
+    const surveyToUse = survey || readStoredSurvey();
+    
+    // VERIFICACION DE CACHE
+    const currentSurveyStr = JSON.stringify(surveyToUse || {});
+    const cachedSurveyStr = sessionStorage.getItem('lastSurveyData');
+    const cachedPlaylistStr = sessionStorage.getItem('cachedPlaylist');
+
+    if (!forceRegenerate && cachedSurveyStr === currentSurveyStr && cachedPlaylistStr) {
+      try {
+        const cachedPlaylist = JSON.parse(cachedPlaylistStr);
+        if (cachedPlaylist && cachedPlaylist.length > 0) {
+          console.log("♻️ Usando playlist cacheada. La encuesta no ha cambiado.");
+          setPlaylist(cachedPlaylist);
+          if (userType === 'spotify') {
+            SpotifyPlayerWrapper.updatePlaylist(cachedPlaylist);
+          }
+          setIsLoading(false);
+          return cachedPlaylist;
+        }
+      } catch (err) {
+        console.warn("Error leyendo la cache, se generará una nueva...");
+      }
+    }
+
     const token = userType === 'spotify' ? localStorage.getItem('spotifyToken') : null;
-    const nextPlaylist = await generateHybridPlaylist(token, survey);
+    const nextPlaylist = await generateHybridPlaylist(token, surveyToUse);
     let playlistToSet = null;
     if (nextPlaylist && nextPlaylist.length > 0) {
       playlistToSet = nextPlaylist;
       setPlaylist(nextPlaylist);
       try {
         sessionStorage.setItem('cachedPlaylist', JSON.stringify(nextPlaylist));
+        sessionStorage.setItem('lastSurveyData', currentSurveyStr);
       } catch (err) {
         console.error("Error caching playlist:", err);
       }
@@ -1857,6 +1930,10 @@ const handleFinalAction = (action) => {
     localStorage.removeItem('spotifyRefreshToken');
     localStorage.removeItem('selectedArtists');
     localStorage.removeItem('selectedArtistsData');
+
+    // Limpiar caché de recomendaciones del sessionStorage
+    sessionStorage.removeItem('cachedPlaylist');
+    sessionStorage.removeItem('lastSurveyData');
   }
 };
 
@@ -1975,9 +2052,8 @@ const renderScreen = () => {
               console.error("❌ Error al guardar artistas en el backend:", e);
             }
           }}
-          onContinue={async () => {
+          onContinue={() => {
             setScreen('dashboard');
-            await loadPlaylist(null);
           }}
         />
       );
@@ -2084,7 +2160,35 @@ const activeThemeKey = isOnboarding
       ? getTrackThemeKey(currentTrack)
       : targetEmotion;
 
-const theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
+const hslToRgb = (h, s, l) => {
+  s /= 100;
+  l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return `${Math.round(255 * f(0))}, ${Math.round(255 * f(8))}, ${Math.round(255 * f(4))}`;
+};
+
+let theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
+
+if (!isOnboarding && themeMode !== 'manual' && currentTrack) {
+  // Tema dinámico global basado en la canción
+  const v = typeof currentTrack.valence === 'number' ? currentTrack.valence : 0.5;
+  const e = typeof currentTrack.energy === 'number' ? currentTrack.energy : 0.5;
+  
+  const hue = 240 - (v * 200); // 240 (Azul) a 40 (Naranja)
+  const saturation = 40 + (e * 60); // 40% a 100% de intensidad
+  const lightness = 40 + (e * 15); // 40% a 55% de brillo primario
+  
+  theme = {
+    primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+    primaryRgb: hslToRgb(hue, saturation, lightness),
+    bgSubtle: `hsl(${hue}, ${saturation}%, 96%)`,
+    borderSubtle: `hsl(${hue}, ${saturation}%, 85%)`,
+    glow1: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`,
+    glow2: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.1)`
+  };
+}
 
 // Genera estilos inline para overrides de Bootstrap y brillos ambientales
 const themeStyle = `
@@ -2132,6 +2236,11 @@ const themeStyle = `
       min-height: 0 !important;
       padding-bottom: ${currentTrack ? '105px' : '0px'} !important;
     }
+    @media (min-width: 768px) {
+      .main-content-area.screen-dashboard {
+        overflow-y: hidden !important;
+      }
+    }
     @media (max-width: 767.98px) {
       .main-content-area {
         height: calc(100vh - 60px${currentTrack ? ' - 105px' : ''}) !important;
@@ -2165,8 +2274,8 @@ if (showSidebar) {
       />
 
       {/* Main Content Area - Locked Height, Independently Scrollable */}
-      <div className="main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1">
-        <MouseGradient />
+      <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1 ${screen === 'dashboard' ? 'screen-dashboard' : ''}`}>
+        <MouseGradient colorRgb={theme.primaryRgb} />
         {renderScreen()}
         {currentTrack && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
       </div>

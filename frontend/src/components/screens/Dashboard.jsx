@@ -89,6 +89,9 @@ const Dashboard = ({
     return localStorage.getItem('sidebarCollapsed') === 'true';
   });
 
+  // Estado para guardar las carátulas descargadas dinámicamente
+  const [coversMap, setCoversMap] = useState({});
+
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
 
@@ -103,6 +106,44 @@ const Dashboard = ({
       window.removeEventListener('sidebar-collapse-toggle', handleSidebarToggle);
     };
   }, []);
+
+  // Buscador de portadas en segundo plano
+  useEffect(() => {
+    tracks.forEach(track => {
+      // Si la cancion tiene default cover y no hemos buscado aun
+      if (isDefaultCover(track.cover) && coversMap[track.id] === undefined) {
+        // Marcamos como pending para evitar disparar peticiones duplicadas
+        setCoversMap(prev => ({ ...prev, [track.id]: 'pending' }));
+        
+        const query = encodeURIComponent(`${track.artist} ${track.title}`);
+        fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.results && data.results.length > 0) {
+              // Reemplazamos la resolucion baja 100x100 por 500x500 de alta definicion
+              const highResUrl = data.results[0].artworkUrl100.replace('100x100bb', '500x500bb');
+              setCoversMap(prev => ({ ...prev, [track.id]: highResUrl }));
+            } else {
+              setCoversMap(prev => ({ ...prev, [track.id]: 'not_found' }));
+            }
+          })
+          .catch(e => {
+            console.error("Error fetching cover from iTunes:", e);
+            setCoversMap(prev => ({ ...prev, [track.id]: 'not_found' }));
+          });
+      }
+    });
+  }, [tracks]);
+
+  // Función para obtener la carátula correcta (original o descargada)
+  const getDisplayCover = (track) => {
+    if (!track) return '';
+    const fetchedCover = coversMap[track.id];
+    if (fetchedCover && fetchedCover !== 'pending' && fetchedCover !== 'not_found') {
+      return fetchedCover;
+    }
+    return track.cover || '';
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -493,72 +534,78 @@ const Dashboard = ({
 
             {/* Columna izquierda: visualizador circular y métricas científicas */}
             <div className="col-12 col-md-5 d-flex flex-column align-items-center">
-
-              {/* Visualizador circular de arte */}
-              <div
-                className={`position-relative rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center ${isPlaying && !isLoading ? 'animate-subtle-pulse' : ''
-                  }`}
-                style={{ width: '220px', height: '220px', background: isDefaultCover(currentTrack.cover) ? 'transparent' : '#eceef0' }}
-              >
-                {isLoading && (
-                  <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column align-items-center justify-content-center z-3 p-2 text-center text-white">
-                    <div className="spinner-border spinner-border-sm text-light mb-2" role="status" />
-                    <span className="fw-semibold text-uppercase tracking-wider" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
-                      Modulando Frecuencias...
-                    </span>
-                  </div>
-                )}
-                {!isDefaultCover(currentTrack.cover) && (
-                  <div
-                    className="position-absolute w-100 h-100 bg-cover bg-center filter blur-sm opacity-25"
-                    style={{ backgroundImage: `url('${currentTrack.cover}')`, backgroundSize: 'cover' }}
-                  />
-                )}
-
-                {/* Visualizador en tiempo real con Web Audio */}
-                <canvas
-                  ref={canvasRef}
-                  width="220"
-                  height="220"
-                  className="position-absolute top-0 start-0 w-100 h-100 z-1"
-                />
-
-                {/* Portada central dentro del anillo del visualizador */}
-                <div
-                  className="rounded-circle overflow-hidden position-relative z-2 d-flex align-items-center justify-content-center"
-                  style={{
-                    width: '130px',
-                    height: '130px',
-                    background: isDefaultCover(currentTrack.cover) ? 'transparent' : '#eceef0',
-                    border: isDefaultCover(currentTrack.cover) ? 'none' : '1px solid rgba(255,255,255,0.25)',
-                    boxShadow: isDefaultCover(currentTrack.cover) ? 'none' : 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  {!isDefaultCover(currentTrack.cover) ? (
-                    <img src={currentTrack.cover} alt="" className="w-100 h-100 object-cover" />
-                  ) : (
-                    <span
-                      className="material-symbols-outlined notranslate text-white select-none animate-subtle-pulse z-3" translate="no"
-                      style={{
-                        fontSize: '32px',
-                        color: '#ffffff',
-                        textShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 30px var(--bs-primary)',
-                        opacity: isPlaying ? 0.95 : 0.65,
-                        transition: 'opacity 0.3s ease, text-shadow 0.3s ease'
-                      }}
+              {(() => {
+                const currentCover = getDisplayCover(currentTrack);
+                return (
+                  <>
+                    {/* Visualizador circular de arte */}
+                    <div
+                      className={`position-relative rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center ${isPlaying && !isLoading ? 'animate-subtle-pulse' : ''
+                        }`}
+                      style={{ width: '220px', height: '220px', background: isDefaultCover(currentCover) ? 'transparent' : '#eceef0' }}
                     >
-                      {getGenreIcon(currentTrack.genre)}
-                    </span>
-                  )}
+                      {isLoading && (
+                        <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column align-items-center justify-content-center z-3 p-2 text-center text-white">
+                          <div className="spinner-border spinner-border-sm text-light mb-2" role="status" />
+                          <span className="fw-semibold text-uppercase tracking-wider" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
+                            Modulando Frecuencias...
+                          </span>
+                        </div>
+                      )}
+                      {!isDefaultCover(currentCover) && (
+                        <div
+                          className="position-absolute w-100 h-100 bg-cover bg-center filter blur-sm opacity-25"
+                          style={{ backgroundImage: `url('${currentCover}')`, backgroundSize: 'cover' }}
+                        />
+                      )}
 
-                  {/* Spinner sutil cuando el audio esta en buffer */}
-                  {isLoading && (
-                    <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-40 d-flex align-items-center justify-content-center">
-                      <div className="spinner-border spinner-border-sm text-light" role="status" />
+                      {/* Visualizador en tiempo real con Web Audio */}
+                      <canvas
+                        ref={canvasRef}
+                        width="220"
+                        height="220"
+                        className="position-absolute top-0 start-0 w-100 h-100 z-1"
+                      />
+
+                      {/* Portada central dentro del anillo del visualizador */}
+                      <div
+                        className="rounded-circle overflow-hidden position-relative z-2 d-flex align-items-center justify-content-center"
+                        style={{
+                          width: '130px',
+                          height: '130px',
+                          background: isDefaultCover(currentCover) ? 'transparent' : '#eceef0',
+                          border: isDefaultCover(currentCover) ? 'none' : '1px solid rgba(255,255,255,0.25)',
+                          boxShadow: isDefaultCover(currentCover) ? 'none' : 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {!isDefaultCover(currentCover) ? (
+                          <img src={currentCover} alt="" className="w-100 h-100 object-cover" />
+                        ) : (
+                          <span
+                            className="material-symbols-outlined notranslate text-white select-none animate-subtle-pulse z-3" translate="no"
+                            style={{
+                              fontSize: '32px',
+                              color: '#ffffff',
+                              textShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 30px var(--bs-primary)',
+                              opacity: isPlaying ? 0.95 : 0.65,
+                              transition: 'opacity 0.3s ease, text-shadow 0.3s ease'
+                            }}
+                          >
+                            {getGenreIcon(currentTrack.genre)}
+                          </span>
+                        )}
+
+                        {/* Spinner sutil cuando el audio esta en buffer */}
+                        {isLoading && (
+                          <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-40 d-flex align-items-center justify-content-center">
+                            <div className="spinner-border spinner-border-sm text-light" role="status" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+                  </>
+                );
+              })()}
 
               {/* Titulo y artista (Visualizador principal) */}
               <div className="text-center mt-3 mb-2 w-100">
@@ -576,10 +623,10 @@ const Dashboard = ({
                 <div>
                   <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
                     <span>Energía</span>
-                    <span className="fw-semibold">{currentTrack.energy || 3}/10</span>
+                    <span className="fw-semibold">{currentTrack.energy}</span>
                   </div>
                   <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${(currentTrack.energy || 3) * 10}%` }}></div>
+                    <div className="progress-bar bg-primary" style={{ width: `${currentTrack.energy * 100}%` }}></div>
                   </div>
                 </div>
 
@@ -587,10 +634,10 @@ const Dashboard = ({
                 <div>
                   <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
                     <span>Valencia</span>
-                    <span className="fw-semibold">{currentTrack.valence || 7}/10</span>
+                    <span className="fw-semibold">{currentTrack.valence}</span>
                   </div>
                   <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${(currentTrack.valence || 7) * 10}%` }}></div>
+                    <div className="progress-bar bg-primary" style={{ width: `${currentTrack.valence * 100}%` }}></div>
                   </div>
                 </div>
 
@@ -598,10 +645,10 @@ const Dashboard = ({
                 <div>
                   <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
                     <span>Tempo (BPM)</span>
-                    <span className="fw-semibold">{currentTrack.bpm || 60} BPM</span>
+                    <span className="fw-semibold">{currentTrack.tempo}</span>
                   </div>
                   <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${((currentTrack.bpm || 60) / 160) * 100}%` }}></div>
+                    <div className="progress-bar bg-primary" style={{ width: `${(currentTrack.tempo / 160) * 100}%` }}></div>
                   </div>
                 </div>
               </div>
@@ -619,31 +666,23 @@ const Dashboard = ({
               {/* Lista (Bootstrap sin bordes, mostrando todas las canciones) */}
               <div className="list-group w-100 mb-2 px-1 playlist-scroll-container">
                 {tracks.map((track, index) => {
+                  const trackCover = getDisplayCover(track);
                   const isCurrent = index === currentIndex;
 
-                  // Normaliza nombres de genero (corrige encoding)
-                  let displayGenre = track.genre || 'Calma';
-                  const genreLower = displayGenre.toLowerCase();
-                  if (genreLower.includes('electr')) {
-                    displayGenre = 'Electrónica';
-                  } else if (genreLower.includes('class') || genreLower.includes('clás') || genreLower.includes('clas')) {
-                    displayGenre = 'Clásica';
-                  } else if (genreLower.includes('amb')) {
-                    displayGenre = 'Ambient';
-                  } else if (genreLower.includes('chill')) {
-                    displayGenre = 'Chillout';
-                  }
+                  const displayGenre = track.genre || 'Desconocido';
 
-                  // Mapa de color segun energia emocional del genero
-                  const tagColors = {
-                    Ambient: 'bg-info-subtle text-info border border-info-subtle',
-                    'Clásica': 'bg-success-subtle text-success border border-success-subtle',
-                    Chillout: 'bg-warning-subtle text-warning border border-warning-subtle',
-                    'Electrónica': 'bg-danger-subtle text-danger border border-danger-subtle',
-                    Calma: 'bg-info-subtle text-info border border-info-subtle',
-                    Foco: 'bg-warning-subtle text-warning border border-warning-subtle',
-                    Zen: 'bg-success-subtle text-success border border-success-subtle'
-                  };
+                  // Cálculos de color basados estrictamente en datos (Valence y Energy)
+                  // Valencia dicta el color: 0 -> Azul oscuro (240), 1 -> Amarillo/Naranja (40)
+                  const v = typeof track.valence === 'number' ? track.valence : 0.5;
+                  const e = typeof track.energy === 'number' ? track.energy : 0.5;
+                  
+                  const hue = 240 - (v * 200); // 240 (Azul) hasta 40 (Naranja)
+                  const saturation = 40 + (e * 60); // 40% a 100% de saturación (energía dicta intensidad)
+                  const lightness = 35 + (e * 15); // 35% a 50% de brillo
+
+                  const textColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                  const bgColor = `hsl(${hue}, ${saturation}%, 92%)`;
+                  const borderColor = `hsl(${hue}, ${saturation}%, 85%)`;
 
                   return (
                     <button
@@ -660,13 +699,13 @@ const Dashboard = ({
                           style={{
                             width: '36px',
                             height: '36px',
-                            background: isDefaultCover(track.cover)
+                            background: isDefaultCover(trackCover)
                               ? (isCurrent ? 'var(--bs-primary)' : 'rgba(var(--bs-primary-rgb), 0.15)')
                               : '#eceef0'
                           }}
                         >
-                          {!isDefaultCover(track.cover) ? (
-                            <img src={track.cover} alt="" className="w-100 h-100 object-cover" />
+                          {!isDefaultCover(trackCover) ? (
+                            <img src={trackCover} alt="" className="w-100 h-100 object-cover" />
                           ) : (
                             <span
                               className="material-symbols-outlined notranslate select-none" translate="no"
@@ -678,7 +717,7 @@ const Dashboard = ({
                               {getGenreIcon(track.genre)}
                             </span>
                           )}
-                          {isCurrent && !isDefaultCover(track.cover) && (
+                          {isCurrent && !isDefaultCover(trackCover) && (
                             <div className="position-absolute top-0 start-0 w-100 h-100 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
                               <span className="material-symbols-outlined notranslate text-white text-sm filled" translate="no">
                                 {isPlaying ? 'volume_up' : 'play_arrow'}
@@ -697,9 +736,6 @@ const Dashboard = ({
                         </div>
                       </div>
 
-                      <span className={`badge rounded-pill text-uppercase ${tagColors[displayGenre] || 'bg-light text-muted'}`} style={{ fontSize: '8px', letterSpacing: '0.5px' }}>
-                        {displayGenre}
-                      </span>
                     </button>
                   );
                 })}
