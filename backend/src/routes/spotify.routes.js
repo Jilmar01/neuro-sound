@@ -1,4 +1,4 @@
-import express from "express";
+import express, { request } from "express";
 import SpotifyWebApi from "spotify-web-api-node";
 import dotenv from "dotenv";
 
@@ -37,7 +37,9 @@ router.get("/login", (req, res) => {
 router.get("/callback", async (req, res) => {
     const code = req.query.code;
 
-    if (!code) return res.status(400).send("Error: No code provided");
+    if (!code) {
+        return res.status(400).send("No code provided");
+    }
 
     try {
         const data = await spotifyApi.authorizationCodeGrant(code);
@@ -51,9 +53,14 @@ router.get("/callback", async (req, res) => {
         
         return res.redirect(frontendUrl);
 
+        console.log(process.env.FRONTEND_URL);
+
+        res.redirect(
+            `${process.env.FRONTEND_URL}/views/home.html?access_token=${accessToken}&refresh_token=${refreshToken}`
+        );
     } catch (error) {
-        console.error("Error en autenticación:", error);
-        return res.redirect(`https://neuro-sound.web.app/home.html?error=auth_failed`);
+        console.error("❌ Error autenticando Spotify:", error);
+        res.status(500).send("Auth failed");
     }
 });
 
@@ -94,5 +101,13 @@ router.post("/refresh", async (req, res) => {
         res.status(400).json({ error: "No se pudo renovar el token", details: error });
     }
 });
+
+
+router.get('/token', (req, res) => {
+    res.json(
+        {
+            access_token: access_token
+        })
+})
 
 export default router;
