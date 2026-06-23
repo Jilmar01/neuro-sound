@@ -17,11 +17,18 @@ const isValidPassword = (password) => password && password.length >= 6;
 export const authService = async (email, password) => {
 
     const user = await User.findOne({email}).select('+password');
+
+    if (!user) {
+        throw new HttpError("Invalid username or password", 401);
+    }
+
     const passwordMatch = verifyPassword(password, user.password);
 
-    if(!user || !passwordMatch) throw new HttpError("Invalid username or password", 401);
+    if (!passwordMatch) {
+        throw new HttpError("Invalid username or password", 401);
+    }
 
-    const userObj = user.toObject ? user.toObject() : { ...usuario };
+    const userObj = user.toObject ? user.toObject() : { ...user };
     if (userObj.password) delete userObj.password;
 
     const token = generateToken(userObj);
