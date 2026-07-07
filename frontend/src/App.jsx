@@ -1562,6 +1562,8 @@ const handleSurveySubmit = async (data) => {
     } catch (_) {}
   }
 
+  setIsLoading(false);
+
   if (isFormCompleted) {
     navigate('/dashboard');
   } else {
