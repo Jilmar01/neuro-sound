@@ -18,7 +18,7 @@ export const login = async (req, res) => {
 
 		const cookieOptions = {
 			httpOnly: true,
-			secure: isProduction,                    
+			secure: isProduction,
 			sameSite: isProduction ? "none" : "lax",
 			path: "/",
 			maxAge: 7 * 24 * 60 * 60 * 1000
@@ -30,7 +30,7 @@ export const login = async (req, res) => {
 
 		res.cookie('token', token, cookieOptions);
 
-		return sendSuccess(res, { token , user: { form: user.form } }, 'Login exitoso', 200);
+		return sendSuccess(res, { token, user: { form: user.form } }, 'Login exitoso', 200);
 	} catch (error) {
 		return sendError(res, 'Error al iniciar sesión', error.status, error.message);
 	}
@@ -41,7 +41,17 @@ export const login = async (req, res) => {
  */
 export const logout = (req, res) => {
 	try {
-		res.clearCookie('token', { httpOnly: true, sameSite: 'lax' });
+		const isProduction = process.env.NODE_ENV === "production";
+
+		const cookieOptions = {
+			httpOnly: true,
+			secure: isProduction,
+			sameSite: isProduction ? "none" : "lax",
+			path: "/"
+		};
+
+		res.clearCookie('token', cookieOptions);
+
 		return sendSuccess(res, null, 'Logout exitoso', 200);
 	} catch (error) {
 		return sendError(res, 'Error al cerrar sesión', 500, error.message);
@@ -51,7 +61,7 @@ export const logout = (req, res) => {
 /**
  * Datos del usuario autenticado
  */
-export const myData = async(req, res) => {
+export const myData = async (req, res) => {
 	try {
 		const { _id } = req.user;
 		const user = await userAuth(_id);
