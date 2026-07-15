@@ -30,7 +30,7 @@ export const login = async (req, res) => {
 
 		res.cookie('token', token, cookieOptions);
 
-		return sendSuccess(res, { token, user: { form: user.form } }, 'Login exitoso', 200);
+		return sendSuccess(res, { token, user }, 'Login exitoso', 200);
 	} catch (error) {
 		return sendError(res, 'Error al iniciar sesión', error.status, error.message);
 	}
