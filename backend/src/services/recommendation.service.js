@@ -1,5 +1,26 @@
 import Recommendation from "../models/recommendation.model.js"
 import { HttpError } from "../utils/httpError.js";
+import { getRecommendationEngine } from "./engine.service.js";
+
+export const generateRecommendation = async (survey) => {
+    const recommend = await getRecommendationEngine(survey);
+    const result = recommend.recomendacionGenerada;
+
+    const tracks = result.map(song => ({
+        id: song.id,
+        uri: song.uri,
+        title: song.title,
+        artists: song.artists,
+        neuro_score: song.neuro_score,
+        feedback: null
+    }));
+
+    return await saveRecommendation(
+        survey.userId,
+        survey._id,
+        tracks
+    );
+};
 
 export const saveRecommendation = async (userId, surveyId, tracks) => {
     if (!tracks) {
@@ -11,7 +32,9 @@ export const saveRecommendation = async (userId, surveyId, tracks) => {
 }
 
 export const getRecommendationBySurvey = async (userId, surveyId) => {
-    const recommendation = await Recommendation.findOne({ userId, surveyId });
+    const recommendation = await Recommendation.findOne({ userId, surveyId })
+        .sort({ createdAt: -1 });
+        
     if (!recommendation) {
         throw new HttpError('No existe recomendación para esta encuesta', 404);
     }
@@ -23,15 +46,15 @@ export const getRecommendation = async (userId) => {
 }
 
 export const feedbackRecommendationForTrack = async (recommendationId, trackId, feedback = null) => {
-    
+
     if (!recommendationId) {
         throw new HttpError('El ID de la recomendación es requerido.', 400);
     }
-    
+
     if (!trackId) {
         throw new HttpError('El ID del track es requerido.', 400);
     }
-    
+
     const updateRecommendation = await Recommendation.findOneAndUpdate(
         {
             _id: recommendationId,
