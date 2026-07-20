@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Onboarding from './components/screens/Onboarding';
+import DataTreatmentScreen from './components/screens/DataTreatmentScreen';
 import InitialSurvey from './components/screens/InitialSurvey';
 import ArtistSurvey from './components/screens/ArtistSurvey';
 import CalibrationScreen from './components/screens/CalibrationScreen';
@@ -15,6 +16,7 @@ import { generateHybridPlaylist, processTrackOnDemand, mapSurveyToBackendPayload
 import { apiCall } from './utils/fetch.js';
 import SpotifyPlayerWrapper from './utils/spotifyPlayer.js';
 import Slider from './components/common/Slider';
+import RightPanel from './components/common/RightPanel';
 
 // Redirigir de forma transparente las claves de sesión de localStorage a sessionStorage
 const keysToSession = ['token', 'spotifyToken', 'spotifyRefreshToken', 'user', 'userData', 'userCached'];
@@ -257,6 +259,7 @@ function MainApp() {
     '/login': 'onboarding',
     '/register': 'register',
     '/callback': 'processing-spotify',
+    '/data-treatment': 'data-treatment',
     '/survey': 'initial-evaluation',
     '/calibrate': 'calibration',
     '/artists': 'artist-evaluation',
@@ -271,6 +274,7 @@ function MainApp() {
     'onboarding': '/login',
     'register': '/register',
     'processing-spotify': '/callback',
+    'data-treatment': '/data-treatment',
     'initial-evaluation': '/survey',
     'calibration': '/calibrate',
     'artist-evaluation': '/artists',
@@ -290,7 +294,7 @@ function MainApp() {
 
   // Redirección inteligente de rutas
   useEffect(() => {
-    const onboardingPaths = ['/', '/login', '/register', '/survey', '/artists', '/calibrate'];
+    const onboardingPaths = ['/', '/login', '/register', '/data-treatment', '/survey', '/artists', '/calibrate'];
 
     if (onboardingPaths.includes(location.pathname)) {
       const token = localStorage.getItem('token');
@@ -301,28 +305,33 @@ function MainApp() {
         if (userCached) {
           try {
             const userObj = JSON.parse(userCached);
+            const hasPastSurveys = userObj.surveys && userObj.surveys.length > 0;
+            const lastSurvey = hasPastSurveys ? userObj.surveys[userObj.surveys.length - 1] : null;
+            const hasArtists = lastSurvey && lastSurvey.artist_interest && lastSurvey.artist_interest.length > 0;
 
             // Si form es true, el usuario ya completó la configuración inicial (frecuencia, artistas).
             // PERO queremos que cada vez que inicie la app ('/' o '/login'), haga la encuesta emocional ('/survey').
             if (userObj.form === true) {
-              if (location.pathname === '/' || location.pathname === '/login') {
+              if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/data-treatment') {
                 navigate('/survey', { replace: true });
                 return;
               }
-              // Si intenta ir a '/artists' o '/calibrate' manualmente, lo bloqueamos y lo mandamos al dashboard
-              if (location.pathname === '/artists' || location.pathname === '/calibrate') {
+              // Si intenta ir a '/artists' o '/calibrate' manualmente, lo bloqueamos y lo mandamos al dashboard (solo si ya tiene configurado)
+              if ((location.pathname === '/artists' || location.pathname === '/calibrate') && hasArtists) {
                 navigate('/dashboard', { replace: true });
                 return;
               }
               // Si está en '/survey', lo dejamos continuar (hará la encuesta emocional)
             }
 
-            const hasPastSurveys = userObj.surveys && userObj.surveys.length > 0;
-            const lastSurvey = hasPastSurveys ? userObj.surveys[userObj.surveys.length - 1] : null;
-            const hasArtists = lastSurvey && lastSurvey.artist_interest && lastSurvey.artist_interest.length > 0;
-
             // Lógica de progreso del onboarding (para nuevos usuarios que aún no tienen form===true)
             if (userObj.form !== true) {
+              // Si no han aceptado el tratamiento de datos y no están en la ruta /data-treatment, mandarlos ahí
+              if (location.pathname !== '/data-treatment') {
+                navigate('/data-treatment', { replace: true });
+                return;
+              }
+
               if (hasPastSurveys && hasArtists) {
                 // Caso raro donde no tiene form true pero ya hizo todo
                 navigate('/dashboard', { replace: true });
@@ -345,7 +354,7 @@ function MainApp() {
             navigate('/dashboard', { replace: true });
             return;
           }
-          navigate('/survey', { replace: true });
+          navigate('/data-treatment', { replace: true });
         }
       } else {
         // No hay token, forzar login si está intentando ir a otra ruta
@@ -410,6 +419,41 @@ function MainApp() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebarCollapsed') === 'true';
   });
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(() => window.innerWidth >= 768);
+  const [currentTrackCover, setCurrentTrackCover] = useState('');
+
+  // Buscador de portada en Apple Music/iTunes para el reproductor en tiempo real
+  useEffect(() => {
+    const track = playlist[currentIndex];
+    if (!track) {
+      setCurrentTrackCover('');
+      return;
+    }
+
+    const isDefaultCover = (url) => {
+      return !url || url.includes('lh3.googleusercontent.com') || url.includes('defaultcover.png');
+    };
+
+    if (!isDefaultCover(track.cover)) {
+      setCurrentTrackCover(track.cover);
+      return;
+    }
+
+    const query = encodeURIComponent(`${track.artist} ${track.title}`);
+    fetch(`https://itunes.apple.com/search?term=${query}&entity=song&limit=1`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.results && data.results.length > 0) {
+          const highResUrl = data.results[0].artworkUrl100.replace('100x100bb', '500x500bb');
+          setCurrentTrackCover(highResUrl);
+        } else {
+          setCurrentTrackCover(track.cover || '');
+        }
+      })
+      .catch(() => {
+        setCurrentTrackCover(track.cover || '');
+      });
+  }, [currentIndex, playlist]);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage(msg);
@@ -522,7 +566,7 @@ function MainApp() {
                     artistsData = parsed;
                   }
                 }
-              } catch (_) {}
+              } catch (_) { }
               if (artistsData.length === 0) {
                 const dbGenres = dbSurvey.genres || [];
                 artistsData = dbSurvey.artist_interest.map((name, idx) => ({
@@ -658,1542 +702,1573 @@ function MainApp() {
   }, [userType, volume]);
 
   // Estado global del temporizador de sesion
-const [timeLeft, setTimeLeft] = useState(15 * 60);
-const [isTimerRunning, setIsTimerRunning] = useState(false);
-const [timerDuration, setTimerDuration] = useState(15);
-const timerRef = useRef(null);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerDuration, setTimerDuration] = useState(15);
+  const timerRef = useRef(null);
 
-// Efecto de cuenta regresiva del temporizador
-useEffect(() => {
-  if (isTimerRunning) {
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          setIsTimerRunning(false);
+  // Efecto de cuenta regresiva del temporizador
+  useEffect(() => {
+    if (isTimerRunning) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            setIsTimerRunning(false);
 
-          // Sesion completada: pausar audio y mostrar alerta
-          setIsPlaying(false);
-          if (audioRef.current) audioRef.current.pause();
-          if (userType === 'spotify') SpotifyPlayerWrapper.pause?.();
+            // Sesion completada: pausar audio y mostrar alerta
+            setIsPlaying(false);
+            if (audioRef.current) audioRef.current.pause();
+            if (userType === 'spotify') SpotifyPlayerWrapper.pause?.();
 
-          alert("¡Sesión finalizada! Tu tiempo de sintonización ha terminado.");
-          setScreen('final-evaluation');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  } else {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  }
-  return () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  };
-}, [isTimerRunning, userType]);
-
-// Usar una variable global fuera del componente en lugar de useRef para sobrevivir al Strict Mode de React 18
-// Verifica el callback OAuth de Spotify (PKCE) al montar
-useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  const code = searchParams.get('code');
-  const error = searchParams.get('error');
-
-  // Mover esta verificación ANTES del ref para que HMR o recargas forzadas no se queden atascadas
-  if (!code && location.pathname === '/callback') {
-    navigate('/login', { replace: true });
-    return;
-  }
-
-  if (window.isSpotifyProcessing) return;
-
-  if (error) {
-    window.isSpotifyProcessing = true;
-    console.error('❌ Spotify rechazó la autenticación:', error);
-    navigate('/login', { replace: true });
-    return;
-  }
-
-  if (!code) return; // No hay código → primera carga normal
-
-  const verifier = localStorage.getItem('spotifyCodeVerifier');
-  if (!verifier) {
-    console.warn('⚠️ No se encontró code_verifier. La sesión pudo haber expirado, procesado previamente, o es una URL caducada.');
-    navigate('/login', { replace: true });
-    return;
-  }
-
-  window.isSpotifyProcessing = true;
-
-  // Limpiar la URL para que no se vuelva a procesar el código si recarga
-  navigate('/callback', { replace: true });
-  localStorage.removeItem('spotifyCodeVerifier');
-
-  const exchangeAndSync = async () => {
-    try {
-      console.log('🔄 Intercambiando código PKCE por access_token de Spotify...');
-
-      // 1. Intercambio de código → token (PKCE, sin client_secret)
-      const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: 'f94cd594219c4d11abc5a2ab15472b9c',
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: 'http://127.0.0.1:5173/callback',
-          code_verifier: verifier
-        })
-      });
-
-      if (!tokenRes.ok) {
-        const errBody = await tokenRes.json().catch(() => ({}));
-        throw new Error(errBody.error_description || `Token exchange failed: ${tokenRes.status}`);
-      }
-
-      const tokenData = await tokenRes.json();
-      const accessToken = tokenData.access_token;
-      const refreshToken = tokenData.refresh_token;
-
-      localStorage.setItem('spotifyToken', accessToken);
-      if (refreshToken) localStorage.setItem('spotifyRefreshToken', refreshToken);
-      console.log('✅ Token de Spotify obtenido y guardado.');
-
-      // 2. Sincronizar con el backend local
-      const localToken = localStorage.getItem('token');
-      if (localToken) {
-        // Ya hay sesión local → solo vinculamos Spotify
-        setUserType('spotify');
-        console.log('✅ Spotify vinculado a la sesión local activa.');
-        navigate('/', { replace: true });
-        return;
-      }
-
-      // No hay sesión local: obtener perfil de Spotify y crear cuenta
-      const meRes = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-
-      if (!meRes.ok) {
-        throw new Error('Spotify rechazó la solicitud del perfil (Error 403). Verifica que tu cuenta de Spotify esté añadida al panel de desarrolladores o que hayas aceptado los permisos.');
-      }
-
-      const spotifyUser = await meRes.json();
-      const spotifyEmail = spotifyUser.email || `spotify_${spotifyUser.id}@neurosound.com`;
-      const names = (spotifyUser.display_name || 'Spotify User').split(' ');
-      const name = names[0] || 'Spotify';
-      const lastName = names.slice(1).join(' ') || 'User';
-      const password = `spotify_secret_2026_${spotifyUser.id}`;
-
-      // 1. Intentar iniciar sesión primero
-      let loginRes;
-      try {
-        loginRes = await apiCall('neuro', '/api/auth/login', 'POST', {
-          email: spotifyEmail, password
+            alert("¡Sesión finalizada! Tu tiempo de sintonización ha terminado.");
+            setScreen('final-evaluation');
+            return 0;
+          }
+          return prev - 1;
         });
-      } catch (e) {
-        // Si falla el login, intentamos registrar al usuario
-        try {
-          await apiCall('neuro', '/api/user/register', 'POST', {
-            name, last_name: lastName, email: spotifyEmail, password
-          });
-          console.log('✅ Usuario de Spotify registrado en base de datos local.');
-          // Reintentar login tras registrar
-          loginRes = await apiCall('neuro', '/api/auth/login', 'POST', {
-            email: spotifyEmail, password
-          });
-        } catch (regErr) {
-          // Si el registro falla por duplicado (409) o error del servidor, lo manejamos
-          if (regErr.status === 409 || regErr.message.includes('409') || regErr.message.includes('registrado') || regErr.message.includes('registrar')) {
-            throw new Error('Este correo ya está registrado de forma tradicional. Por favor, inicia sesión con tu correo y contraseña.');
-          } else {
-            throw new Error(`Error al crear la cuenta: ${regErr.message}`);
-          }
-        }
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
-
-      if (loginRes && loginRes.success) {
-        localStorage.setItem('token', loginRes.data.token);
-        if (loginRes.data.user) {
-          localStorage.setItem('user', JSON.stringify(loginRes.data.user));
-          const surveys = loginRes.data.user.surveys;
-          if (surveys && surveys.length > 0) {
-            const lastSurvey = surveys[surveys.length - 1];
-            setSurveyData(lastSurvey);
-            localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
-          }
-        }
-        console.log('✅ Sesión local iniciada para el usuario de Spotify.');
-      } else {
-        throw new Error('No se pudo obtener el token de acceso local.');
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
+    };
+  }, [isTimerRunning, userType]);
 
-      // Solo continuamos si todo fue exitoso
-      setUserType('spotify');
-      navigate('/survey', { replace: true });
+  // Usar una variable global fuera del componente en lugar de useRef para sobrevivir al Strict Mode de React 18
+  // Verifica el callback OAuth de Spotify (PKCE) al montar
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const code = searchParams.get('code');
+    const error = searchParams.get('error');
 
-    } catch (e) {
-      console.error('❌ Error en el flujo PKCE de Spotify:', e);
-      // Si hay error, regresamos al login pasando el error
-      navigate('/login', { replace: true, state: { error: e.message } });
-    } finally {
-      setTimeout(() => { window.isSpotifyProcessing = false; }, 2000);
-    }
-  };
-
-  exchangeAndSync();
-}, []);
-
-// Inicializa el objeto Audio persistente
-// Inicializa el objeto Audio persistente una sola vez
-useEffect(() => {
-  const audio = new Audio();
-  audio.crossOrigin = "anonymous";
-  audioRef.current = audio;
-  return () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-  };
-}, []);
-
-// Actualiza listeners cuando cambian playlist/currentIndex/volume
-useEffect(() => {
-  const audio = audioRef.current;
-  if (!audio) return;
-
-  const onTimeUpdate = () => {
-    setProgress(audio.currentTime);
-
-    // Logica de fade-out: ultimos 6 segundos de la pista
-    const baseVol = volume / 100;
-    if (audio.duration && audio.duration - audio.currentTime <= 6 && !audio.paused && !isFadingOut.current && baseVol > 0) {
-      isFadingOut.current = true;
-      console.log(`🔊 Starting fade-out for "${playlist[currentIndex]?.title || 'song'}"...`);
-
-      const steps = 20;
-      const intervalTime = 250; // 5000ms / 20 pasos = 250ms por paso
-      let currentStep = 0;
-
-      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-
-      fadeIntervalRef.current = setInterval(() => {
-        if (!audioRef.current) {
-          clearInterval(fadeIntervalRef.current);
-          return;
-        }
-
-        currentStep++;
-        const ratio = Math.max(0, 1 - (currentStep / steps));
-        audio.volume = baseVol * ratio;
-        if (gainNodeRef.current && audioContextRef.current) {
-          gainNodeRef.current.gain.setValueAtTime(baseVol * ratio, audioContextRef.current.currentTime);
-        }
-
-        if (currentStep >= steps) {
-          clearInterval(fadeIntervalRef.current);
-          console.log("🔊 Fade out complete. Loading next track.");
-          audio.pause();
-          isFadingOut.current = false;
-          handleNext();
-        }
-      }, intervalTime);
-    }
-  };
-
-  const onLoadedMetadata = () => {
-    if (audio.duration !== Infinity && !isNaN(audio.duration)) {
-      setDuration(audio.duration);
-    }
-    setIsLoading(false);
-  };
-
-  const onEnded = () => {
-    if (isFadingOut.current) return; // Ya manejado por el fin del fade-out
-
-    // Protección contra fin prematuro de stream (microcortes de red)
-    if (audio.duration && audio.duration - audio.currentTime > 10) {
-      console.warn(`⚠️ Stream cortado prematuramente a los ${audio.currentTime}s de ${audio.duration}s. Reconectando...`);
-      const currentTime = audio.currentTime;
-      setIsLoading(true);
-      audio.load();
-      audio.currentTime = currentTime;
-      audio.play().catch(e => console.error("Error al reconectar stream:", e));
+    // Mover esta verificación ANTES del ref para que HMR o recargas forzadas no se queden atascadas
+    if (!code && location.pathname === '/callback') {
+      navigate('/login', { replace: true });
       return;
     }
 
-    handleNext();
-  };
+    if (window.isSpotifyProcessing) return;
 
-  const onError = (e) => {
-    console.error("❌ Error en el reproductor de audio:", audio.error);
-    // Código 2: MEDIA_ERR_NETWORK (Problema de red descargando el stream)
-    if (audio.error && audio.error.code === 2) {
-      console.log("🔄 Intento de recuperación de red en curso...");
-      const currentTime = audio.currentTime;
-      setIsLoading(true);
-      setTimeout(() => {
-        audio.load();
-        audio.currentTime = currentTime;
-        audio.play().catch(console.error);
-      }, 1000); // Esperar 1 segundo antes de reintentar
-    } else if (audio.error && audio.error.code === 3) {
-      // MEDIA_ERR_DECODE - A veces pasa si el stream se corrompe. Intentamos saltar a la siguiente si es irrecuperable.
-      console.warn("⚠️ Error de decodificación. Saltando track...");
-      handleNext();
+    if (error) {
+      window.isSpotifyProcessing = true;
+      console.error('❌ Spotify rechazó la autenticación:', error);
+      navigate('/login', { replace: true });
+      return;
     }
-  };
 
-  const onWaiting = () => {
-    console.log("⏳ Esperando más datos del stream...");
-    setIsLoading(true);
-  };
+    if (!code) return; // No hay código → primera carga normal
 
-  const onPlaying = () => {
-    setIsLoading(false);
-  };
+    const verifier = localStorage.getItem('spotifyCodeVerifier');
+    if (!verifier) {
+      console.warn('⚠️ No se encontró code_verifier. La sesión pudo haber expirado, procesado previamente, o es una URL caducada.');
+      navigate('/login', { replace: true });
+      return;
+    }
 
-  audio.addEventListener('timeupdate', onTimeUpdate);
-  audio.addEventListener('loadedmetadata', onLoadedMetadata);
-  audio.addEventListener('ended', onEnded);
-  audio.addEventListener('error', onError);
-  audio.addEventListener('waiting', onWaiting);
-  audio.addEventListener('playing', onPlaying);
+    window.isSpotifyProcessing = true;
 
-  return () => {
-    audio.removeEventListener('timeupdate', onTimeUpdate);
-    audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-    audio.removeEventListener('ended', onEnded);
-    audio.removeEventListener('error', onError);
-    audio.removeEventListener('waiting', onWaiting);
-    audio.removeEventListener('playing', onPlaying);
-  };
-}, [currentIndex, playlist, volume]);
+    // Limpiar la URL para que no se vuelva a procesar el código si recarga
+    navigate('/callback', { replace: true });
+    localStorage.removeItem('spotifyCodeVerifier');
 
-// Procesamiento bajo demanda cuando cambia el indice actual
-useEffect(() => {
-  if (userType === 'spotify') return;
-  if (playlist.length === 0) return;
-  const currentTrack = playlist[currentIndex];
-  if (!currentTrack || currentTrack.id.startsWith("sim-")) return;
-
-  const isAlreadyProcessed = currentTrack.preview_url && currentTrack.preview_url.includes("processed_");
-
-  if (!isAlreadyProcessed) {
-    let isSubscribed = true;
-
-    const processTrack = async () => {
+    const exchangeAndSync = async () => {
       try {
-        setIsLoading(true);
-        const surveyObj = surveyData || { estres: 3, ansiedad: 3, tristeza: 1 };
-        console.log(`⚡ Modulando fármaco digital para "${currentTrack.title}"...`);
+        console.log('🔄 Intercambiando código PKCE por access_token de Spotify...');
 
-        const processedUrl = await processTrackOnDemand(currentTrack.id, surveyObj);
+        // 1. Intercambio de código → token (PKCE, sin client_secret)
+        const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: 'f94cd594219c4d11abc5a2ab15472b9c',
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: 'http://127.0.0.1:5173/callback',
+            code_verifier: verifier
+          })
+        });
 
-        if (processedUrl && isSubscribed) {
-          setPlaylist(prevPlaylist => {
-            const updated = [...prevPlaylist];
-            if (updated[currentIndex] && updated[currentIndex].id === currentTrack.id) {
-              updated[currentIndex] = {
-                ...updated[currentIndex],
-                preview_url: `http://${window.location.hostname}:5002${processedUrl}`
-              };
-            }
-            return updated;
+        if (!tokenRes.ok) {
+          const errBody = await tokenRes.json().catch(() => ({}));
+          throw new Error(errBody.error_description || `Token exchange failed: ${tokenRes.status}`);
+        }
+
+        const tokenData = await tokenRes.json();
+        const accessToken = tokenData.access_token;
+        const refreshToken = tokenData.refresh_token;
+
+        localStorage.setItem('spotifyToken', accessToken);
+        if (refreshToken) localStorage.setItem('spotifyRefreshToken', refreshToken);
+        console.log('✅ Token de Spotify obtenido y guardado.');
+
+        // 2. Sincronizar con el backend local
+        const localToken = localStorage.getItem('token');
+        if (localToken) {
+          // Ya hay sesión local → solo vinculamos Spotify
+          setUserType('spotify');
+          console.log('✅ Spotify vinculado a la sesión local activa.');
+          navigate('/', { replace: true });
+          return;
+        }
+
+        // No hay sesión local: obtener perfil de Spotify y crear cuenta
+        const meRes = await fetch('https://api.spotify.com/v1/me', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        if (!meRes.ok) {
+          throw new Error('Spotify rechazó la solicitud del perfil (Error 403). Verifica que tu cuenta de Spotify esté añadida al panel de desarrolladores o que hayas aceptado los permisos.');
+        }
+
+        const spotifyUser = await meRes.json();
+        const spotifyEmail = spotifyUser.email || `spotify_${spotifyUser.id}@neurosound.com`;
+        const names = (spotifyUser.display_name || 'Spotify User').split(' ');
+        const name = names[0] || 'Spotify';
+        const lastName = names.slice(1).join(' ') || 'User';
+        const password = `spotify_secret_2026_${spotifyUser.id}`;
+
+        // 1. Intentar iniciar sesión primero
+        let loginRes;
+        try {
+          loginRes = await apiCall('neuro', '/api/auth/login', 'POST', {
+            email: spotifyEmail, password
           });
+        } catch (e) {
+          // Si falla el login, intentamos registrar al usuario
+          try {
+            await apiCall('neuro', '/api/user/register', 'POST', {
+              name, last_name: lastName, email: spotifyEmail, password
+            });
+            console.log('✅ Usuario de Spotify registrado en base de datos local.');
+            // Reintentar login tras registrar
+            loginRes = await apiCall('neuro', '/api/auth/login', 'POST', {
+              email: spotifyEmail, password
+            });
+          } catch (regErr) {
+            // Si el registro falla por duplicado (409) o error del servidor, lo manejamos
+            if (regErr.status === 409 || regErr.message.includes('409') || regErr.message.includes('registrado') || regErr.message.includes('registrar')) {
+              throw new Error('Este correo ya está registrado de forma tradicional. Por favor, inicia sesión con tu correo y contraseña.');
+            } else {
+              throw new Error(`Error al crear la cuenta: ${regErr.message}`);
+            }
+          }
         }
-      } catch (error) {
-        // 422 / notAvailable: el audio no esta en YouTube - saltar automaticamente
-        if (error?.notAvailable && isSubscribed) {
-          console.warn(`⏭️ Track "${currentTrack.title}" no disponible en YouTube. Saltando a la siguiente pista...`);
-          // Remueve la pista no disponible y avanza
-          setPlaylist(prevPlaylist => prevPlaylist.filter((_, i) => i !== currentIndex));
-          setCurrentIndex(prev => Math.min(prev, Math.max(0, playlist.length - 2)));
+
+        if (loginRes && loginRes.success) {
+          localStorage.setItem('token', loginRes.data.token);
+          if (loginRes.data.user) {
+            localStorage.setItem('user', JSON.stringify(loginRes.data.user));
+            const surveys = loginRes.data.user.surveys;
+            if (surveys && surveys.length > 0) {
+              const lastSurvey = surveys[surveys.length - 1];
+              setSurveyData(lastSurvey);
+              localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
+            }
+          }
+          console.log('✅ Sesión local iniciada para el usuario de Spotify.');
         } else {
-          console.error("❌ Error running on-demand processor:", error);
+          throw new Error('No se pudo obtener el token de acceso local.');
         }
+
+        // Solo continuamos si todo fue exitoso
+        setUserType('spotify');
+        navigate('/survey', { replace: true });
+
+      } catch (e) {
+        console.error('❌ Error en el flujo PKCE de Spotify:', e);
+        // Si hay error, regresamos al login pasando el error
+        navigate('/login', { replace: true, state: { error: e.message } });
       } finally {
-        if (isSubscribed) {
-          setIsLoading(false);
-        }
+        setTimeout(() => { window.isSpotifyProcessing = false; }, 2000);
       }
     };
 
-    processTrack();
+    exchangeAndSync();
+  }, []);
 
+  // Inicializa el objeto Audio persistente
+  // Inicializa el objeto Audio persistente una sola vez
+  useEffect(() => {
+    const audio = new Audio();
+    audio.crossOrigin = "anonymous";
+    audioRef.current = audio;
     return () => {
-      isSubscribed = false;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
-  }
-}, [currentIndex, playlist, surveyData, userType]);
+  }, []);
 
-// Sincroniza la reproduccion de audio
-useEffect(() => {
-  if (!audioRef.current || playlist.length === 0) return;
-  const currentTrack = playlist[currentIndex];
-  if (!currentTrack) return;
+  // Actualiza listeners cuando cambian playlist/currentIndex/volume
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  // Si el usuario es de Spotify y la pista tiene URI, la reproducción se delega a Spotify
-  if (userType === 'spotify') {
-    audioRef.current.pause();
-    return;
-  }
+    const onTimeUpdate = () => {
+      setProgress(audio.currentTime);
 
-  const src = currentTrack.preview_url || currentTrack.src;
-
-  // Sin URL aun: el procesador bajo demanda sigue descargando.
-  // Pausa el audio y muestra spinner; processTrack actualizara preview_url al finalizar.
-  if (!src) {
-    audioRef.current.pause();
-    setIsLoading(true);
-    return;
-  }
-
-  if (audioRef.current.src !== src) {
-    setIsLoading(true);
-    audioRef.current.src = src;
-    audioRef.current.load();
-
-    // Inicia en volumen 0 para hacer fade-in
-    audioRef.current.volume = 0;
-  } else {
-    setIsLoading(false);
-  }
-
-  if (isPlaying) {
-    initAudioContext();
-    audioRef.current.play().then(() => {
-      // Hace fade-in del track desde 0 al volumen objetivo
+      // Logica de fade-out: ultimos 6 segundos de la pista
       const baseVol = volume / 100;
-      if (baseVol > 0 && audioRef.current && audioRef.current.volume === 0) {
-        const steps = 15;
-        const intervalTime = 100; // 1500ms de fade-in total
+      if (audio.duration && audio.duration - audio.currentTime <= 6 && !audio.paused && !isFadingOut.current && baseVol > 0) {
+        isFadingOut.current = true;
+        console.log(`🔊 Starting fade-out for "${playlist[currentIndex]?.title || 'song'}"...`);
+
+        const steps = 20;
+        const intervalTime = 250; // 5000ms / 20 pasos = 250ms por paso
         let currentStep = 0;
 
-        const fadeInInterval = setInterval(() => {
-          if (audioRef.current) {
-            currentStep++;
-            const ratio = Math.min(1, currentStep / steps);
-            audioRef.current.volume = baseVol * ratio;
-            if (gainNodeRef.current && audioContextRef.current) {
-              gainNodeRef.current.gain.setValueAtTime(baseVol * ratio, audioContextRef.current.currentTime);
-            }
+        if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
 
-            if (currentStep >= steps) {
-              clearInterval(fadeInInterval);
-            }
-          } else {
-            clearInterval(fadeInInterval);
+        fadeIntervalRef.current = setInterval(() => {
+          if (!audioRef.current) {
+            clearInterval(fadeIntervalRef.current);
+            return;
+          }
+
+          currentStep++;
+          const ratio = Math.max(0, 1 - (currentStep / steps));
+          audio.volume = baseVol * ratio;
+          if (gainNodeRef.current && audioContextRef.current) {
+            gainNodeRef.current.gain.setValueAtTime(baseVol * ratio, audioContextRef.current.currentTime);
+          }
+
+          if (currentStep >= steps) {
+            clearInterval(fadeIntervalRef.current);
+            console.log("🔊 Fade out complete. Loading next track.");
+            audio.pause();
+            isFadingOut.current = false;
+            handleNext();
           }
         }, intervalTime);
       }
-    }).catch((err) => {
-      console.warn("Autoplay blocked:", err);
-      setIsPlaying(false);
-    });
-  } else {
-    audioRef.current.pause();
-  }
-}, [currentIndex, playlist, isPlaying, volume, userType]);
+    };
 
-// Sincroniza la reproducción de Spotify
-useEffect(() => {
-  if (userType !== 'legacy-spotify' || playlist.length === 0) return;
-  const currentTrack = playlist[currentIndex];
-  if (!currentTrack || !currentTrack.uri) return;
+    const onLoadedMetadata = () => {
+      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+      }
+      setIsLoading(false);
+    };
 
-  // Pausar audio local HTML5 si estuviera sonando
-  if (audioRef.current && !audioRef.current.paused) {
-    audioRef.current.pause();
-  }
+    const onEnded = () => {
+      if (isFadingOut.current) return; // Ya manejado por el fin del fade-out
 
-  if (!spotifyDeviceId) {
-    console.warn("⚠️ Spotify Device ID no listo para reproducir.");
-    return;
-  }
+      // Protección contra fin prematuro de stream (microcortes de red)
+      if (audio.duration && audio.duration - audio.currentTime > 10) {
+        console.warn(`⚠️ Stream cortado prematuramente a los ${audio.currentTime}s de ${audio.duration}s. Reconectando...`);
+        const currentTime = audio.currentTime;
+        setIsLoading(true);
+        audio.load();
+        audio.currentTime = currentTime;
+        audio.play().catch(e => console.error("Error al reconectar stream:", e));
+        return;
+      }
 
-  const playSpotifyTrack = async () => {
-    try {
+      handleNext();
+    };
+
+    const onError = (e) => {
+      console.error("❌ Error en el reproductor de audio:", audio.error);
+      // Código 2: MEDIA_ERR_NETWORK (Problema de red descargando el stream)
+      if (audio.error && audio.error.code === 2) {
+        console.log("🔄 Intento de recuperación de red en curso...");
+        const currentTime = audio.currentTime;
+        setIsLoading(true);
+        setTimeout(() => {
+          audio.load();
+          audio.currentTime = currentTime;
+          audio.play().catch(console.error);
+        }, 1000); // Esperar 1 segundo antes de reintentar
+      } else if (audio.error && audio.error.code === 3) {
+        // MEDIA_ERR_DECODE - A veces pasa si el stream se corrompe. Intentamos saltar a la siguiente si es irrecuperable.
+        console.warn("⚠️ Error de decodificación. Saltando track...");
+        handleNext();
+      }
+    };
+
+    const onWaiting = () => {
+      console.log("⏳ Esperando más datos del stream...");
       setIsLoading(true);
-      // Obtener el estado actual del reproductor
-      const state = await spotifyPlayerRef.current?.getCurrentState();
-      const currentUriInPlayer = state?.track_window?.current_track?.uri;
-      const isPausedInPlayer = state?.paused ?? true;
+    };
 
-      if (isPlaying) {
-        if (currentUriInPlayer !== currentTrack.uri) {
-          console.log(`▶️ Reproduciendo track en Spotify: ${currentTrack.title} (${currentTrack.uri})`);
-          await apiCall('spotify', `/me/player/play?device_id=${spotifyDeviceId}`, 'PUT', {
-            uris: [currentTrack.uri]
-          });
-        } else if (isPausedInPlayer) {
-          console.log("▶️ Resumiendo track en Spotify");
-          await spotifyPlayerRef.current?.resume();
+    const onPlaying = () => {
+      setIsLoading(false);
+    };
+
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
+
+    return () => {
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+      audio.removeEventListener('waiting', onWaiting);
+      audio.removeEventListener('playing', onPlaying);
+    };
+  }, [currentIndex, playlist, volume]);
+
+  // Procesamiento bajo demanda cuando cambia el indice actual
+  useEffect(() => {
+    if (userType === 'spotify') return;
+    if (playlist.length === 0) return;
+    const currentTrack = playlist[currentIndex];
+    if (!currentTrack || currentTrack.id.startsWith("sim-")) return;
+
+    const isAlreadyProcessed = currentTrack.preview_url && currentTrack.preview_url.includes("processed_");
+
+    if (!isAlreadyProcessed) {
+      let isSubscribed = true;
+
+      const processTrack = async () => {
+        try {
+          setIsLoading(true);
+          const surveyObj = surveyData || { estres: 3, ansiedad: 3, tristeza: 1 };
+          console.log(`⚡ Modulando fármaco digital para "${currentTrack.title}"...`);
+
+          const processedUrl = await processTrackOnDemand(currentTrack.id, surveyObj);
+
+          if (processedUrl && isSubscribed) {
+            setPlaylist(prevPlaylist => {
+              const updated = [...prevPlaylist];
+              if (updated[currentIndex] && updated[currentIndex].id === currentTrack.id) {
+                updated[currentIndex] = {
+                  ...updated[currentIndex],
+                  preview_url: `http://${window.location.hostname}:5002${processedUrl}`
+                };
+              }
+              return updated;
+            });
+          }
+        } catch (error) {
+          // 422 / notAvailable: el audio no esta en YouTube - saltar automaticamente
+          if (error?.notAvailable && isSubscribed) {
+            console.warn(`⏭️ Track "${currentTrack.title}" no disponible en YouTube. Saltando a la siguiente pista...`);
+            // Remueve la pista no disponible y avanza
+            setPlaylist(prevPlaylist => prevPlaylist.filter((_, i) => i !== currentIndex));
+            setCurrentIndex(prev => Math.min(prev, Math.max(0, playlist.length - 2)));
+          } else {
+            console.error("❌ Error running on-demand processor:", error);
+          }
+        } finally {
+          if (isSubscribed) {
+            setIsLoading(false);
+          }
         }
+      };
+
+      processTrack();
+
+      return () => {
+        isSubscribed = false;
+      };
+    }
+  }, [currentIndex, playlist, surveyData, userType]);
+
+  // Sincroniza la reproduccion de audio
+  useEffect(() => {
+    if (!audioRef.current || playlist.length === 0) return;
+    const currentTrack = playlist[currentIndex];
+    if (!currentTrack) return;
+
+    // Si el usuario es de Spotify y la pista tiene URI, la reproducción se delega a Spotify
+    if (userType === 'spotify') {
+      audioRef.current.pause();
+      return;
+    }
+
+    const src = currentTrack.preview_url || currentTrack.src;
+
+    // Sin URL aun: el procesador bajo demanda sigue descargando.
+    // Pausa el audio y muestra spinner; processTrack actualizara preview_url al finalizar.
+    if (!src) {
+      audioRef.current.pause();
+      setIsLoading(true);
+      return;
+    }
+
+    if (audioRef.current.src !== src) {
+      setIsLoading(true);
+      audioRef.current.src = src;
+      audioRef.current.load();
+
+      // Inicia en volumen 0 para hacer fade-in
+      audioRef.current.volume = 0;
+    } else {
+      setIsLoading(false);
+    }
+
+    if (isPlaying) {
+      initAudioContext();
+      audioRef.current.play().then(() => {
+        // Hace fade-in del track desde 0 al volumen objetivo
+        const baseVol = volume / 100;
+        if (baseVol > 0 && audioRef.current && audioRef.current.volume === 0) {
+          const steps = 15;
+          const intervalTime = 100; // 1500ms de fade-in total
+          let currentStep = 0;
+
+          const fadeInInterval = setInterval(() => {
+            if (audioRef.current) {
+              currentStep++;
+              const ratio = Math.min(1, currentStep / steps);
+              audioRef.current.volume = baseVol * ratio;
+              if (gainNodeRef.current && audioContextRef.current) {
+                gainNodeRef.current.gain.setValueAtTime(baseVol * ratio, audioContextRef.current.currentTime);
+              }
+
+              if (currentStep >= steps) {
+                clearInterval(fadeInInterval);
+              }
+            } else {
+              clearInterval(fadeInInterval);
+            }
+          }, intervalTime);
+        }
+      }).catch((err) => {
+        console.warn("Autoplay blocked:", err);
+        setIsPlaying(false);
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [currentIndex, playlist, isPlaying, volume, userType]);
+
+  // Sincroniza la reproducción de Spotify
+  useEffect(() => {
+    if (userType !== 'legacy-spotify' || playlist.length === 0) return;
+    const currentTrack = playlist[currentIndex];
+    if (!currentTrack || !currentTrack.uri) return;
+
+    // Pausar audio local HTML5 si estuviera sonando
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+    }
+
+    if (!spotifyDeviceId) {
+      console.warn("⚠️ Spotify Device ID no listo para reproducir.");
+      return;
+    }
+
+    const playSpotifyTrack = async () => {
+      try {
+        setIsLoading(true);
+        // Obtener el estado actual del reproductor
+        const state = await spotifyPlayerRef.current?.getCurrentState();
+        const currentUriInPlayer = state?.track_window?.current_track?.uri;
+        const isPausedInPlayer = state?.paused ?? true;
+
+        if (isPlaying) {
+          if (currentUriInPlayer !== currentTrack.uri) {
+            console.log(`▶️ Reproduciendo track en Spotify: ${currentTrack.title} (${currentTrack.uri})`);
+            await apiCall('spotify', `/me/player/play?device_id=${spotifyDeviceId}`, 'PUT', {
+              uris: [currentTrack.uri]
+            });
+          } else if (isPausedInPlayer) {
+            console.log("▶️ Resumiendo track en Spotify");
+            await spotifyPlayerRef.current?.resume();
+          }
+        } else {
+          if (!isPausedInPlayer) {
+            console.log("⏸️ Pausando track en Spotify");
+            await spotifyPlayerRef.current?.pause();
+          }
+        }
+      } catch (err) {
+        console.error("❌ Error controlando reproducción en Spotify:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    playSpotifyTrack();
+  }, [currentIndex, playlist, isPlaying, spotifyDeviceId, userType]);
+
+  // Intervalo de progreso y fin de canción para Spotify
+  useEffect(() => {
+    let interval = null;
+    if (userType === 'legacy-spotify' && isPlaying && spotifyDeviceId && duration > 0) {
+      interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= duration - 1) {
+            clearInterval(interval);
+            console.log("⏹️ Canción finalizada en Spotify. Pasando al siguiente track.");
+            handleNext(false);
+            return duration;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [userType, isPlaying, spotifyDeviceId, duration, currentIndex]);
+
+  // Handlers de audio
+  /**
+   * Alterna reproduccion/pausa del audio.
+   * @returns {void}
+   */
+  const handlePlayPause = async () => {
+    if (userType === 'spotify') {
+      const currentTrack = playlist[currentIndex];
+      if (!isPlaying && currentTrack?.uri && progress === 0) {
+        const ok = await SpotifyPlayerWrapper.playTrackAtIndex(currentIndex);
+        if (ok) setIsPlaying(true);
+        return;
+      }
+
+      SpotifyPlayerWrapper.togglePlay();
+      if (isPlaying) {
+        setIsPlaying(false);
       } else {
-        if (!isPausedInPlayer) {
-          console.log("⏸️ Pausando track en Spotify");
-          await spotifyPlayerRef.current?.pause();
+        setIsPlaying(true);
+      }
+      return;
+    }
+
+    setIsPlaying(!isPlaying);
+  };
+
+  /**
+   * Salta a la siguiente pista y reinicia estado de carga.
+   * @returns {void}
+   */
+  /**
+   * Salta a la siguiente pista y reinicia estado de carga.
+   * @param {boolean} [isManual=false] - Indica si el cambio de track fue realizado manualmente por el usuario.
+   * @returns {Promise<void>}
+   */
+  const handleNext = async (isManual = false) => {
+    if (playlist.length === 0) return;
+    const currentTrack = playlist[currentIndex];
+
+    if (isManual && currentTrack) {
+      if (progress < 60) {
+        await handleFeedback('negative', currentTrack, false);
+      } else {
+        await handleFeedback('positive', currentTrack);
+      }
+    } else if (!isManual && currentTrack) {
+      await handleFeedback('positive', currentTrack);
+    }
+
+    if (currentIndex === playlist.length - 1) {
+      console.log("🏁 Fin de la playlist. Cargando siguiente tanda (ignorando caché)...");
+      setIsPlaying(false);
+      setIsLoading(true);
+      const newPlaylist = await loadPlaylist(surveyData || {}, true);
+      if (userType === 'spotify' && newPlaylist?.length > 0) {
+        await SpotifyPlayerWrapper.playTrackAtIndex(0);
+      }
+      setIsPlaying(true);
+      return;
+    }
+
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+    isFadingOut.current = false;
+    if (audioRef.current) audioRef.current.volume = volume / 100;
+    if (gainNodeRef.current && audioContextRef.current) {
+      gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
+    }
+
+    setIsLoading(true);
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+
+    // 👉 Enrutamiento al SDK de Spotify
+    if (userType === 'spotify') {
+      try {
+        await SpotifyPlayerWrapper.playTrackAtIndex(nextIndex);
+      } catch (e) { console.error("Error en Spotify Player:", e); }
+    }
+
+    setIsPlaying(true);
+  };
+
+  useEffect(() => {
+    spotifyTrackEndHandlerRef.current = () => handleNext(false);
+  }, [handleNext]);
+
+  /**
+   * Retrocede a la pista anterior y reinicia estado de carga.
+   * @param {boolean} [isManual=false] - Indica si fue manual.
+   * @returns {Promise<void>}
+   */
+  const handlePrev = async (isManual = false) => {
+    if (playlist.length === 0) return;
+    const currentTrack = playlist[currentIndex];
+
+    if (isManual && currentTrack) {
+      if (progress < 60) {
+        await handleFeedback('negative', currentTrack, false);
+      } else {
+        await handleFeedback('positive', currentTrack);
+      }
+    }
+
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+    isFadingOut.current = false;
+    if (audioRef.current) audioRef.current.volume = volume / 100;
+    if (gainNodeRef.current && audioContextRef.current) {
+      gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
+    }
+
+    setIsLoading(true);
+    const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+    setCurrentIndex(prevIndex);
+
+    // 👉 Enrutamiento al SDK de Spotify
+    if (userType === 'spotify') {
+      try {
+        await SpotifyPlayerWrapper.playTrackAtIndex(prevIndex);
+      } catch (e) { console.error("Error en Spotify Player:", e); }
+    }
+
+    setIsPlaying(true);
+  };
+
+  /**
+   * Selecciona una pista por indice y la reproduce.
+   * @param {number} index - Indice de la pista en la lista.
+   * @param {boolean} [isManual=false] - Indica si fue manual.
+   * @returns {Promise<void>}
+   */
+  const handleSelectTrack = async (index, isManual = false) => {
+    if (index === currentIndex) {
+      setIsPlaying(!isPlaying);
+      return;
+    }
+    const currentTrack = playlist[currentIndex];
+
+    if (isManual && currentTrack) {
+      if (progress < 60) {
+        await handleFeedback('negative', currentTrack, false);
+      } else {
+        await handleFeedback('positive', currentTrack);
+      }
+    }
+
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+    isFadingOut.current = false;
+    if (audioRef.current) audioRef.current.volume = volume / 100;
+    if (gainNodeRef.current && audioContextRef.current) {
+      gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
+    }
+
+    setIsLoading(true);
+    setCurrentIndex(index);
+
+    // 👉 Enrutamiento al SDK de Spotify (con fallback a audio local)
+    if (userType === 'spotify') {
+      const selectedTrack = playlist[index];
+      const playedOnSpotify = await SpotifyPlayerWrapper.playTrackAtIndex(index);
+
+      if (!playedOnSpotify && selectedTrack?.preview_url && audioRef.current) {
+        if (audioRef.current.src !== selectedTrack.preview_url) {
+          audioRef.current.src = selectedTrack.preview_url;
+        }
+        try {
+          await audioRef.current.play();
+        } catch (e) {
+          console.error("Error reproduciendo preview local:", e);
+          setIsPlaying(false);
         }
       }
-    } catch (err) {
-      console.error("❌ Error controlando reproducción en Spotify:", err);
+    }
+
+    setIsPlaying(true);
+  };
+  /**
+   * Actualiza el tiempo de reproduccion.
+   * @param {number} val - Tiempo destino en segundos.
+   * @returns {void}
+   */
+  const handleSeek = (val) => {
+    const currentTrack = playlist[currentIndex];
+    if (userType === 'spotify' && currentTrack && currentTrack.uri && spotifyPlayerRef.current) {
+      spotifyPlayerRef.current.seek(val).then(() => {
+        setProgress(val);
+      }).catch(err => {
+        console.warn("Spotify seek error:", err);
+      });
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = val;
+      setProgress(val);
+    }
+  };
+
+  // Login y onboarding
+  /**
+   * Registra el tipo de usuario y avanza al primer survey.
+   * @param {string} type - "spotify" o "guest".
+   * @returns {void}
+   */
+  const handleLogin = (type, userObj = null) => {
+    setUserType(type);
+    const user = userObj || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
+
+    // Restaurar surveyData desde el usuario ANTES de cualquier navegación
+    if (user) {
+      const hasSurvey = user.surveys && user.surveys.length > 0;
+      let surveyWithArtists = null;
+      if (hasSurvey) {
+        for (let i = user.surveys.length - 1; i >= 0; i--) {
+          if (user.surveys[i].artist_interest && user.surveys[i].artist_interest.length > 0) {
+            surveyWithArtists = user.surveys[i];
+            break;
+          }
+        }
+      }
+      const hasArtists = !!surveyWithArtists;
+
+      if (hasSurvey) {
+        const lastSurvey = user.surveys[user.surveys.length - 1];
+        setSurveyData(lastSurvey);
+        localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
+      }
+
+      // Si el usuario ya completó el proceso inicial (form: true), llevarlo a la encuesta emocional diaria
+      if (user.form === true) {
+        navigate('/survey');
+        return;
+      }
+
+      if (hasArtists) {
+        // Usuario ya configurado: solo preguntamos el estado emocional de hoy
+        setScreen('initial-evaluation');
+      } else if (hasSurvey) {
+        // Tiene encuesta pero nunca eligió artistas → elegir artistas
+        setScreen('artist-evaluation');
+      } else {
+        // Primera vez: flujo completo
+        setScreen('data-treatment');
+      }
+    } else {
+      setScreen('data-treatment');
+    }
+  };
+
+  /**
+   * Obtiene la encuesta mezclada con los artistas y géneros previos del usuario,
+   * buscando tanto en la base de datos como en localStorage.
+   */
+  const getExistingSurveyId = () => {
+    try { const s = localStorage.getItem('surveyData'); return s ? JSON.parse(s)._id : undefined; } catch (_) { }
+  };
+
+  const getMergedSurveyData = async (rawSurveyData) => {
+    let finalArtists = [];
+    let finalGenres = [];
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log("📥 Buscando artistas previos en el historial de la base de datos...");
+        const response = await apiCall('neuro', '/api/auth/me', 'GET');
+        if (response && response.success && response.data) {
+          const userObj = response.data;
+          localStorage.setItem('user', JSON.stringify(userObj));
+
+          if (userObj.surveys && userObj.surveys.length > 0) {
+            // Buscar hacia atrás en el historial
+            for (let i = userObj.surveys.length - 1; i >= 0; i--) {
+              if (userObj.surveys[i].artist_interest && userObj.surveys[i].artist_interest.length > 0) {
+                finalArtists = userObj.surveys[i].artist_interest;
+                finalGenres = userObj.surveys[i].genres || [];
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("❌ Error al obtener perfil y encuestas previas:", e);
+    }
+
+    // Fallback a localStorage si la DB no arrojó artistas
+    if (finalArtists.length === 0) {
+      try {
+        const stored = localStorage.getItem('selectedArtistsData');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          finalArtists = parsed.map(a => a.name).filter(Boolean);
+          parsed.forEach(a => {
+            const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+            artistGenres.forEach(g => {
+              if (g && !finalGenres.includes(g)) finalGenres.push(g);
+            });
+          });
+        }
+      } catch (e) {
+        console.error("❌ Error al leer selectedArtistsData de localStorage:", e);
+      }
+    }
+
+    // Último fallback: leer del surveyData actual en localStorage (antes de sobrescribir)
+    if (finalArtists.length === 0) {
+      try {
+        const currSurvey = localStorage.getItem('surveyData');
+        if (currSurvey) {
+          const parsed = JSON.parse(currSurvey);
+          if (parsed.artist_interest && parsed.artist_interest.length > 0) {
+            finalArtists = parsed.artist_interest;
+            finalGenres = parsed.genres || [];
+          }
+        }
+      } catch (e) {
+        console.error("❌ Error al leer surveyData actual de localStorage:", e);
+      }
+    }
+
+    // Si no se encontraron artistas, no enviar estos campos al backend
+    // para que preserve los valores existentes en la BD
+    if (finalArtists.length === 0) {
+      const { artist_interest, genres, ...rest } = rawSurveyData;
+      return {
+        ...rest,
+        _id: rawSurveyData._id || getExistingSurveyId(),
+        artist_interest: undefined,
+        genres: undefined
+      };
+    }
+
+    if (finalGenres.length === 0) {
+      finalGenres = ["Lofi", "Ambient"];
+    }
+
+    return {
+      ...rawSurveyData,
+      _id: rawSurveyData._id || getExistingSurveyId(),
+      artist_interest: finalArtists,
+      genres: finalGenres
+    };
+  };
+
+  /**
+   * Guarda la encuesta inicial y define emocion/volumen base.
+   * @param {Object} data - Datos de encuesta.
+   * @returns {void}
+   */
+  const handleSurveySubmit = async (data) => {
+    setIsLoading(true);
+
+    // Obtener los datos mezclados con los artistas de encuestas previas
+    const completeSurvey = await getMergedSurveyData(data);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log("💾 Registrando encuesta diaria en el backend...");
+        const backendPayload = mapSurveyToBackendPayload(completeSurvey);
+        const res = await registerOrUpdateSurvey(backendPayload);
+        if (res?.surveyId) {
+          completeSurvey._id = res.surveyId;
+          console.log("✅ Encuesta con ID:", res.surveyId);
+        }
+      }
+    } catch (e) {
+      console.error("❌ Error al registrar encuesta diaria:", e);
+    }
+
+    setSurveyData(completeSurvey);
+    localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
+    setInitialStress(completeSurvey.estres * 2);
+
+    // Emocion por defecto segun nivel de estres
+    let defaultEmotion = 'calma';
+    if (completeSurvey.ansiedad >= completeSurvey.estres && completeSurvey.ansiedad >= completeSurvey.tristeza) {
+      defaultEmotion = 'calma';
+    } else if (completeSurvey.tristeza > completeSurvey.ansiedad && completeSurvey.tristeza > completeSurvey.estres) {
+      defaultEmotion = 'zen';
+    } else {
+      defaultEmotion = 'relajacion';
+    }
+    setTargetEmotion(defaultEmotion);
+    setThemeMode('auto');
+
+    const userCached = localStorage.getItem('user');
+    let isFormCompleted = false;
+    if (userCached) {
+      try {
+        const userObj = JSON.parse(userCached);
+        isFormCompleted = userObj.form === true;
+      } catch (_) { }
+    }
+
+    setIsLoading(false);
+
+    if (isFormCompleted) {
+      navigate('/dashboard');
+    } else {
+      navigate('/calibrate');
+    }
+  };
+
+  /**
+   * Actualiza el estado emocional del usuario directamente desde el modal.
+   */
+  const handleUpdateSurveyInline = async (sienteVal, quiereVal) => {
+    setIsLoading(true);
+    const currentFrequency = surveyData?.volume ?? 200;
+
+    const tristezaMapped = Math.max(1, 6 - sienteVal);
+    const gap = Math.abs(quiereVal - sienteVal);
+    const estresMapped = Math.max(1, Math.min(5, Math.round(tristezaMapped * 0.7 + gap * 0.5)));
+    const ansiedadMapped = Math.max(1, Math.min(5, Math.round(tristezaMapped * 0.6 + gap * 0.6)));
+
+    let targetEmo = 'calma';
+    if (sienteVal <= 2) {
+      targetEmo = 'zen';
+    } else if (sienteVal === 3) {
+      targetEmo = 'calma';
+    } else {
+      targetEmo = 'relajacion';
+    }
+
+    const updatedData = {
+      _id: surveyData?._id || null, // Mantener el ID anterior si existe
+      ansiedad: ansiedadMapped,
+      estres: estresMapped,
+      tristeza: tristezaMapped,
+      volume: currentFrequency,
+      comoSiente: sienteVal,
+      comoQuiere: quiereVal,
+      emotion: targetEmo
+    };
+
+    // Obtener encuesta completa mezclada con artistas previos
+    const completeSurvey = await getMergedSurveyData(updatedData);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log("💾 Guardando actualización de encuesta en el backend...");
+        const backendPayload = mapSurveyToBackendPayload(completeSurvey);
+        const res = await registerOrUpdateSurvey(backendPayload);
+        if (res?.surveyId) {
+          completeSurvey._id = res.surveyId;
+        }
+        console.log("✅ Encuesta registrada/actualizada con ID:", completeSurvey._id);
+      }
+    } catch (e) {
+      console.error("❌ Error al guardar encuesta inline:", e);
+    }
+
+    setSurveyData(completeSurvey);
+    localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
+    setInitialStress(estresMapped * 2);
+    setTargetEmotion(targetEmo);
+    setThemeMode('auto');
+
+    // Cargar playlist (se pasa null porque ya la registramos/actualizamos)
+    await loadPlaylist(null);
+  };
+
+  // Genera y carga la playlist
+  /**
+   * Genera y carga la playlist segun la encuesta.
+   * @param {Object} survey - Datos usados para la recomendacion.
+   * @returns {Promise<void>}
+   */
+  const loadPlaylist = async (survey, forceRegenerate = false) => {
+    try {
+      setIsLoading(true);
+      const surveyToUse = survey || readStoredSurvey();
+
+      // VERIFICACION DE CACHE
+      const currentSurveyStr = JSON.stringify(surveyToUse || {});
+      const cachedSurveyStr = sessionStorage.getItem('lastSurveyData');
+      const cachedPlaylistStr = sessionStorage.getItem('cachedPlaylist');
+
+      if (!forceRegenerate && cachedSurveyStr === currentSurveyStr && cachedPlaylistStr) {
+        try {
+          const cachedPlaylist = JSON.parse(cachedPlaylistStr);
+          if (cachedPlaylist && cachedPlaylist.length > 0) {
+            console.log("♻️ Usando playlist cacheada. La encuesta no ha cambiado.");
+            setPlaylist(cachedPlaylist);
+            if (userType === 'spotify') {
+              SpotifyPlayerWrapper.updatePlaylist(cachedPlaylist);
+            }
+            setIsLoading(false);
+            return cachedPlaylist;
+          }
+        } catch (err) {
+          console.warn("Error leyendo la cache, se generará una nueva...");
+        }
+      }
+
+      const token = userType === 'spotify' ? localStorage.getItem('spotifyToken') : null;
+      const nextPlaylist = await generateHybridPlaylist(token, surveyToUse);
+      let playlistToSet = null;
+      if (nextPlaylist && nextPlaylist.length > 0) {
+        playlistToSet = nextPlaylist;
+        setPlaylist(nextPlaylist);
+        try {
+          sessionStorage.setItem('cachedPlaylist', JSON.stringify(nextPlaylist));
+          sessionStorage.setItem('lastSurveyData', currentSurveyStr);
+        } catch (err) {
+          console.error("Error caching playlist:", err);
+        }
+      } else {
+        const cached = sessionStorage.getItem('cachedPlaylist');
+        if (!cached) {
+          console.warn("⚠️ API de NeuroSound no responde. Activando playlist de respaldo local.");
+          playlistToSet = fallbackPlaylist;
+          setPlaylist(fallbackPlaylist);
+        } else {
+          console.warn("⚠️ API de NeuroSound no responde. Manteniendo playlist cacheada.");
+          try {
+            playlistToSet = JSON.parse(cached);
+            setPlaylist(playlistToSet);
+          } catch {
+            playlistToSet = fallbackPlaylist;
+            setPlaylist(fallbackPlaylist);
+          }
+        }
+      }
+      if (userType === 'spotify' && playlistToSet) {
+        SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
+      }
+      setCurrentIndex(0);
+      setProgress(0);
+      return playlistToSet;
+    } catch (e) {
+      console.error("Error loading playlist, checking cache/fallback:", e);
+      const cached = sessionStorage.getItem('cachedPlaylist');
+      let playlistToSet = fallbackPlaylist;
+      if (cached) {
+        try {
+          playlistToSet = JSON.parse(cached);
+          console.warn("Manteniendo playlist cacheada debido al error.");
+        } catch {
+          playlistToSet = fallbackPlaylist;
+        }
+      } else {
+        console.warn("Activando playlist de respaldo local debido al error.");
+      }
+      setPlaylist(playlistToSet);
+      if (userType === 'spotify') {
+        SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
+      }
+      setCurrentIndex(0);
+      setProgress(0);
+      return playlistToSet;
     } finally {
       setIsLoading(false);
     }
   };
 
-  playSpotifyTrack();
-}, [currentIndex, playlist, isPlaying, spotifyDeviceId, userType]);
+  /**
+   * Confirma artistas seleccionados: guarda datos y muestra resumen de perfil.
+   * @param {string[]} selectedArtists - Lista de ids de artistas.
+   * @param {Object[]} artistsData     - Objetos completos de artistas seleccionados.
+   * @returns {void}
+   */
+  const handleArtistSurveyConfirm = async (selectedArtists, artistsData = [], nextScreen = 'profile-summary') => {
+    localStorage.setItem('selectedArtists', JSON.stringify(selectedArtists));
+    localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
+    setSelectedArtistsData(artistsData);
 
-// Intervalo de progreso y fin de canción para Spotify
-useEffect(() => {
-  let interval = null;
-  if (userType === 'legacy-spotify' && isPlaying && spotifyDeviceId && duration > 0) {
-    interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= duration - 1) {
-          clearInterval(interval);
-          console.log("⏹️ Canción finalizada en Spotify. Pasando al siguiente track.");
-          handleNext(false);
-          return duration;
-        }
-        return prev + 1;
-      });
-    }, 1000);
-  }
-  return () => {
-    if (interval) clearInterval(interval);
-  };
-}, [userType, isPlaying, spotifyDeviceId, duration, currentIndex]);
-
-// Handlers de audio
-/**
- * Alterna reproduccion/pausa del audio.
- * @returns {void}
- */
-const handlePlayPause = async () => {
-  if (userType === 'spotify') {
-    const currentTrack = playlist[currentIndex];
-    if (!isPlaying && currentTrack?.uri && progress === 0) {
-      const ok = await SpotifyPlayerWrapper.playTrackAtIndex(currentIndex);
-      if (ok) setIsPlaying(true);
-      return;
-    }
-
-    SpotifyPlayerWrapper.togglePlay();
-    if (isPlaying) {
-      setIsPlaying(false);
-    } else {
-      setIsPlaying(true);
-    }
-    return;
-  }
-
-  setIsPlaying(!isPlaying);
-};
-
-/**
- * Salta a la siguiente pista y reinicia estado de carga.
- * @returns {void}
- */
-/**
- * Salta a la siguiente pista y reinicia estado de carga.
- * @param {boolean} [isManual=false] - Indica si el cambio de track fue realizado manualmente por el usuario.
- * @returns {Promise<void>}
- */
-const handleNext = async (isManual = false) => {
-  if (playlist.length === 0) return;
-  const currentTrack = playlist[currentIndex];
-
-  if (isManual && currentTrack) {
-    if (progress < 60) {
-      await handleFeedback('negative', currentTrack, false);
-    } else {
-      await handleFeedback('positive', currentTrack);
-    }
-  } else if (!isManual && currentTrack) {
-    await handleFeedback('positive', currentTrack);
-  }
-
-  if (currentIndex === playlist.length - 1) {
-    console.log("🏁 Fin de la playlist. Cargando siguiente tanda (ignorando caché)...");
-    setIsPlaying(false);
-    setIsLoading(true);
-    const newPlaylist = await loadPlaylist(surveyData || {}, true);
-    if (userType === 'spotify' && newPlaylist?.length > 0) {
-      await SpotifyPlayerWrapper.playTrackAtIndex(0);
-    }
-    setIsPlaying(true);
-    return;
-  }
-
-  if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-  isFadingOut.current = false;
-  if (audioRef.current) audioRef.current.volume = volume / 100;
-  if (gainNodeRef.current && audioContextRef.current) {
-    gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
-  }
-
-  setIsLoading(true);
-  const nextIndex = currentIndex + 1;
-  setCurrentIndex(nextIndex);
-
-  // 👉 Enrutamiento al SDK de Spotify
-  if (userType === 'spotify') {
+    // Guardar en la base de datos si el usuario está autenticado
     try {
-      await SpotifyPlayerWrapper.playTrackAtIndex(nextIndex);
-    } catch (e) { console.error("Error en Spotify Player:", e); }
-  }
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log("💾 Guardando artistas seleccionados en el backend...");
 
-  setIsPlaying(true);
-};
-
-spotifyTrackEndHandlerRef.current = () => handleNext(false);
-
-/**
- * Retrocede a la pista anterior y reinicia estado de carga.
- * @param {boolean} [isManual=false] - Indica si fue manual.
- * @returns {Promise<void>}
- */
-const handlePrev = async (isManual = false) => {
-  if (playlist.length === 0) return;
-  const currentTrack = playlist[currentIndex];
-
-  if (isManual && currentTrack) {
-    if (progress < 60) {
-      await handleFeedback('negative', currentTrack, false);
-    } else {
-      await handleFeedback('positive', currentTrack);
-    }
-  }
-
-  if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-  isFadingOut.current = false;
-  if (audioRef.current) audioRef.current.volume = volume / 100;
-  if (gainNodeRef.current && audioContextRef.current) {
-    gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
-  }
-
-  setIsLoading(true);
-  const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-  setCurrentIndex(prevIndex);
-
-  // 👉 Enrutamiento al SDK de Spotify
-  if (userType === 'spotify') {
-    try {
-      await SpotifyPlayerWrapper.playTrackAtIndex(prevIndex);
-    } catch (e) { console.error("Error en Spotify Player:", e); }
-  }
-
-  setIsPlaying(true);
-};
-
-/**
- * Selecciona una pista por indice y la reproduce.
- * @param {number} index - Indice de la pista en la lista.
- * @param {boolean} [isManual=false] - Indica si fue manual.
- * @returns {Promise<void>}
- */
-const handleSelectTrack = async (index, isManual = false) => {
-  if (index === currentIndex) {
-    setIsPlaying(!isPlaying);
-    return;
-  }
-  const currentTrack = playlist[currentIndex];
-
-  if (isManual && currentTrack) {
-    if (progress < 60) {
-      await handleFeedback('negative', currentTrack, false);
-    } else {
-      await handleFeedback('positive', currentTrack);
-    }
-  }
-
-  if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-  isFadingOut.current = false;
-  if (audioRef.current) audioRef.current.volume = volume / 100;
-  if (gainNodeRef.current && audioContextRef.current) {
-    gainNodeRef.current.gain.setValueAtTime(volume / 100, audioContextRef.current.currentTime);
-  }
-
-  setIsLoading(true);
-  setCurrentIndex(index);
-
-  // 👉 Enrutamiento al SDK de Spotify (con fallback a audio local)
-  if (userType === 'spotify') {
-    const selectedTrack = playlist[index];
-    const playedOnSpotify = await SpotifyPlayerWrapper.playTrackAtIndex(index);
-
-    if (!playedOnSpotify && selectedTrack?.preview_url && audioRef.current) {
-      if (audioRef.current.src !== selectedTrack.preview_url) {
-        audioRef.current.src = selectedTrack.preview_url;
-      }
-      try {
-        await audioRef.current.play();
-      } catch (e) {
-        console.error("Error reproduciendo preview local:", e);
-        setIsPlaying(false);
-      }
-    }
-  }
-
-  setIsPlaying(true);
-};
-/**
- * Actualiza el tiempo de reproduccion.
- * @param {number} val - Tiempo destino en segundos.
- * @returns {void}
- */
-const handleSeek = (val) => {
-  const currentTrack = playlist[currentIndex];
-  if (userType === 'spotify' && currentTrack && currentTrack.uri && spotifyPlayerRef.current) {
-    spotifyPlayerRef.current.seek(val).then(() => {
-      setProgress(val);
-    }).catch(err => {
-      console.warn("Spotify seek error:", err);
-    });
-  } else if (audioRef.current) {
-    audioRef.current.currentTime = val;
-    setProgress(val);
-  }
-};
-
-// Login y onboarding
-/**
- * Registra el tipo de usuario y avanza al primer survey.
- * @param {string} type - "spotify" o "guest".
- * @returns {void}
- */
-const handleLogin = (type, userObj = null) => {
-  setUserType(type);
-  const user = userObj || (localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null);
-
-  // Restaurar surveyData desde el usuario ANTES de cualquier navegación
-  if (user) {
-    const hasSurvey = user.surveys && user.surveys.length > 0;
-    let surveyWithArtists = null;
-    if (hasSurvey) {
-      for (let i = user.surveys.length - 1; i >= 0; i--) {
-        if (user.surveys[i].artist_interest && user.surveys[i].artist_interest.length > 0) {
-          surveyWithArtists = user.surveys[i];
-          break;
-        }
-      }
-    }
-    const hasArtists = !!surveyWithArtists;
-
-    if (hasSurvey) {
-      const lastSurvey = user.surveys[user.surveys.length - 1];
-      setSurveyData(lastSurvey);
-      localStorage.setItem('surveyData', JSON.stringify(lastSurvey));
-    }
-
-    // Si el usuario ya completó el proceso inicial (form: true), llevarlo a la encuesta emocional diaria
-    if (user.form === true) {
-      navigate('/survey');
-      return;
-    }
-
-    if (hasArtists) {
-      // Usuario ya configurado: solo preguntamos el estado emocional de hoy
-      setScreen('initial-evaluation');
-    } else if (hasSurvey) {
-      // Tiene encuesta pero nunca eligió artistas → elegir artistas
-      setScreen('artist-evaluation');
-    } else {
-      // Primera vez: flujo completo
-      setScreen('initial-evaluation');
-    }
-  } else {
-    setScreen('initial-evaluation');
-  }
-};
-
-/**
- * Obtiene la encuesta mezclada con los artistas y géneros previos del usuario,
- * buscando tanto en la base de datos como en localStorage.
- */
-const getExistingSurveyId = () => {
-  try { const s = localStorage.getItem('surveyData'); return s ? JSON.parse(s)._id : undefined; } catch (_) {}
-};
-
-const getMergedSurveyData = async (rawSurveyData) => {
-  let finalArtists = [];
-  let finalGenres = [];
-
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log("📥 Buscando artistas previos en el historial de la base de datos...");
-      const response = await apiCall('neuro', '/api/auth/me', 'GET');
-      if (response && response.success && response.data) {
-        const userObj = response.data;
-        localStorage.setItem('user', JSON.stringify(userObj));
-
-        if (userObj.surveys && userObj.surveys.length > 0) {
-          // Buscar hacia atrás en el historial
-          for (let i = userObj.surveys.length - 1; i >= 0; i--) {
-            if (userObj.surveys[i].artist_interest && userObj.surveys[i].artist_interest.length > 0) {
-              finalArtists = userObj.surveys[i].artist_interest;
-              finalGenres = userObj.surveys[i].genres || [];
-              break;
-            }
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error("❌ Error al obtener perfil y encuestas previas:", e);
-  }
-
-  // Fallback a localStorage si la DB no arrojó artistas
-  if (finalArtists.length === 0) {
-    try {
-      const stored = localStorage.getItem('selectedArtistsData');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        finalArtists = parsed.map(a => a.name).filter(Boolean);
-        parsed.forEach(a => {
+        const completeSurvey = {
+          ...surveyData,
+          artist_interest: artistsData.map(a => a.name).filter(Boolean),
+          genres: []
+        };
+        artistsData.forEach(a => {
           const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
           artistGenres.forEach(g => {
-            if (g && !finalGenres.includes(g)) finalGenres.push(g);
+            if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
           });
         });
-      }
-    } catch (e) {
-      console.error("❌ Error al leer selectedArtistsData de localStorage:", e);
-    }
-  }
+        if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
 
-  // Último fallback: leer del surveyData actual en localStorage (antes de sobrescribir)
-  if (finalArtists.length === 0) {
-    try {
-      const currSurvey = localStorage.getItem('surveyData');
-      if (currSurvey) {
-        const parsed = JSON.parse(currSurvey);
-        if (parsed.artist_interest && parsed.artist_interest.length > 0) {
-          finalArtists = parsed.artist_interest;
-          finalGenres = parsed.genres || [];
+        const backendPayload = mapSurveyToBackendPayload(completeSurvey);
+        console.log("Datos de la encuesta que se enviarán:", backendPayload);
+
+        const response = await registerOrUpdateSurvey(backendPayload);
+        console.log("✅ Encuesta y artistas iniciales guardados exitosamente en la base de datos.");
+
+        if (response?.surveyId) {
+          completeSurvey._id = response.surveyId;
         }
+
+        setSurveyData(completeSurvey);
+        localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
+
+        // Actualizar el objeto de usuario local
+        const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+        cachedUserObj.selectedArtists = selectedArtists;
+        localStorage.setItem('user', JSON.stringify(cachedUserObj));
+
+        // Novedad: Guardar los artistas en el perfil de usuario del backend para que no se pierdan al recargar
+        await apiCall('neuro', '/api/user/update', 'PUT', { selectedArtists });
+        console.log("✅ Artistas actualizados en el perfil de usuario del servidor.");
       }
     } catch (e) {
-      console.error("❌ Error al leer surveyData actual de localStorage:", e);
+      console.error("❌ Error al guardar los artistas en el backend:", e);
     }
-  }
 
-  // Si no se encontraron artistas, no enviar estos campos al backend
-  // para que preserve los valores existentes en la BD
-  if (finalArtists.length === 0) {
-    const { artist_interest, genres, ...rest } = rawSurveyData;
-    return {
-      ...rest,
-      _id: rawSurveyData._id || getExistingSurveyId(),
-      artist_interest: undefined,
-      genres: undefined
+    setScreen(nextScreen);
+  };
+
+  /**
+   * Confirma la calibración de frecuencia: guarda el volumen Hawkins y navega.
+   * @param {{ volume: number }} data - Datos de calibración.
+   * @returns {Promise<void>}
+   */
+  const handleCalibrationConfirm = async ({ volume }) => {
+    const updatedSurvey = { ...(surveyData || {}), volume };
+    setSurveyData(updatedSurvey);
+    localStorage.setItem('surveyData', JSON.stringify(updatedSurvey));
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const backendPayload = mapSurveyToBackendPayload(updatedSurvey);
+        await registerOrUpdateSurvey(backendPayload);
+      }
+    } catch (e) {
+      console.error("Error al guardar calibración en la encuesta:", e);
+    }
+
+    const hasArtists = updatedSurvey.artist_interest && updatedSurvey.artist_interest.length > 0;
+    if (hasArtists) {
+      console.log("🎵 Usuario con artistas. Navegando al Dashboard...");
+      navigate('/dashboard');
+      await loadPlaylist(null);
+    } else {
+      console.log("🎨 Sin artistas. Navegando a selección de artistas...");
+      navigate('/artists');
+    }
+  };
+
+  // Acciones de feedback
+  /**
+   * Procesa feedback del usuario para refrescar recomendaciones.
+   * @param {"negative"|"positive"} type - Tipo de feedback.
+   * @returns {Promise<void>}
+   */
+  const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = true) => {
+    const track = trackToFeedback || playlist[currentIndex];
+    if (!track) return;
+
+    const feedbackVal = type === 'positive' ? true : (type === 'negative' ? null : false);
+
+    // Sincronizar feedback con el backend
+    if (track.recommendationId) {
+      try {
+        console.log(`Sending feedback to backend: recommendationId=${track.recommendationId}, trackId=${track.id}, feedback=${feedbackVal}`);
+        await apiCall('neuro', `/api/recommend/feedback/${track.recommendationId}`, 'PATCH', {
+          trackId: track.id,
+          feedback: feedbackVal
+        });
+        // Actualizar la playlist local para reflejar el estado del feedback
+        setPlaylist(prev => prev.map(t => t.id === track.id ? { ...t, feedback: feedbackVal } : t));
+      } catch (e) {
+        console.error("❌ Error al enviar feedback al backend:", e);
+      }
+    }
+
+    // Feedback local: el backend en producción no expone /api/user/feedback
+    if (type === 'negative') {
+      try {
+        const stored = localStorage.getItem('dislikedTracks');
+        const disliked = stored ? JSON.parse(stored) : [];
+        if (!disliked.includes(track.id)) {
+          disliked.push(track.id);
+          localStorage.setItem('dislikedTracks', JSON.stringify(disliked));
+        }
+      } catch (e) {
+        console.error("Error storing disliked track:", e);
+      }
+
+      // AQUÍ ESTÁ EL CAMBIO: Solo recargamos si shouldRegenerate es true
+      if (shouldRegenerate) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        setIsPlaying(false);
+        setIsLoading(true);
+
+        console.log("Refrescando la playlist excluyendo la canción rechazada...");
+        await loadPlaylist(surveyData || {});
+        setIsPlaying(true);
+      } else {
+        console.log("Feedback negativo registrado de forma silenciosa. Cambiando de pista...");
+      }
+
+    } else {
+      console.log("Al usuario le ayuda la pista recomendada:", track.title);
+      try {
+        const stored = localStorage.getItem('playedTracks');
+        const played = stored ? JSON.parse(stored) : [];
+        if (!played.includes(track.id)) {
+          played.push(track.id);
+          localStorage.setItem('playedTracks', JSON.stringify(played));
+        }
+      } catch (e) {
+        console.error("Error al almacenar playedTrack en localStorage:", e);
+      }
+    }
+  };
+
+  // Callback cuando termina el temporizador
+  /**
+   * Callback cuando termina el temporizador global.
+   * @returns {void}
+   */
+  const handleTimerEnd = () => {
+    if (userType === 'spotify') {
+      SpotifyPlayerWrapper.pause?.();
+    }
+    setIsPlaying(false);
+    alert("¡Sesión finalizada! Tu tiempo de sintonización ha terminado.");
+    setScreen('final-evaluation');
+  };
+
+  /**
+   * Procesa la accion final de la encuesta de cierre.
+   * @param {"new"|"finish"} action - Accion elegida por el usuario.
+   * @returns {void}
+   */
+  const handleFinalAction = (action) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (userType === 'spotify') {
+      SpotifyPlayerWrapper.pause?.();
+    }
+    setIsPlaying(false);
+    setProgress(0);
+
+    if (action === 'new' || action === 'finish') {
+      setPlaylist([]);
+      setCurrentIndex(0);
+      setScreen('initial-evaluation');
+    } else {
+      setScreen('onboarding');
+      setUserType(null);
+      setSurveyData(null);
+      setPlaylist([]);
+      setCurrentIndex(0);
+
+      // Limpiar TODO el localStorage relacionado a la sesión
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('spotifyToken');
+      localStorage.removeItem('spotifyRefreshToken');
+      localStorage.removeItem('selectedArtists');
+      localStorage.removeItem('selectedArtistsData');
+
+      // Limpiar caché de recomendaciones del sessionStorage
+      sessionStorage.removeItem('cachedPlaylist');
+      sessionStorage.removeItem('lastSurveyData');
+    }
+  };
+
+  /**
+   * Decide que pantalla renderizar segun el estado actual.
+   * @returns {JSX.Element}
+   */
+  const renderScreen = () => {
+    switch (screen) {
+      case 'onboarding':
+        return <Onboarding onLogin={handleLogin} />;
+      case 'data-treatment':
+        return (
+          <DataTreatmentScreen
+            onAccept={async () => {
+              try {
+                // Actualizar form: true en el backend
+                await apiCall('neuro', '/api/user/update', 'PUT', { form: true });
+                console.log("✅ Consentimiento de datos registrado (form: true) en el backend.");
+
+                // Actualizar form: true en el localStorage
+                const cachedUser = localStorage.getItem('user');
+                if (cachedUser) {
+                  const userObj = JSON.parse(cachedUser);
+                  userObj.form = true;
+                  localStorage.setItem('user', JSON.stringify(userObj));
+                }
+              } catch (err) {
+                console.error("❌ Error al registrar consentimiento de datos:", err);
+              }
+              // Continuar al siguiente paso (encuesta inicial)
+              setScreen('initial-evaluation');
+            }}
+            onDecline={() => {
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+          />
+        );
+      case 'processing-spotify':
+        return (
+          <div className="w-100 vh-100 d-flex flex-column align-items-center justify-content-center bg-dark text-white">
+            <div className="spinner-border text-success mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
+            <h4 className="fw-bold animate-pulse">Conectando con Spotify...</h4>
+            <p className="text-muted">Procesando tu sesión segura</p>
+          </div>
+        );
+      case 'initial-evaluation':
+        const userObjForSurvey = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+        const hasSavedSurvey = (userObjForSurvey.surveys && userObjForSurvey.surveys.length > 0) || !!surveyData;
+        return (
+          <InitialSurvey
+            onSubmit={handleSurveySubmit}
+            hideFrequencies={hasSavedSurvey}
+            initialData={surveyData}
+          />
+        );
+      case 'calibration':
+        return (
+          <CalibrationScreen
+            initialData={surveyData}
+            onSubmit={handleCalibrationConfirm}
+          />
+        );
+      case 'artist-evaluation':
+        const userObjTemp = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+        const hasSurveyTemp = userObjTemp.surveys && userObjTemp.surveys.length > 0;
+        const targetNext = hasSurveyTemp ? 'profile' : 'profile-summary';
+        return (
+          <ArtistSurvey
+            onConfirm={(selectedIds, artistsData) => handleArtistSurveyConfirm(selectedIds, artistsData, targetNext)}
+            preselectedArtists={selectedArtistsData}
+          />
+        );
+      case 'dashboard':
+        return (
+          <Dashboard
+            tracks={playlist}
+            currentIndex={currentIndex}
+            isPlaying={isPlaying}
+            progress={progress}
+            duration={duration}
+            isLoading={isLoading}
+            volume={volume}
+            onVolumeChange={setVolume}
+            onPlayPause={handlePlayPause}
+            onNext={() => handleNext(true)}
+            onPrev={() => handlePrev(true)}
+            onSelectTrack={(idx) => handleSelectTrack(idx, true)}
+            onSeek={handleSeek}
+            onNavigate={setScreen}
+            onFeedback={handleFeedback}
+            timeLeft={timeLeft}
+            isTimerRunning={isTimerRunning}
+            timerDuration={timerDuration}
+            onStartPauseTimer={() => setIsTimerRunning(!isTimerRunning)}
+            onResetTimer={() => { setIsTimerRunning(false); setTimeLeft(timerDuration * 60); }}
+            onSelectTimerPreset={(mins) => { setTimerDuration(mins); setTimeLeft(mins * 60); setIsTimerRunning(false); }}
+            analyserNode={analyserNode}
+            onShowEmotionalSummary={() => setShowEmotionalSummary(true)}
+            surveyData={surveyData}
+          />
+        );
+      case 'profile-summary':
+        return (
+          <ProfileSummaryScreen
+            surveyData={surveyData}
+            selectedArtistsData={selectedArtistsData}
+            fromOnboarding={true}
+            onArtistsSaved={async (ids, data) => {
+              setSelectedArtistsData(data);
+              localStorage.setItem('selectedArtistsData', JSON.stringify(data));
+              try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  console.log("💾 Guardando artistas en el backend...");
+                  const completeSurvey = {
+                    ...surveyData,
+                    artist_interest: data.map(a => a.name).filter(Boolean),
+                    genres: []
+                  };
+                  data.forEach(a => {
+                    const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+                    artistGenres.forEach(g => {
+                      if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
+                    });
+                  });
+                  if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
+
+                  const backendPayload = mapSurveyToBackendPayload(completeSurvey);
+                  const res = await registerOrUpdateSurvey(backendPayload);
+                  if (res?.surveyId) {
+                    completeSurvey._id = res.surveyId;
+                  }
+
+                  setSurveyData(completeSurvey);
+                  localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
+
+                  const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                  cachedUserObj.selectedArtists = ids;
+                  localStorage.setItem('user', JSON.stringify(cachedUserObj));
+                }
+              } catch (e) {
+                console.error("❌ Error al guardar artistas en el backend:", e);
+              }
+            }}
+            onContinue={() => {
+              setScreen('dashboard');
+            }}
+          />
+        );
+      case 'profile':
+        return (
+          <ProfileSummaryScreen
+            surveyData={surveyData}
+            selectedArtistsData={selectedArtistsData}
+            fromOnboarding={false}
+            onContinue={() => setScreen('dashboard')}
+            onBack={() => setScreen('dashboard')}
+            onArtistsSaved={async (ids, data) => {
+              setSelectedArtistsData(data);
+              localStorage.setItem('selectedArtistsData', JSON.stringify(data));
+              try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  console.log("💾 Guardando artistas en el backend...");
+                  const completeSurvey = {
+                    ...surveyData,
+                    artist_interest: data.map(a => a.name).filter(Boolean),
+                    genres: []
+                  };
+                  data.forEach(a => {
+                    const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
+                    artistGenres.forEach(g => {
+                      if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
+                    });
+                  });
+                  if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
+
+                  const backendPayload = mapSurveyToBackendPayload(completeSurvey);
+                  const res = await registerOrUpdateSurvey(backendPayload);
+                  if (res?.surveyId) {
+                    completeSurvey._id = res.surveyId;
+                  }
+
+                  setSurveyData(completeSurvey);
+                  localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
+
+                  const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                  cachedUserObj.selectedArtists = ids;
+                  localStorage.setItem('user', JSON.stringify(cachedUserObj));
+                }
+              } catch (e) {
+                console.error("❌ Error al guardar artistas en el backend:", e);
+              }
+            }}
+          />
+        );
+      case 'settings':
+        return (
+          <SettingsScreen
+            onNavigate={setScreen}
+            onLogout={() => handleFinalAction('logout')}
+            targetEmotion={targetEmotion}
+            surveyData={surveyData}
+            selectedArtistsData={selectedArtistsData}
+            onEmotionChange={(emo) => {
+              setTargetEmotion(emo);
+              setThemeMode('manual');
+            }}
+            themeMode={themeMode}
+            onThemeModeChange={setThemeMode}
+          />
+        );
+      case 'final-evaluation':
+        return (
+          <FinalSurvey
+            initialStress={initialStress}
+            onAction={handleFinalAction}
+            onNavigate={setScreen}
+            onSubmit={async (finalSurveyData) => {
+              try {
+                console.log("💾 Enviando encuesta final IAE al backend...", finalSurveyData);
+                await apiCall('neuro', '/api/iae-survey/register', 'POST', finalSurveyData);
+                console.log("✅ Encuesta final IAE registrada con éxito");
+              } catch (e) {
+                console.error("❌ Error al registrar encuesta final IAE:", e);
+              }
+            }}
+          />
+        );
+      case 'register':
+        return <Onboarding onLogin={handleLogin} initialMode="register" />;
+      case 'onboarding':
+      default:
+        return <Onboarding onLogin={handleLogin} initialMode="select" />;
+    }
+  };
+
+  // Determina el tema activo segun modo auto/manual
+  const currentTrack = playlist[currentIndex] || null;
+
+  // Mantiene onboarding y encuestas neutros (gris)
+  const onboardingScreens = ['onboarding', 'data-treatment', 'initial-evaluation', 'artist-evaluation', 'profile-summary', 'calibration'];
+  const isOnboarding = onboardingScreens.includes(screen);
+
+  const activeThemeKey = isOnboarding
+    ? 'gris'
+    : themeMode === 'manual'
+      ? targetEmotion
+      : currentTrack
+        ? getTrackThemeKey(currentTrack)
+        : targetEmotion;
+
+  const hslToRgb = (h, s, l) => {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return `${Math.round(255 * f(0))}, ${Math.round(255 * f(8))}, ${Math.round(255 * f(4))}`;
+  };
+
+  let theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
+
+  if (!isOnboarding && themeMode !== 'manual' && currentTrack) {
+    // Tema dinámico global basado en la canción
+    const v = typeof currentTrack.valence === 'number' ? currentTrack.valence : 0.5;
+    const e = typeof currentTrack.energy === 'number' ? currentTrack.energy : 0.5;
+
+    const hue = 240 - (v * 200); // 240 (Azul) a 40 (Naranja)
+    const saturation = 40 + (e * 60); // 40% a 100% de intensidad
+    const lightness = 40 + (e * 15); // 40% a 55% de brillo primario
+
+    theme = {
+      primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+      primaryRgb: hslToRgb(hue, saturation, lightness),
+      bgSubtle: `hsl(${hue}, ${saturation}%, 96%)`,
+      borderSubtle: `hsl(${hue}, ${saturation}%, 85%)`,
+      glow1: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`,
+      glow2: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.1)`
     };
   }
 
-  if (finalGenres.length === 0) {
-    finalGenres = ["Lofi", "Ambient"];
-  }
-
-  return {
-    ...rawSurveyData,
-    _id: rawSurveyData._id || getExistingSurveyId(),
-    artist_interest: finalArtists,
-    genres: finalGenres
-  };
-};
-
-/**
- * Guarda la encuesta inicial y define emocion/volumen base.
- * @param {Object} data - Datos de encuesta.
- * @returns {void}
- */
-const handleSurveySubmit = async (data) => {
-  setIsLoading(true);
-
-  // Obtener los datos mezclados con los artistas de encuestas previas
-  const completeSurvey = await getMergedSurveyData(data);
-
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log("💾 Registrando encuesta diaria en el backend...");
-      const backendPayload = mapSurveyToBackendPayload(completeSurvey);
-      const res = await registerOrUpdateSurvey(backendPayload);
-      if (res?.surveyId) {
-        completeSurvey._id = res.surveyId;
-        console.log("✅ Encuesta con ID:", res.surveyId);
-      }
-    }
-  } catch (e) {
-    console.error("❌ Error al registrar encuesta diaria:", e);
-  }
-
-  setSurveyData(completeSurvey);
-  localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
-  setInitialStress(completeSurvey.estres * 2);
-
-  // Emocion por defecto segun nivel de estres
-  let defaultEmotion = 'calma';
-  if (completeSurvey.ansiedad >= completeSurvey.estres && completeSurvey.ansiedad >= completeSurvey.tristeza) {
-    defaultEmotion = 'calma';
-  } else if (completeSurvey.tristeza > completeSurvey.ansiedad && completeSurvey.tristeza > completeSurvey.estres) {
-    defaultEmotion = 'zen';
-  } else {
-    defaultEmotion = 'relajacion';
-  }
-  setTargetEmotion(defaultEmotion);
-  setThemeMode('auto');
-
-  const userCached = localStorage.getItem('user');
-  let isFormCompleted = false;
-  if (userCached) {
-    try {
-      const userObj = JSON.parse(userCached);
-      isFormCompleted = userObj.form === true;
-    } catch (_) {}
-  }
-
-  setIsLoading(false);
-
-  if (isFormCompleted) {
-    navigate('/dashboard');
-  } else {
-    navigate('/calibrate');
-  }
-};
-
-/**
- * Actualiza el estado emocional del usuario directamente desde el modal.
- */
-const handleUpdateSurveyInline = async (sienteVal, quiereVal) => {
-  setIsLoading(true);
-  const currentFrequency = surveyData?.volume ?? 200;
-
-  const tristezaMapped = Math.max(1, 6 - sienteVal);
-  const gap = Math.abs(quiereVal - sienteVal);
-  const estresMapped = Math.max(1, Math.min(5, Math.round(tristezaMapped * 0.7 + gap * 0.5)));
-  const ansiedadMapped = Math.max(1, Math.min(5, Math.round(tristezaMapped * 0.6 + gap * 0.6)));
-
-  let targetEmo = 'calma';
-  if (sienteVal <= 2) {
-    targetEmo = 'zen';
-  } else if (sienteVal === 3) {
-    targetEmo = 'calma';
-  } else {
-    targetEmo = 'relajacion';
-  }
-
-  const updatedData = {
-    _id: surveyData?._id || null, // Mantener el ID anterior si existe
-    ansiedad: ansiedadMapped,
-    estres: estresMapped,
-    tristeza: tristezaMapped,
-    volume: currentFrequency,
-    comoSiente: sienteVal,
-    comoQuiere: quiereVal,
-    emotion: targetEmo
-  };
-
-  // Obtener encuesta completa mezclada con artistas previos
-  const completeSurvey = await getMergedSurveyData(updatedData);
-
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log("💾 Guardando actualización de encuesta en el backend...");
-      const backendPayload = mapSurveyToBackendPayload(completeSurvey);
-      const res = await registerOrUpdateSurvey(backendPayload);
-      if (res?.surveyId) {
-        completeSurvey._id = res.surveyId;
-      }
-      console.log("✅ Encuesta registrada/actualizada con ID:", completeSurvey._id);
-    }
-  } catch (e) {
-    console.error("❌ Error al guardar encuesta inline:", e);
-  }
-
-  setSurveyData(completeSurvey);
-  localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
-  setInitialStress(estresMapped * 2);
-  setTargetEmotion(targetEmo);
-  setThemeMode('auto');
-
-  // Cargar playlist (se pasa null porque ya la registramos/actualizamos)
-  await loadPlaylist(null);
-};
-
-// Genera y carga la playlist
-/**
- * Genera y carga la playlist segun la encuesta.
- * @param {Object} survey - Datos usados para la recomendacion.
- * @returns {Promise<void>}
- */
-const loadPlaylist = async (survey, forceRegenerate = false) => {
-  try {
-    setIsLoading(true);
-    const surveyToUse = survey || readStoredSurvey();
-    
-    // VERIFICACION DE CACHE
-    const currentSurveyStr = JSON.stringify(surveyToUse || {});
-    const cachedSurveyStr = sessionStorage.getItem('lastSurveyData');
-    const cachedPlaylistStr = sessionStorage.getItem('cachedPlaylist');
-
-    if (!forceRegenerate && cachedSurveyStr === currentSurveyStr && cachedPlaylistStr) {
-      try {
-        const cachedPlaylist = JSON.parse(cachedPlaylistStr);
-        if (cachedPlaylist && cachedPlaylist.length > 0) {
-          console.log("♻️ Usando playlist cacheada. La encuesta no ha cambiado.");
-          setPlaylist(cachedPlaylist);
-          if (userType === 'spotify') {
-            SpotifyPlayerWrapper.updatePlaylist(cachedPlaylist);
-          }
-          setIsLoading(false);
-          return cachedPlaylist;
-        }
-      } catch (err) {
-        console.warn("Error leyendo la cache, se generará una nueva...");
-      }
-    }
-
-    const token = userType === 'spotify' ? localStorage.getItem('spotifyToken') : null;
-    const nextPlaylist = await generateHybridPlaylist(token, surveyToUse);
-    let playlistToSet = null;
-    if (nextPlaylist && nextPlaylist.length > 0) {
-      playlistToSet = nextPlaylist;
-      setPlaylist(nextPlaylist);
-      try {
-        sessionStorage.setItem('cachedPlaylist', JSON.stringify(nextPlaylist));
-        sessionStorage.setItem('lastSurveyData', currentSurveyStr);
-      } catch (err) {
-        console.error("Error caching playlist:", err);
-      }
-    } else {
-      const cached = sessionStorage.getItem('cachedPlaylist');
-      if (!cached) {
-        console.warn("⚠️ API de NeuroSound no responde. Activando playlist de respaldo local.");
-        playlistToSet = fallbackPlaylist;
-        setPlaylist(fallbackPlaylist);
-      } else {
-        console.warn("⚠️ API de NeuroSound no responde. Manteniendo playlist cacheada.");
-        try {
-          playlistToSet = JSON.parse(cached);
-          setPlaylist(playlistToSet);
-        } catch {
-          playlistToSet = fallbackPlaylist;
-          setPlaylist(fallbackPlaylist);
-        }
-      }
-    }
-    if (userType === 'spotify' && playlistToSet) {
-      SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
-    }
-    setCurrentIndex(0);
-    setProgress(0);
-    return playlistToSet;
-  } catch (e) {
-    console.error("Error loading playlist, checking cache/fallback:", e);
-    const cached = sessionStorage.getItem('cachedPlaylist');
-    let playlistToSet = fallbackPlaylist;
-    if (cached) {
-      try {
-        playlistToSet = JSON.parse(cached);
-        console.warn("Manteniendo playlist cacheada debido al error.");
-      } catch {
-        playlistToSet = fallbackPlaylist;
-      }
-    } else {
-      console.warn("Activando playlist de respaldo local debido al error.");
-    }
-    setPlaylist(playlistToSet);
-    if (userType === 'spotify') {
-      SpotifyPlayerWrapper.updatePlaylist(playlistToSet);
-    }
-    setCurrentIndex(0);
-    setProgress(0);
-    return playlistToSet;
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-/**
- * Confirma artistas seleccionados: guarda datos y muestra resumen de perfil.
- * @param {string[]} selectedArtists - Lista de ids de artistas.
- * @param {Object[]} artistsData     - Objetos completos de artistas seleccionados.
- * @returns {void}
- */
-const handleArtistSurveyConfirm = async (selectedArtists, artistsData = [], nextScreen = 'profile-summary') => {
-  localStorage.setItem('selectedArtists', JSON.stringify(selectedArtists));
-  localStorage.setItem('selectedArtistsData', JSON.stringify(artistsData));
-  setSelectedArtistsData(artistsData);
-
-  // Guardar en la base de datos si el usuario está autenticado
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log("💾 Guardando artistas seleccionados en el backend...");
-
-      const completeSurvey = {
-        ...surveyData,
-        artist_interest: artistsData.map(a => a.name).filter(Boolean),
-        genres: []
-      };
-      artistsData.forEach(a => {
-        const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
-        artistGenres.forEach(g => {
-          if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
-        });
-      });
-      if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
-
-      const backendPayload = mapSurveyToBackendPayload(completeSurvey);
-      console.log("Datos de la encuesta que se enviarán:", backendPayload);
-
-      const response = await registerOrUpdateSurvey(backendPayload);
-      console.log("✅ Encuesta y artistas iniciales guardados exitosamente en la base de datos.");
-
-      if (response?.surveyId) {
-        completeSurvey._id = response.surveyId;
-      }
-
-      setSurveyData(completeSurvey);
-      localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
-
-      // Actualizar el objeto de usuario local
-      const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-      cachedUserObj.selectedArtists = selectedArtists;
-      localStorage.setItem('user', JSON.stringify(cachedUserObj));
-
-      // Novedad: Guardar los artistas en el perfil de usuario del backend para que no se pierdan al recargar
-      await apiCall('neuro', '/api/user/update', 'PUT', { selectedArtists });
-      console.log("✅ Artistas actualizados en el perfil de usuario del servidor.");
-    }
-  } catch (e) {
-    console.error("❌ Error al guardar los artistas en el backend:", e);
-  }
-
-  setScreen(nextScreen);
-};
-
-/**
- * Confirma la calibración de frecuencia: guarda el volumen Hawkins y navega.
- * @param {{ volume: number }} data - Datos de calibración.
- * @returns {Promise<void>}
- */
-const handleCalibrationConfirm = async ({ volume }) => {
-  const updatedSurvey = { ...(surveyData || {}), volume };
-  setSurveyData(updatedSurvey);
-  localStorage.setItem('surveyData', JSON.stringify(updatedSurvey));
-
-  try {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const backendPayload = mapSurveyToBackendPayload(updatedSurvey);
-      await registerOrUpdateSurvey(backendPayload);
-    }
-  } catch (e) {
-    console.error("Error al guardar calibración en la encuesta:", e);
-  }
-
-  const hasArtists = updatedSurvey.artist_interest && updatedSurvey.artist_interest.length > 0;
-  if (hasArtists) {
-    console.log("🎵 Usuario con artistas. Navegando al Dashboard...");
-    navigate('/dashboard');
-    await loadPlaylist(null);
-  } else {
-    console.log("🎨 Sin artistas. Navegando a selección de artistas...");
-    navigate('/artists');
-  }
-};
-
-// Acciones de feedback
-/**
- * Procesa feedback del usuario para refrescar recomendaciones.
- * @param {"negative"|"positive"} type - Tipo de feedback.
- * @returns {Promise<void>}
- */
-const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = true) => {
-  const track = trackToFeedback || playlist[currentIndex];
-  if (!track) return;
-
-  const feedbackVal = type === 'positive' ? true : (type === 'negative' ? null : false);
-
-  // Sincronizar feedback con el backend
-  if (track.recommendationId) {
-    try {
-      console.log(`Sending feedback to backend: recommendationId=${track.recommendationId}, trackId=${track.id}, feedback=${feedbackVal}`);
-      await apiCall('neuro', `/api/recommend/feedback/${track.recommendationId}`, 'PATCH', {
-        trackId: track.id,
-        feedback: feedbackVal
-      });
-      // Actualizar la playlist local para reflejar el estado del feedback
-      setPlaylist(prev => prev.map(t => t.id === track.id ? { ...t, feedback: feedbackVal } : t));
-    } catch (e) {
-      console.error("❌ Error al enviar feedback al backend:", e);
-    }
-  }
-
-  // Feedback local: el backend en producción no expone /api/user/feedback
-  if (type === 'negative') {
-    try {
-      const stored = localStorage.getItem('dislikedTracks');
-      const disliked = stored ? JSON.parse(stored) : [];
-      if (!disliked.includes(track.id)) {
-        disliked.push(track.id);
-        localStorage.setItem('dislikedTracks', JSON.stringify(disliked));
-      }
-    } catch (e) {
-      console.error("Error storing disliked track:", e);
-    }
-
-    // AQUÍ ESTÁ EL CAMBIO: Solo recargamos si shouldRegenerate es true
-    if (shouldRegenerate) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      setIsPlaying(false);
-      setIsLoading(true);
-
-      console.log("Refrescando la playlist excluyendo la canción rechazada...");
-      await loadPlaylist(surveyData || {});
-      setIsPlaying(true);
-    } else {
-      console.log("Feedback negativo registrado de forma silenciosa. Cambiando de pista...");
-    }
-
-  } else {
-    console.log("Al usuario le ayuda la pista recomendada:", track.title);
-    try {
-      const stored = localStorage.getItem('playedTracks');
-      const played = stored ? JSON.parse(stored) : [];
-      if (!played.includes(track.id)) {
-        played.push(track.id);
-        localStorage.setItem('playedTracks', JSON.stringify(played));
-      }
-    } catch (e) {
-      console.error("Error al almacenar playedTrack en localStorage:", e);
-    }
-  }
-};
-
-// Callback cuando termina el temporizador
-/**
- * Callback cuando termina el temporizador global.
- * @returns {void}
- */
-const handleTimerEnd = () => {
-  if (userType === 'spotify') {
-    SpotifyPlayerWrapper.pause?.();
-  }
-  setIsPlaying(false);
-  alert("¡Sesión finalizada! Tu tiempo de sintonización ha terminado.");
-  setScreen('final-evaluation');
-};
-
-/**
- * Procesa la accion final de la encuesta de cierre.
- * @param {"new"|"finish"} action - Accion elegida por el usuario.
- * @returns {void}
- */
-const handleFinalAction = (action) => {
-  if (audioRef.current) {
-    audioRef.current.pause();
-  }
-  if (userType === 'spotify') {
-    SpotifyPlayerWrapper.pause?.();
-  }
-  setIsPlaying(false);
-  setProgress(0);
-
-  if (action === 'new' || action === 'finish') {
-    setPlaylist([]);
-    setCurrentIndex(0);
-    setScreen('initial-evaluation');
-  } else {
-    setScreen('onboarding');
-    setUserType(null);
-    setSurveyData(null);
-    setPlaylist([]);
-    setCurrentIndex(0);
-
-    // Limpiar TODO el localStorage relacionado a la sesión
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('spotifyToken');
-    localStorage.removeItem('spotifyRefreshToken');
-    localStorage.removeItem('selectedArtists');
-    localStorage.removeItem('selectedArtistsData');
-
-    // Limpiar caché de recomendaciones del sessionStorage
-    sessionStorage.removeItem('cachedPlaylist');
-    sessionStorage.removeItem('lastSurveyData');
-  }
-};
-
-/**
- * Decide que pantalla renderizar segun el estado actual.
- * @returns {JSX.Element}
- */
-const renderScreen = () => {
-  switch (screen) {
-    case 'onboarding':
-      return <Onboarding onLogin={handleLogin} />;
-    case 'processing-spotify':
-      return (
-        <div className="w-100 vh-100 d-flex flex-column align-items-center justify-content-center bg-dark text-white">
-          <div className="spinner-border text-success mb-3" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-          <h4 className="fw-bold animate-pulse">Conectando con Spotify...</h4>
-          <p className="text-muted">Procesando tu sesión segura</p>
-        </div>
-      );
-    case 'initial-evaluation':
-      const userObjForSurvey = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-      const hasSavedSurvey = (userObjForSurvey.surveys && userObjForSurvey.surveys.length > 0) || !!surveyData;
-      return (
-        <InitialSurvey
-          onSubmit={handleSurveySubmit}
-          hideFrequencies={hasSavedSurvey}
-          initialData={surveyData}
-        />
-      );
-    case 'calibration':
-      return (
-        <CalibrationScreen
-          initialData={surveyData}
-          onSubmit={handleCalibrationConfirm}
-        />
-      );
-    case 'artist-evaluation':
-      const userObjTemp = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-      const hasSurveyTemp = userObjTemp.surveys && userObjTemp.surveys.length > 0;
-      const targetNext = hasSurveyTemp ? 'profile' : 'profile-summary';
-      return (
-        <ArtistSurvey
-          onConfirm={(selectedIds, artistsData) => handleArtistSurveyConfirm(selectedIds, artistsData, targetNext)}
-          preselectedArtists={selectedArtistsData}
-        />
-      );
-    case 'dashboard':
-      return (
-        <Dashboard
-          tracks={playlist}
-          currentIndex={currentIndex}
-          isPlaying={isPlaying}
-          progress={progress}
-          duration={duration}
-          isLoading={isLoading}
-          volume={volume}
-          onVolumeChange={setVolume}
-          onPlayPause={handlePlayPause}
-          onNext={() => handleNext(true)}
-          onPrev={() => handlePrev(true)}
-          onSelectTrack={(idx) => handleSelectTrack(idx, true)}
-          onSeek={handleSeek}
-          onNavigate={setScreen}
-          onFeedback={handleFeedback}
-          timeLeft={timeLeft}
-          isTimerRunning={isTimerRunning}
-          timerDuration={timerDuration}
-          onStartPauseTimer={() => setIsTimerRunning(!isTimerRunning)}
-          onResetTimer={() => { setIsTimerRunning(false); setTimeLeft(timerDuration * 60); }}
-          onSelectTimerPreset={(mins) => { setTimerDuration(mins); setTimeLeft(mins * 60); setIsTimerRunning(false); }}
-          analyserNode={analyserNode}
-          onShowEmotionalSummary={() => setShowEmotionalSummary(true)}
-          surveyData={surveyData}
-        />
-      );
-    case 'profile-summary':
-      return (
-        <ProfileSummaryScreen
-          surveyData={surveyData}
-          selectedArtistsData={selectedArtistsData}
-          fromOnboarding={true}
-          onArtistsSaved={async (ids, data) => {
-            setSelectedArtistsData(data);
-            localStorage.setItem('selectedArtistsData', JSON.stringify(data));
-            try {
-              const token = localStorage.getItem('token');
-              if (token) {
-                console.log("💾 Guardando artistas en el backend...");
-                const completeSurvey = {
-                  ...surveyData,
-                  artist_interest: data.map(a => a.name).filter(Boolean),
-                  genres: []
-                };
-                data.forEach(a => {
-                  const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
-                  artistGenres.forEach(g => {
-                    if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
-                  });
-                });
-                if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
-
-                const backendPayload = mapSurveyToBackendPayload(completeSurvey);
-                const res = await registerOrUpdateSurvey(backendPayload);
-                if (res?.surveyId) {
-                  completeSurvey._id = res.surveyId;
-                }
-
-                setSurveyData(completeSurvey);
-                localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
-
-                const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-                cachedUserObj.selectedArtists = ids;
-                localStorage.setItem('user', JSON.stringify(cachedUserObj));
-              }
-            } catch (e) {
-              console.error("❌ Error al guardar artistas en el backend:", e);
-            }
-          }}
-          onContinue={() => {
-            setScreen('dashboard');
-          }}
-        />
-      );
-    case 'profile':
-      return (
-        <ProfileSummaryScreen
-          surveyData={surveyData}
-          selectedArtistsData={selectedArtistsData}
-          fromOnboarding={false}
-          onContinue={() => setScreen('dashboard')}
-          onBack={() => setScreen('dashboard')}
-          onArtistsSaved={async (ids, data) => {
-            setSelectedArtistsData(data);
-            localStorage.setItem('selectedArtistsData', JSON.stringify(data));
-            try {
-              const token = localStorage.getItem('token');
-              if (token) {
-                console.log("💾 Guardando artistas en el backend...");
-                const completeSurvey = {
-                  ...surveyData,
-                  artist_interest: data.map(a => a.name).filter(Boolean),
-                  genres: []
-                };
-                data.forEach(a => {
-                  const artistGenres = Array.isArray(a.genres) ? a.genres : (a.genre ? [a.genre] : []);
-                  artistGenres.forEach(g => {
-                    if (g && !completeSurvey.genres.includes(g)) completeSurvey.genres.push(g);
-                  });
-                });
-                if (completeSurvey.genres.length === 0) completeSurvey.genres = ["Lofi", "Ambient"];
-
-                const backendPayload = mapSurveyToBackendPayload(completeSurvey);
-                const res = await registerOrUpdateSurvey(backendPayload);
-                if (res?.surveyId) {
-                  completeSurvey._id = res.surveyId;
-                }
-
-                setSurveyData(completeSurvey);
-                localStorage.setItem('surveyData', JSON.stringify(completeSurvey));
-
-                const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
-                cachedUserObj.selectedArtists = ids;
-                localStorage.setItem('user', JSON.stringify(cachedUserObj));
-              }
-            } catch (e) {
-              console.error("❌ Error al guardar artistas en el backend:", e);
-            }
-          }}
-        />
-      );
-    case 'settings':
-      return (
-        <SettingsScreen
-          onNavigate={setScreen}
-          onLogout={() => handleFinalAction('logout')}
-          targetEmotion={targetEmotion}
-          surveyData={surveyData}
-          selectedArtistsData={selectedArtistsData}
-          onEmotionChange={(emo) => {
-            setTargetEmotion(emo);
-            setThemeMode('manual');
-          }}
-          themeMode={themeMode}
-          onThemeModeChange={setThemeMode}
-        />
-      );
-    case 'final-evaluation':
-      return (
-        <FinalSurvey
-          initialStress={initialStress}
-          onAction={handleFinalAction}
-          onNavigate={setScreen}
-          onSubmit={async (finalSurveyData) => {
-            try {
-              console.log("💾 Enviando encuesta final IAE al backend...", finalSurveyData);
-              await apiCall('neuro', '/api/iae-survey/register', 'POST', finalSurveyData);
-              console.log("✅ Encuesta final IAE registrada con éxito");
-            } catch (e) {
-              console.error("❌ Error al registrar encuesta final IAE:", e);
-            }
-          }}
-        />
-      );
-    case 'register':
-      return <Onboarding onLogin={handleLogin} initialMode="register" />;
-    case 'onboarding':
-    default:
-      return <Onboarding onLogin={handleLogin} initialMode="select" />;
-  }
-};
-
-// Determina el tema activo segun modo auto/manual
-const currentTrack = playlist[currentIndex] || null;
-
-// Mantiene onboarding y encuestas neutros (gris)
-const onboardingScreens = ['onboarding', 'initial-evaluation', 'artist-evaluation', 'profile-summary', 'calibration'];
-const isOnboarding = onboardingScreens.includes(screen);
-
-const activeThemeKey = isOnboarding
-  ? 'gris'
-  : themeMode === 'manual'
-    ? targetEmotion
-    : currentTrack
-      ? getTrackThemeKey(currentTrack)
-      : targetEmotion;
-
-const hslToRgb = (h, s, l) => {
-  s /= 100;
-  l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  return `${Math.round(255 * f(0))}, ${Math.round(255 * f(8))}, ${Math.round(255 * f(4))}`;
-};
-
-let theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
-
-if (!isOnboarding && themeMode !== 'manual' && currentTrack) {
-  // Tema dinámico global basado en la canción
-  const v = typeof currentTrack.valence === 'number' ? currentTrack.valence : 0.5;
-  const e = typeof currentTrack.energy === 'number' ? currentTrack.energy : 0.5;
-  
-  const hue = 240 - (v * 200); // 240 (Azul) a 40 (Naranja)
-  const saturation = 40 + (e * 60); // 40% a 100% de intensidad
-  const lightness = 40 + (e * 15); // 40% a 55% de brillo primario
-  
-  theme = {
-    primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-    primaryRgb: hslToRgb(hue, saturation, lightness),
-    bgSubtle: `hsl(${hue}, ${saturation}%, 96%)`,
-    borderSubtle: `hsl(${hue}, ${saturation}%, 85%)`,
-    glow1: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`,
-    glow2: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.1)`
-  };
-}
-
-// Genera estilos inline para overrides de Bootstrap y brillos ambientales
-const themeStyle = `
+  // Genera estilos inline para overrides de Bootstrap y brillos ambientales
+  const themeStyle = `
     :root {
       --bs-primary: ${theme.primary} !important;
       --bs-primary-rgb: ${theme.primaryRgb} !important;
@@ -2250,78 +2325,79 @@ const themeStyle = `
     }
   `;
 
-const mainScreens = ['dashboard', 'music-code', 'timer', 'settings', 'final-evaluation', 'profile'];
-const showSidebar = mainScreens.includes(screen);
+  const mainScreens = ['dashboard', 'music-code', 'timer', 'settings', 'final-evaluation', 'profile'];
+  const showSidebar = mainScreens.includes(screen);
 
-if (showSidebar) {
-  return (
-    <div className="d-flex flex-column flex-md-row vh-100 w-100 position-relative overflow-hidden">
-      <style>{themeStyle}</style>
+  if (showSidebar) {
+    return (
+      <>
+        <div className="d-flex flex-column flex-md-row vh-100 w-100 position-relative overflow-hidden">
+          <style>{themeStyle}</style>
 
-      {/* Background Ambient Glows */}
-      <div className="ambient-glow" />
-      <div className="ambient-glow-bottom" />
+          {/* Background Ambient Glows */}
+          <div className="ambient-glow" />
+          <div className="ambient-glow-bottom" />
 
-      {/* Left Sidebar */}
-      <Sidebar
-        activeTab={screen}
-        onTabChange={setScreen}
-        targetEmotion={targetEmotion}
-        onEmotionChange={(emo) => {
-          setTargetEmotion(emo);
-          setThemeMode('manual');
-        }}
-        themeMode={themeMode}
-        onThemeModeChange={setThemeMode}
-      />
+          {/* Left Sidebar */}
+          <Sidebar
+            activeTab={screen}
+            onTabChange={setScreen}
+            targetEmotion={targetEmotion}
+            onEmotionChange={(emo) => {
+              setTargetEmotion(emo);
+              setThemeMode('manual');
+            }}
+            themeMode={themeMode}
+            onThemeModeChange={setThemeMode}
+          />
 
-      {/* Main Content Area - Locked Height, Independently Scrollable */}
-      <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1 ${screen === 'dashboard' ? 'screen-dashboard' : ''}`}>
-        <MouseGradient colorRgb={theme.primaryRgb} />
-        {renderScreen()}
-        {currentTrack && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
-      </div>
-
-      {/* Modal de Resumen de Estado Emocional */}
-      {showEmotionalSummary && surveyData && (
-        <EmotionalSummaryModal
-          surveyData={surveyData}
-          onClose={() => setShowEmotionalSummary(false)}
-          onUpdateSurvey={handleUpdateSurveyInline}
-        />
-      )}
-
-      {/* Notificacion toast (estilo Bootstrap) */}
-      {toastMessage && (
-        <div
-          className={`position-fixed top-0 start-50 translate-middle-x mt-4 alert ${toastType === 'success' ? 'alert-success' : 'alert-warning'
-            } shadow-sm rounded-pill px-4 py-2 z-3`}
-          role="alert"
-          style={{ transition: 'opacity 0.5s' }}
-        >
-          <div className="d-flex align-items-center gap-2">
-            <span className="material-symbols-outlined notranslate filled" translate="no">
-              {toastType === 'success' ? 'check_circle' : 'change_circle'}
-            </span>
-            <span className="fw-semibold" style={{ fontSize: '13px' }}>{toastMessage}</span>
+          {/* Main Content Area - Locked Height, Independently Scrollable */}
+          <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1 ${screen === 'dashboard' ? 'screen-dashboard' : ''}`}>
+            <MouseGradient colorRgb={theme.primaryRgb} />
+            {renderScreen()}
+            {currentTrack && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
           </div>
-        </div>
-      )}
 
-      {/* BARRA DE REPRODUCCIÓN FIJA */}
-      {currentTrack && (
-        <div className="player-bar-fixed d-flex align-items-center justify-content-between px-1 px-md-4 py-2" style={{
-          position: 'fixed',
-          bottom: 0,
-          height: '105px',
-          zIndex: 1050,
-          transition: 'left 0.3s ease, width 0.3s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          {/* Estilos inline dinámicos y de personalización */}
-          <style>{`
+          {/* Modal de Resumen de Estado Emocional */}
+          {showEmotionalSummary && surveyData && (
+            <EmotionalSummaryModal
+              surveyData={surveyData}
+              onClose={() => setShowEmotionalSummary(false)}
+              onUpdateSurvey={handleUpdateSurveyInline}
+            />
+          )}
+
+          {/* Notificacion toast (estilo Bootstrap) */}
+          {toastMessage && (
+            <div
+              className={`position-fixed top-0 start-50 translate-middle-x mt-4 alert ${toastType === 'success' ? 'alert-success' : 'alert-warning'
+                } shadow-sm rounded-pill px-4 py-2 z-3`}
+              role="alert"
+              style={{ transition: 'opacity 0.5s' }}
+            >
+              <div className="d-flex align-items-center gap-2">
+                <span className="material-symbols-outlined notranslate filled" translate="no">
+                  {toastType === 'success' ? 'check_circle' : 'change_circle'}
+                </span>
+                <span className="fw-semibold" style={{ fontSize: '13px' }}>{toastMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* BARRA DE REPRODUCCIÓN FIJA */}
+          {currentTrack && (
+            <div className="player-bar-fixed d-flex align-items-center justify-content-between px-1 px-md-4 py-2" style={{
+              position: 'fixed',
+              bottom: 0,
+              height: '105px',
+              zIndex: 1050,
+              transition: 'left 0.3s ease, width 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              {/* Estilos inline dinámicos y de personalización */}
+              <style>{`
             .player-bar-fixed {
               left: 0 !important;
               width: 100% !important;
@@ -2340,23 +2416,13 @@ if (showSidebar) {
             }
 
             .player-track-info-desktop {
-              display: none !important;
-            }
-            .player-track-info-mobile-trigger {
               display: flex !important;
             }
             .player-controls-right {
-              display: none !important;
+              display: flex !important;
             }
             @media (min-width: 1001px) {
-              .player-track-info-desktop {
-                display: flex !important;
-              }
-              .player-track-info-mobile-trigger {
-                display: none !important;
-              }
               .player-controls-right {
-                display: flex !important;
                 padding-right: 80px !important;
               }
             }
@@ -2528,69 +2594,82 @@ if (showSidebar) {
                cursor: pointer !important;
              }
              .player-btn span {
-               font-size: 30px !important;
+               font-size: 28px !important;
              }
              @media (min-width: 576px) {
                .player-btn {
-                 padding: 14px !important;
+                 padding: 12px !important;
                }
                .player-btn span {
-                 font-size: 36px !important;
+                 font-size: 30px !important;
                }
              }
-             @media (min-width: 768px) {
-               .player-btn {
-                 padding: 18px !important;
-               }
-               .player-btn span {
-                 font-size: 42px !important;
-               }
-             }
+             
+             .player-btn-play {
+                background: var(--bs-primary) !important;
+                color: #ffffff !important;
+                border-radius: 50% !important;
+                width: 66px !important;
+                height: 66px !important;
+                margin: 0 8px !important;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
+              }
+              .player-btn-play span {
+                font-size: 36px !important;
+              }
+              .player-btn-play:hover {
+                background: var(--bs-primary) !important;
+                color: #ffffff !important;
+                transform: scale(1.08) !important;
+                opacity: 0.95;
+              }
+              
+              .player-btn-center {
+                padding: 10px !important;
+              }
+              .player-btn-center span {
+                font-size: 26px !important;
+              }
+              
+              @media (min-width: 576px) {
+                .player-btn-play {
+                  width: 72px !important;
+                  height: 72px !important;
+                  margin: 0 10px !important;
+                }
+                .player-btn-play span {
+                  font-size: 40px !important;
+                }
+                .player-btn-center {
+                  padding: 12px !important;
+                }
+                .player-btn-center span {
+                  font-size: 30px !important;
+                }
+              }
+              @media (min-width: 768px) {
+                .player-btn-play {
+                  width: 80px !important;
+                  height: 80px !important;
+                  margin: 0 12px !important;
+                }
+                .player-btn-play span {
+                  font-size: 48px !important;
+                }
+                .player-btn-center {
+                  padding: 18px !important;
+                }
+                .player-btn-center span {
+                  font-size: 36px !important;
+                }
+              }
+
              .player-btn:hover {
                color: #191c1e !important;
                transform: scale(1.08) !important;
              }
              .player-btn.active {
                color: var(--bs-primary) !important;
-             }
-             .player-btn-play {
-               background: var(--bs-primary) !important;
-               color: #ffffff !important;
-               border-radius: 50% !important;
-               width: 60px !important;
-               height: 60px !important;
-               margin: 0 6px !important;
-               box-shadow: 0 3px 10px rgba(0,0,0,0.18) !important;
-             }
-             .player-btn-play span {
-               font-size: 32px !important;
-             }
-             .player-btn-play:hover {
-               background: var(--bs-primary) !important;
-               color: #ffffff !important;
-               transform: scale(1.08) !important;
-               opacity: 0.95;
-             }
-             
-             @media (min-width: 576px) {
-               .player-btn-play {
-                 width: 70px !important;
-                 height: 70px !important;
-                 margin: 0 8px !important;
-               }
-               .player-btn-play span {
-                 font-size: 40px !important;
-               }
-             }
-             @media (min-width: 768px) {
-               .player-btn-play {
-                 width: 80px !important;
-                 height: 80px !important;
-                 margin: 0 10px !important;
-               }
-               .player-btn-play span {
-                 font-size: 48px !important;
-               }
              }
              
              /* Time display style */
@@ -2603,262 +2682,205 @@ if (showSidebar) {
              }
           `}</style>
 
-          {/* LADO IZQUIERDO: Información de la canción (Responsivo) */}
-          {/* En desktop >= 1001px: Muestra título y artista directamente */}
-          <div className="player-track-info-desktop flex-column align-items-start justify-content-center min-w-0" style={{ flex: '1 1 20%', maxWidth: '220px' }}>
-            <p className="mb-0 fw-bold text-dark text-truncate w-100" style={{ fontSize: '13.5px', lineHeight: '1.2' }}>
-              {currentTrack.title}
-            </p>
-            <p className="mb-0 text-muted text-truncate w-100" style={{ fontSize: '10.5px', marginTop: '2px' }}>
-              {currentTrack.artist}
-            </p>
-          </div>
-
-          {/* En mobile < 1001px: Muestra un botón que abre un popover con la info, feedback y volumen */}
-          <div className="player-track-info-mobile-trigger position-relative align-items-center justify-content-start" style={{ flex: '1 1 20%', maxWidth: '60px' }}>
-            <button
-              onClick={() => setShowMobileTrackInfo(prev => !prev)}
-              className={`player-btn ${showMobileTrackInfo ? 'text-primary' : ''}`}
-              title="Información de la canción"
-              style={{ padding: '8px' }}
-            >
-              <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '24px' }}>
-                info
-              </span>
-            </button>
-
-            {showMobileTrackInfo && (
-              <div 
-                className="position-absolute bg-white bg-opacity-95 backdrop-blur-md border border-light-subtle rounded-4 p-3 shadow-lg"
-                style={{
-                  bottom: '80px',
-                  left: '10px',
-                  width: '260px',
-                  zIndex: 1100,
-                  animation: 'playerFadeInUp 0.2s ease-out'
-                }}
-              >
-                <div className="d-flex justify-content-between align-items-start mb-1">
-                  <span className="badge bg-primary text-white rounded-pill px-2" style={{ fontSize: '9px', fontWeight: 600 }}>Sonando ahora</span>
-                  <button 
-                    onClick={() => setShowMobileTrackInfo(false)} 
-                    className="btn-close" 
-                    style={{ fontSize: '8px', padding: '2px' }}
-                    aria-label="Close"
+              {/* LADO IZQUIERDO: Portada y Gráfico de Métricas */}
+              <div className="player-track-info-desktop d-flex align-items-center justify-content-start gap-2 min-w-0" style={{ flex: '1 1 0px' }}>
+                {currentTrackCover && (
+                  <img
+                    src={currentTrackCover}
+                    alt="cover"
+                    className="rounded shadow-sm"
+                    style={{ width: '40px', height: '40px', objectFit: 'cover' }}
                   />
-                </div>
-                <p className="mb-0 fw-bold text-dark text-truncate" style={{ fontSize: '13px', lineHeight: '1.25' }}>
-                  {currentTrack.title}
-                </p>
-                <p className="mb-0 text-muted text-truncate mb-2" style={{ fontSize: '11px', marginTop: '1px' }}>
-                  {currentTrack.artist}
-                </p>
+                )}
 
-                {/* Botones que "se mueven" a mobile */}
-                <div className="d-flex align-items-center justify-content-between border-top pt-2 mt-2 gap-2">
-                  <div className="d-flex align-items-center gap-1">
-                    {/* Thumbs down (Dislike) */}
-                    <button
-                      onClick={() => handleFeedbackClickGlobal('negative')}
-                      className={`btn btn-sm p-1.5 rounded-circle border-0 ${currentTrack.feedback === null ? 'bg-danger bg-opacity-10 text-danger' : 'bg-light text-secondary'}`}
-                      title="No ayuda"
-                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === null ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
-                        thumb_down
-                      </span>
-                    </button>
-                    
-                    {/* Thumbs up (Like) */}
-                    <button
-                      onClick={() => handleFeedbackClickGlobal('positive')}
-                      className={`btn btn-sm p-1.5 rounded-circle border-0 ${currentTrack.feedback === true ? 'bg-success bg-opacity-10 text-success' : 'bg-light text-secondary'}`}
-                      title="Me ayuda"
-                      style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
-                        thumb_up
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Sonido / Volumen en Mobile */}
-                  <div 
-                    className="volume-container-vertical ms-auto"
-                    style={{ position: 'relative' }}
+                {/* Gráfico de barras horizontal para las métricas */}
+                {currentTrack && (
+                  <div
+                    className="d-flex flex-column justify-content-center gap-1 px-2 py-1 rounded"
+                    style={{
+                      height: '40px',
+                      width: '60px',
+                      background: 'rgba(0, 0, 0, 0.03)',
+                      border: '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
+                    title={`Métricas - Tempo: ${Math.round(currentTrack.tempo || 0)} BPM | Energía: ${Math.round((currentTrack.energy || 0) * 100)}% | Valencia: ${Math.round((currentTrack.valence || 0) * 100)}%`}
                   >
-                    {/* Popover con slider vertical en Mobile */}
-                    <div 
-                      className={`volume-slider-vertical-popover ${showMobileVolume ? 'show' : ''}`}
-                      style={{ bottom: '40px' }}
+                    {/* Tempo Bar */}
+                    {currentTrack.tempo && (
+                      <div
+                        className="bg-warning rounded-pill"
+                        style={{
+                          height: '4px',
+                          width: `${Math.min(100, Math.max(10, (currentTrack.tempo / 180) * 100))}%`,
+                          transition: 'width 0.3s ease'
+                        }}
+                        title={`Tempo: ${Math.round(currentTrack.tempo)} BPM`}
+                      />
+                    )}
+                    {/* Energy Bar */}
+                    {currentTrack.energy !== undefined && (
+                      <div
+                        className="bg-danger rounded-pill"
+                        style={{
+                          height: '4px',
+                          width: `${Math.min(100, Math.max(10, currentTrack.energy * 100))}%`,
+                          transition: 'width 0.3s ease'
+                        }}
+                        title={`Energía: ${Math.round(currentTrack.energy * 100)}%`}
+                      />
+                    )}
+                    {/* Valence Bar */}
+                    {currentTrack.valence !== undefined && (
+                      <div
+                        className="bg-success rounded-pill"
+                        style={{
+                          height: '4px',
+                          width: `${Math.min(100, Math.max(10, currentTrack.valence * 100))}%`,
+                          transition: 'width 0.3s ease'
+                        }}
+                        title={`Valencia: ${Math.round(currentTrack.valence * 100)}%`}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* CENTRO: Controles y Slider de progreso */}
+              <div className="d-flex flex-column align-items-center justify-content-center px-1 px-md-3" style={{ flex: '1 1 auto', minWidth: '0' }}>
+                {/* Botones de reproducción */}
+                <div className="d-flex align-items-center justify-content-center mb-1">
+                  {/* Anterior */}
+                  <button onClick={() => handlePrev(true)} className="player-btn player-btn-center" title="Anterior">
+                    <span className="material-symbols-outlined notranslate" translate="no">skip_previous</span>
+                  </button>
+
+                  {/* Play / Pause circular */}
+                  <button onClick={handlePlayPause} className="player-btn player-btn-play shadow" title={isPlaying ? 'Pausar' : 'Reproducir'}>
+                    <span className="material-symbols-outlined notranslate filled" translate="no">
+                      {isPlaying ? 'pause' : 'play_arrow'}
+                    </span>
+                  </button>
+
+                  {/* Siguiente */}
+                  <button onClick={() => handleNext(true)} className="player-btn player-btn-center" title="Siguiente">
+                    <span className="material-symbols-outlined notranslate" translate="no">skip_next</span>
+                  </button>
+                </div>
+
+                {/* Slider de tiempo */}
+                <div className="d-flex align-items-center w-100 gap-2">
+                  <span className="player-time d-none d-sm-inline">{formatTime(progress)}</span>
+                  <input
+                    type="range"
+                    className="player-range flex-grow-1"
+                    min={0}
+                    max={duration || 30}
+                    value={progress}
+                    onChange={(e) => handleSeek(Number(e.target.value))}
+                    style={{
+                      '--progress-percent': `${duration ? (progress / duration) * 100 : 0}%`
+                    }}
+                  />
+                  <span className="player-time d-none d-sm-inline">{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              {/* LADO DERECHO: Feedback secundario y volumen */}
+              <div className="player-controls-right d-flex flex-row align-items-center justify-content-end gap-1 gap-md-2" style={{ flex: '1 1 0px', minWidth: '0' }}>
+
+
+
+                {/* Control de volumen (Oculto en pantallas ultra pequeñas si no cabe, pero display por defecto) */}
+                <div
+                  className="d-none d-sm-flex align-items-center gap-1 ms-md-2 volume-container-vertical"
+                  style={{ width: '80px' }}
+                  onMouseEnter={() => setShowDesktopVolume(true)}
+                  onMouseLeave={() => setShowDesktopVolume(false)}
+                >
+                  {/* Popover con slider vertical */}
+                  <div
+                    className={`volume-slider-vertical-popover ${showDesktopVolume ? 'show' : ''}`}
+                    onTouchMove={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="range"
+                      className="player-range-vertical"
+                      style={{
+                        '--progress-percent': `${volume}%`
+                      }}
+                      min={0}
+                      max={100}
+                      value={volume}
+                      onChange={(e) => setVolume(Number(e.target.value))}
                       onTouchMove={(e) => e.stopPropagation()}
                       onTouchStart={(e) => e.stopPropagation()}
                       onTouchEnd={(e) => e.stopPropagation()}
                       onWheel={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="range"
-                        className="player-range-vertical"
-                        style={{
-                          '--progress-percent': `${volume}%`
-                        }}
-                        min={0}
-                        max={100}
-                        value={volume}
-                        onChange={(e) => setVolume(Number(e.target.value))}
-                        onTouchMove={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => e.stopPropagation()}
-                        onWheel={(e) => e.stopPropagation()}
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => setShowMobileVolume(prev => !prev)}
-                      className="btn btn-sm p-1 text-muted border-0 bg-transparent"
-                      title={volume === 0 ? "Activar sonido" : "Silenciar"}
-                    >
-                      <span className="material-symbols-outlined notranslate" translate="no" style={{ fontSize: '20px' }}>
-                        {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
-                      </span>
-                    </button>
+                    />
                   </div>
+
+                  {/* Botón de altavoz */}
+                  <button
+                    onClick={() => {
+                      setVolume(volume === 0 ? 50 : 0);
+                    }}
+                    className="player-btn"
+                    title={volume === 0 ? "Activar sonido" : "Silenciar"}
+                  >
+                    <span className="material-symbols-outlined notranslate" translate="no">
+                      {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
+                    </span>
+                  </button>
                 </div>
-              </div>
-            )}
-          </div>
 
-          {/* CENTRO: Controles y Slider de progreso */}
-          <div className="d-flex flex-column align-items-center justify-content-center px-1 px-md-3" style={{ flex: '2 1 60%', minWidth: '120px' }}>
-            {/* Botones de reproducción */}
-            <div className="d-flex align-items-center justify-content-center mb-1">
-              {/* Anterior */}
-              <button onClick={() => handlePrev(true)} className="player-btn" title="Anterior">
-                <span className="material-symbols-outlined notranslate" translate="no">skip_previous</span>
-              </button>
-
-              {/* Play / Pause circular */}
-              <button onClick={handlePlayPause} className="player-btn player-btn-play shadow" title={isPlaying ? 'Pausar' : 'Reproducir'}>
-                <span className="material-symbols-outlined notranslate filled" translate="no">
-                  {isPlaying ? 'pause' : 'play_arrow'}
-                </span>
-              </button>
-
-              {/* Siguiente */}
-              <button onClick={() => handleNext(true)} className="player-btn" title="Siguiente">
-                <span className="material-symbols-outlined notranslate" translate="no">skip_next</span>
-              </button>
-            </div>
-
-            {/* Slider de tiempo */}
-            <div className="d-flex align-items-center w-100 gap-2">
-              <span className="player-time d-none d-sm-inline">{formatTime(progress)}</span>
-              <input
-                type="range"
-                className="player-range flex-grow-1"
-                min={0}
-                max={duration || 30}
-                value={progress}
-                onChange={(e) => handleSeek(Number(e.target.value))}
-                style={{
-                  '--progress-percent': `${duration ? (progress / duration) * 100 : 0}%`
-                }}
-              />
-              <span className="player-time d-none d-sm-inline">{formatTime(duration)}</span>
-            </div>
-          </div>
-
-          {/* LADO DERECHO: Feedback secundario y volumen (Solo en desktop >= 1001px) */}
-          <div className="player-controls-right align-items-center justify-content-end gap-1 gap-md-2" style={{ flex: '1 1 20%', minWidth: '80px', maxWidth: '200px' }}>
-
-            {/* Feedback Thumbs (funcional de la app) */}
-            <button
-              onClick={() => handleFeedbackClickGlobal('negative')}
-              className={`player-btn ${currentTrack.feedback === null ? 'text-danger' : ''}`}
-              title="No ayuda"
-              style={{ opacity: currentTrack.feedback === null ? 1 : 0.5 }}
-            >
-              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === null ? 'filled' : ''}`} translate="no">
-                thumb_down
-              </span>
-            </button>
-            <button
-              onClick={() => handleFeedbackClickGlobal('positive')}
-              className={`player-btn ${currentTrack.feedback === true ? 'text-success' : ''}`}
-              title="Me ayuda"
-              style={{ opacity: currentTrack.feedback === true ? 1 : 0.5 }}
-            >
-              <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === true ? 'filled' : ''}`} translate="no">
-                thumb_up
-              </span>
-            </button>
-
-            {/* Control de volumen en Desktop */}
-            <div 
-              className="volume-container-vertical"
-              onMouseEnter={() => setShowDesktopVolume(true)}
-              onMouseLeave={() => setShowDesktopVolume(false)}
-            >
-              {/* Popover con slider vertical */}
-              <div 
-                className={`volume-slider-vertical-popover ${showDesktopVolume ? 'show' : ''}`}
-                onTouchMove={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-                onWheel={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="range"
-                  className="player-range-vertical"
-                  style={{
-                    '--progress-percent': `${volume}%`
+                {/* Botón para abrir el panel derecho (Cola y Métricas) - Único para Desktop y Mobile */}
+                <button
+                  onClick={() => {
+                    console.log("Queue toggle clicked! Current state:", isRightPanelOpen);
+                    setIsRightPanelOpen(!isRightPanelOpen);
                   }}
-                  min={0}
-                  max={100}
-                  value={volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  onTouchMove={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchEnd={(e) => e.stopPropagation()}
-                  onWheel={(e) => e.stopPropagation()}
-                />
+                  className={`player-btn ms-1 ${isRightPanelOpen ? 'active' : ''}`}
+                  title="Cola de reproducción"
+                >
+                  <span className="material-symbols-outlined notranslate" translate="no">
+                    playlist_play
+                  </span>
+                </button>
               </div>
-
-              {/* Botón de altavoz */}
-              <button
-                onClick={() => {
-                  setVolume(volume === 0 ? 50 : 0);
-                }}
-                className="player-btn"
-                title={volume === 0 ? "Activar sonido" : "Silenciar"}
-              >
-                <span className="material-symbols-outlined notranslate" translate="no">
-                  {volume === 0 ? 'volume_off' : volume < 35 ? 'volume_down' : 'volume_up'}
-                </span>
-              </button>
             </div>
-          </div>
-
-          {/* Espaciador derecho simétrico en mobile para centrar los controles */}
-          <div className="player-track-info-mobile-trigger" style={{ flex: '1 1 20%', maxWidth: '60px' }} />
-
+          )}
         </div>
-      )}
+        <RightPanel
+          isOpen={isRightPanelOpen}
+          onClose={() => setIsRightPanelOpen(false)}
+          tracks={playlist}
+          currentIndex={currentIndex}
+          currentTrack={playlist[currentIndex]}
+          isPlaying={isPlaying}
+          onSelectTrack={(idx) => {
+            setCurrentIndex(idx);
+            if (!isPlaying) handlePlayPause();
+          }}
+          onFeedbackClickGlobal={handleFeedbackClickGlobal}
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface position-relative overflow-hidden">
+      <style>{themeStyle}</style>
+      <div className="ambient-glow" />
+      <div className="ambient-glow-bottom" />
+      <div className="position-relative z-1 w-full flex-1 flex flex-col items-center justify-center">
+        <MouseGradient />
+        {renderScreen()}
+      </div>
     </div>
   );
-}
-
-return (
-  <div className="w-full min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface position-relative overflow-hidden">
-    <style>{themeStyle}</style>
-    <div className="ambient-glow" />
-    <div className="ambient-glow-bottom" />
-    <div className="position-relative z-1 w-full flex-1 flex flex-col items-center justify-center">
-      <MouseGradient />
-      {renderScreen()}
-    </div>
-  </div>
-);
 }
 
 /**

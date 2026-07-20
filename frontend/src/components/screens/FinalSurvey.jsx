@@ -14,26 +14,51 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
   const [q2, setQ2] = useState(3);
   const [q3, setQ3] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSessionConfirm, setShowSessionConfirm] = useState(false);
 
   const satisfaction = ((q1 + q2 + (q3 === 'si' ? 5 : q3 === 'no' ? 1 : 0)) / 11 * 100).toFixed(0);
 
   const handleAction = async (actionType) => {
-    if (q3 !== null && onSubmit) {
-      setIsSubmitting(true);
-      try {
-        await onSubmit({
-          M1: q1,
-          M2: q2,
-          M3: q3 === 'si' ? 1 : 0,
-          satisfaction: Number(satisfaction)
-        });
-      } catch (err) {
-        console.error("Error submitting final survey:", err);
-      } finally {
-        setIsSubmitting(false);
+    if (actionType === 'finish') {
+      if (q3 !== null && onSubmit) {
+        setIsSubmitting(true);
+        try {
+          await onSubmit({
+            M1: q1,
+            M2: q2,
+            M3: q3 === 'si' ? 1 : 0,
+            satisfaction: Number(satisfaction)
+          });
+          // Abrir modal de confirmación en lugar de redirigir directamente
+          setShowSessionConfirm(true);
+        } catch (err) {
+          console.error("Error submitting final survey:", err);
+          setShowSessionConfirm(true); // Mostrar confirmación incluso si falla el guardado
+        } finally {
+          setIsSubmitting(false);
+        }
+      } else {
+        setShowSessionConfirm(true);
       }
+    } else {
+      // Caso de 'new' (Nueva Sintonía)
+      if (q3 !== null && onSubmit) {
+        setIsSubmitting(true);
+        try {
+          await onSubmit({
+            M1: q1,
+            M2: q2,
+            M3: q3 === 'si' ? 1 : 0,
+            satisfaction: Number(satisfaction)
+          });
+        } catch (err) {
+          console.error("Error submitting final survey:", err);
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+      onAction('new');
     }
-    onAction(actionType);
   };
 
   const renderRating = (value, setter) => (
@@ -143,6 +168,57 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
           </Button>
         </div>
       </main>
+
+      {/* Modal Deseas Seguir en esta sesión */}
+      {showSessionConfirm && (
+        <div className="modal-backdrop-custom d-flex align-items-center justify-content-center">
+          <div className="bg-white p-4 rounded-4 shadow-lg border border-light-subtle text-center animate-fade-in-up" style={{ maxWidth: '400px', width: '90%', background: '#ffffff' }}>
+            <span className="material-symbols-outlined notranslate text-primary mb-3" translate="no" style={{ fontSize: '48px' }}>
+              help_center
+            </span>
+            <h3 className="h5 text-primary fw-bold mb-2">¿Deseas seguir en esta sesión?</h3>
+            <p className="text-secondary small mb-4">
+              Si eliges que sí, volverás a tu panel principal. Si eliges que no, se cerrará tu sesión de forma segura.
+            </p>
+            <div className="d-flex gap-3 w-100 justify-content-center">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowSessionConfirm(false);
+                  onNavigate('dashboard');
+                }}
+                className="flex-grow-1 py-2.5 rounded-pill fw-semibold"
+              >
+                Sí, continuar
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSessionConfirm(false);
+                  onAction('logout');
+                }}
+                className="btn btn-outline-danger flex-grow-1 py-2.5 rounded-pill fw-semibold"
+              >
+                No, salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .modal-backdrop-custom {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 1080;
+        }
+      `}</style>
     </div>
   );
 };

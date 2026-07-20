@@ -138,7 +138,7 @@ const Sidebar = ({
           : 'justify-content-between px-1 px-md-3'
       }`}>
         <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-2'}`}>
-          <span className="material-symbols-outlined notranslate text-primary fs-3" translate="no">headphones</span>
+          <img src="/favicon.svg" alt="Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
           <span className={`font-headline-md text-headline-md text-on-surface fw-bold ${displayClass}`}>
             NeuroSound
           </span>

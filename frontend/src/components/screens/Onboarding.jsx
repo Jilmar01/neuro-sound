@@ -193,9 +193,7 @@ const Onboarding = ({ onLogin, initialMode = 'select' }) => {
         {/* Logo Section */}
         <div className="mb-4 d-flex flex-column align-items-center animate-fade-in-up">
           <div className="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 shadow-sm border border-light-subtle" style={{ width: '120px', height: '120px' }}>
-            <span className="material-symbols-outlined notranslate text-primary opacity-80 text-[64px]" translate="no" style={{ fontVariationSettings: "'FILL' 0" }}>
-              headphones
-            </span>
+            <img src="/favicon.svg" alt="NeuroSound Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
           </div>
           <h1 className="h2 text-primary fw-bold mb-1" style={{ fontSize: '32px' }}>
             NeuroSound

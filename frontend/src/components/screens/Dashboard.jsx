@@ -530,10 +530,10 @@ const Dashboard = ({
       {/* Contenido Principal */}
       {currentTrack ? (
         <div className="container-fluid max-w-[1050px] mx-auto mt-5 mt-md-3">
-          <div className="row justify-content-center align-items-start g-4">
+          <div className="row justify-content-center align-items-center g-4" style={{ minHeight: '60vh' }}>
 
-            {/* Columna izquierda: visualizador circular y métricas científicas */}
-            <div className="col-12 col-md-5 d-flex flex-column align-items-center">
+            {/* Columna del visualizador circular centrada */}
+            <div className="col-12 d-flex flex-column align-items-center justify-content-center">
               {(() => {
                 const currentCover = getDisplayCover(currentTrack);
                 return (
@@ -613,138 +613,11 @@ const Dashboard = ({
                 <p className="text-muted small mb-0 truncate">{currentTrack.artist}</p>
               </div>
 
-              {/* Estadisticas científicas en tarjeta translúcida */}
-              <div className="w-100 p-3 glass-panel rounded-4 shadow-sm border border-light-subtle d-flex flex-column gap-2 mt-2">
-                <span className="text-uppercase text-muted fw-bold font-monospace mb-1 d-block" style={{ fontSize: '9px', letterSpacing: '0.5px' }}>
-                  Métricas de Frecuencia
-                </span>
-
-                {/* Energia */}
-                <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
-                    <span>Energía</span>
-                    <span className="fw-semibold">{currentTrack.energy}</span>
-                  </div>
-                  <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${currentTrack.energy * 100}%` }}></div>
-                  </div>
-                </div>
-
-                {/* Valencia */}
-                <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
-                    <span>Valencia</span>
-                    <span className="fw-semibold">{currentTrack.valence}</span>
-                  </div>
-                  <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${currentTrack.valence * 100}%` }}></div>
-                  </div>
-                </div>
-
-                {/* Tempo */}
-                <div>
-                  <div className="d-flex justify-content-between text-muted" style={{ fontSize: '10.5px' }}>
-                    <span>Tempo (BPM)</span>
-                    <span className="fw-semibold">{currentTrack.tempo}</span>
-                  </div>
-                  <div className="progress" style={{ height: '4px' }}>
-                    <div className="progress-bar bg-primary" style={{ width: `${(currentTrack.tempo / 160) * 100}%` }}></div>
-                  </div>
-                </div>
-              </div>
 
             </div>
-
-            {/* Columna derecha: recomendaciones (playlist) */}
-            <div className="col-12 col-md-7 d-flex flex-column align-items-stretch">
-
-              {/* Encabezado */}
-              <h5 className="h6 text-uppercase text-muted fw-bold mb-3 text-center text-md-start tracking-wider">
-                Selección Personalizada
-              </h5>
-
-              {/* Lista (Bootstrap sin bordes, mostrando todas las canciones) */}
-              <div className="list-group w-100 mb-2 px-1 playlist-scroll-container">
-                {tracks.map((track, index) => {
-                  const trackCover = getDisplayCover(track);
-                  const isCurrent = index === currentIndex;
-
-                  const displayGenre = track.genre || 'Desconocido';
-
-                  // Cálculos de color basados estrictamente en datos (Valence y Energy)
-                  // Valencia dicta el color: 0 -> Azul oscuro (240), 1 -> Amarillo/Naranja (40)
-                  const v = typeof track.valence === 'number' ? track.valence : 0.5;
-                  const e = typeof track.energy === 'number' ? track.energy : 0.5;
-                  
-                  const hue = 240 - (v * 200); // 240 (Azul) hasta 40 (Naranja)
-                  const saturation = 40 + (e * 60); // 40% a 100% de saturación (energía dicta intensidad)
-                  const lightness = 35 + (e * 15); // 35% a 50% de brillo
-
-                  const textColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-                  const bgColor = `hsl(${hue}, ${saturation}%, 92%)`;
-                  const borderColor = `hsl(${hue}, ${saturation}%, 85%)`;
-
-                  return (
-                    <button
-                      key={track.id}
-                      onClick={() => onSelectTrack(index)}
-                      className={`list-group-item list-group-item-action d-flex align-items-center justify-content-between border-0 rounded-4 mb-2 p-2 shadow-sm ${isCurrent
-                        ? 'bg-primary-container border-start border-3 border-primary'
-                        : 'bg-white'
-                        }`}
-                    >
-                      <div className="d-flex align-items-center gap-2 min-w-0">
-                        <div
-                          className="position-relative overflow-hidden rounded shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center"
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            background: isDefaultCover(trackCover)
-                              ? (isCurrent ? 'var(--bs-primary)' : 'rgba(var(--bs-primary-rgb), 0.15)')
-                              : '#eceef0'
-                          }}
-                        >
-                          {!isDefaultCover(trackCover) ? (
-                            <img src={trackCover} alt="" className="w-100 h-100 object-cover" />
-                          ) : (
-                            <span
-                              className="material-symbols-outlined notranslate select-none" translate="no"
-                              style={{
-                                fontSize: '18px',
-                                color: isCurrent ? '#ffffff' : 'var(--bs-primary)'
-                              }}
-                            >
-                              {getGenreIcon(track.genre)}
-                            </span>
-                          )}
-                          {isCurrent && !isDefaultCover(trackCover) && (
-                            <div className="position-absolute top-0 start-0 w-100 h-100 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center">
-                              <span className="material-symbols-outlined notranslate text-white text-sm filled" translate="no">
-                                {isPlaying ? 'volume_up' : 'play_arrow'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="text-start min-w-0">
-                          <p className={`mb-0 fw-semibold text-truncate small ${isCurrent ? 'text-primary' : 'text-dark'}`}>
-                            {track.title}
-                          </p>
-                          <p className="mb-0 text-muted text-truncate" style={{ fontSize: '10px' }}>
-                            {track.artist}
-                          </p>
-                        </div>
-                      </div>
-
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-          </div>
           {/* Spacer para que el player bar fijo no tape las últimas canciones */}
           <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />
+        </div>
         </div>
       ) : (
         <div className="text-center py-5">
