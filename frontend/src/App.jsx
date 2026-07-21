@@ -17,6 +17,7 @@ import { apiCall } from './utils/fetch.js';
 import SpotifyPlayerWrapper from './utils/spotifyPlayer.js';
 import Slider from './components/common/Slider';
 import RightPanel from './components/common/RightPanel';
+import useCoverColor from './hooks/useCoverColor.js';
 
 // Redirigir de forma transparente las claves de sesión de localStorage a sessionStorage
 const keysToSession = ['token', 'spotifyToken', 'spotifyRefreshToken', 'user', 'userData', 'userCached'];
@@ -294,7 +295,7 @@ function MainApp() {
 
   // Redirección inteligente de rutas
   useEffect(() => {
-    const onboardingPaths = ['/', '/login', '/register', '/data-treatment', '/survey', '/artists', '/calibrate'];
+    const onboardingPaths = ['/', '/login', '/register', '/data-treatment', '/survey', '/artists', '/calibrate', '/profile-summary'];
 
     if (onboardingPaths.includes(location.pathname)) {
       const token = localStorage.getItem('token');
@@ -309,55 +310,41 @@ function MainApp() {
             const lastSurvey = hasPastSurveys ? userObj.surveys[userObj.surveys.length - 1] : null;
             const hasArtists = lastSurvey && lastSurvey.artist_interest && lastSurvey.artist_interest.length > 0;
 
-            // Si form es true, el usuario ya completó la configuración inicial (frecuencia, artistas).
-            // PERO queremos que cada vez que inicie la app ('/' o '/login'), haga la encuesta emocional ('/survey').
+            // Si form es true, el usuario ya completó la configuración inicial (tratamiento, encuesta, calibración, artistas, resumen).
+            // Cada vez que inicie la app ('/' o '/login' o '/data-treatment'), lo enviamos a la encuesta emocional diaria ('/survey').
             if (userObj.form === true) {
               if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/data-treatment') {
                 navigate('/survey', { replace: true });
                 return;
               }
-              // Si intenta ir a '/artists' o '/calibrate' manualmente, lo bloqueamos y lo mandamos al dashboard (solo si ya tiene configurado)
-              if ((location.pathname === '/artists' || location.pathname === '/calibrate') && hasArtists) {
+              // Si intenta ir a '/artists', '/calibrate' o '/profile-summary' manualmente cuando ya tiene form === true, mandarlo a dashboard
+              if (['/artists', '/calibrate', '/profile-summary'].includes(location.pathname) && hasArtists) {
                 navigate('/dashboard', { replace: true });
                 return;
               }
-              // Si está en '/survey', lo dejamos continuar (hará la encuesta emocional)
             }
 
-            // Lógica de progreso del onboarding (para nuevos usuarios que aún no tienen form===true)
+            // Lógica de progreso del onboarding (para nuevos usuarios que aún no tienen form === true)
             if (userObj.form !== true) {
-              // Si no han aceptado el tratamiento de datos y no están en la ruta /data-treatment, mandarlos ahí
-              if (location.pathname !== '/data-treatment') {
+              // Si ingresa desde la raíz, login o registro, enviarlo al primer paso (/data-treatment)
+              if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register') {
                 navigate('/data-treatment', { replace: true });
                 return;
               }
-
-              if (hasPastSurveys && hasArtists) {
-                // Caso raro donde no tiene form true pero ya hizo todo
-                navigate('/dashboard', { replace: true });
-                return;
-              } else if (hasPastSurveys && location.pathname === '/survey') {
-                // Ya tiene encuesta inicial, lo mandamos a seleccionar artistas
-                navigate('/artists', { replace: true });
-                return;
-              }
+              // Si ya está navegando dentro del flujo de onboarding (/data-treatment, /survey, /calibrate, /artists, /profile-summary),
+              // permitir avanzar paso a paso sin forzar redirección de vuelta.
             }
           } catch (e) {
             console.error(e);
           }
         }
 
-        // Si estamos en la raiz o login, decidir a donde va en base a localStorage genérico si falla lo anterior
+        // Si estamos en la raíz o login sin userCached válido, redirigir a data-treatment
         if (location.pathname === '/' || location.pathname === '/login') {
-          const survey = localStorage.getItem('surveyData');
-          if (survey) {
-            navigate('/dashboard', { replace: true });
-            return;
-          }
           navigate('/data-treatment', { replace: true });
         }
       } else {
-        // No hay token, forzar login si está intentando ir a otra ruta
+        // No hay token, forzar login si está intentando ir a otra ruta que no sea login/register
         if (location.pathname !== '/login' && location.pathname !== '/register') {
           navigate('/login', { replace: true });
         }
@@ -1998,17 +1985,8 @@ function MainApp() {
           <DataTreatmentScreen
             onAccept={async () => {
               try {
-                // Actualizar form: true en el backend
-                await apiCall('neuro', '/api/user/update', 'PUT', { form: true });
-                console.log("✅ Consentimiento de datos registrado (form: true) en el backend.");
-
-                // Actualizar form: true en el localStorage
-                const cachedUser = localStorage.getItem('user');
-                if (cachedUser) {
-                  const userObj = JSON.parse(cachedUser);
-                  userObj.form = true;
-                  localStorage.setItem('user', JSON.stringify(userObj));
-                }
+                localStorage.setItem('dataTreatmentAccepted', 'true');
+                console.log("✅ Consentimiento de datos aceptado por el usuario.");
               } catch (err) {
                 console.error("❌ Error al registrar consentimiento de datos:", err);
               }
@@ -2129,7 +2107,19 @@ function MainApp() {
                 console.error("❌ Error al guardar artistas en el backend:", e);
               }
             }}
-            onContinue={() => {
+            onContinue={async () => {
+              try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  await apiCall('neuro', '/api/user/update', 'PUT', { form: true });
+                  console.log("✅ Onboarding completado oficialmente (form: true) en el servidor.");
+                }
+                const cachedUserObj = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                cachedUserObj.form = true;
+                localStorage.setItem('user', JSON.stringify(cachedUserObj));
+              } catch (e) {
+                console.error("❌ Error al marcar el onboarding como completado:", e);
+              }
               setScreen('dashboard');
             }}
           />
@@ -2224,6 +2214,7 @@ function MainApp() {
 
   // Determina el tema activo segun modo auto/manual
   const currentTrack = playlist[currentIndex] || null;
+  const coverTheme = useCoverColor(currentTrackCover || (currentTrack ? (currentTrack.coverUrl || currentTrack.cover || currentTrack.img) : null));
 
   // Mantiene onboarding y encuestas neutros (gris)
   const onboardingScreens = ['onboarding', 'data-treatment', 'initial-evaluation', 'artist-evaluation', 'profile-summary', 'calibration'];
@@ -2249,22 +2240,26 @@ function MainApp() {
   let theme = emotionThemes[activeThemeKey] || emotionThemes.gris;
 
   if (!isOnboarding && themeMode !== 'manual' && currentTrack) {
-    // Tema dinámico global basado en la canción
-    const v = typeof currentTrack.valence === 'number' ? currentTrack.valence : 0.5;
-    const e = typeof currentTrack.energy === 'number' ? currentTrack.energy : 0.5;
+    if (coverTheme) {
+      theme = coverTheme;
+    } else {
+      // Tema dinámico de respaldo basado en valencia/energía
+      const v = typeof currentTrack.valence === 'number' ? currentTrack.valence : 0.5;
+      const e = typeof currentTrack.energy === 'number' ? currentTrack.energy : 0.5;
 
-    const hue = 240 - (v * 200); // 240 (Azul) a 40 (Naranja)
-    const saturation = 40 + (e * 60); // 40% a 100% de intensidad
-    const lightness = 40 + (e * 15); // 40% a 55% de brillo primario
+      const hue = 240 - (v * 200); // 240 (Azul) a 40 (Naranja)
+      const saturation = 40 + (e * 60); // 40% a 100% de intensidad
+      const lightness = 40 + (e * 15); // 40% a 55% de brillo primario
 
-    theme = {
-      primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-      primaryRgb: hslToRgb(hue, saturation, lightness),
-      bgSubtle: `hsl(${hue}, ${saturation}%, 96%)`,
-      borderSubtle: `hsl(${hue}, ${saturation}%, 85%)`,
-      glow1: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`,
-      glow2: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.1)`
-    };
+      theme = {
+        primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+        primaryRgb: hslToRgb(hue, saturation, lightness),
+        bgSubtle: `hsl(${hue}, ${saturation}%, 96%)`,
+        borderSubtle: `hsl(${hue}, ${saturation}%, 85%)`,
+        glow1: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.25)`,
+        glow2: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.1)`
+      };
+    }
   }
 
   // Genera estilos inline para overrides de Bootstrap y brillos ambientales
@@ -2352,10 +2347,10 @@ function MainApp() {
           />
 
           {/* Main Content Area - Locked Height, Independently Scrollable */}
-          <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center justify-content-start p-3 p-md-4 position-relative z-1 ${screen === 'dashboard' ? 'screen-dashboard' : ''}`}>
+          <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center ${screen === 'dashboard' ? 'justify-content-center my-auto screen-dashboard' : 'justify-content-start'} p-3 p-md-4 position-relative z-1`}>
             <MouseGradient colorRgb={theme.primaryRgb} />
             {renderScreen()}
-            {currentTrack && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
+            {currentTrack && screen !== 'dashboard' && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
           </div>
 
           {/* Modal de Resumen de Estado Emocional */}

@@ -187,7 +187,7 @@ const Dashboard = ({
 
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const baseRadius = 78; // Borde del circulo de portada de 145px
+      const baseRadius = 100; // Borde del circulo de portada de 175px
 
       // Resuelve los valores RGB del tema activo desde CSS
       const primaryRgb = window.getComputedStyle(document.documentElement).getPropertyValue('--bs-primary-rgb').trim() || '13, 110, 253';
@@ -249,7 +249,7 @@ const Dashboard = ({
         // --- Capa 1 (externa, mas transparente, cambia mas rapido) ---
         ctx.beginPath();
         const numPoints = 80;
-        const baseBlobRadius1 = 68;
+        const baseBlobRadius1 = 88;
 
         for (let i = 0; i <= numPoints; i++) {
           const angle = (i / numPoints) * 2 * Math.PI;
@@ -260,7 +260,7 @@ const Dashboard = ({
             val = dataArray[freqBin] || 0;
           }
 
-          const morph = ((val / 255.0) * 12) + Math.sin(time * 1.5 + i * 0.15) * 5 + Math.cos(time * 0.8 + i * 0.3) * 2.5;
+          const morph = ((val / 255.0) * 14) + Math.sin(time * 1.5 + i * 0.15) * 6 + Math.cos(time * 0.8 + i * 0.3) * 3;
           const r = baseBlobRadius1 + morph;
 
           const x = centerX + Math.cos(angle) * r;
@@ -275,7 +275,7 @@ const Dashboard = ({
         ctx.closePath();
         const blobGrad1 = ctx.createRadialGradient(
           centerX, centerY, 0,
-          centerX, centerY, baseBlobRadius1 + 15
+          centerX, centerY, baseBlobRadius1 + 18
         );
         blobGrad1.addColorStop(0, `rgba(${primaryRgb}, 0.15)`);
         blobGrad1.addColorStop(0.7, `rgba(${primaryRgb}, 0.08)`);
@@ -285,7 +285,7 @@ const Dashboard = ({
 
         // --- Capa 2 (interna, mas solida) ---
         ctx.beginPath();
-        const baseBlobRadius2 = 56;
+        const baseBlobRadius2 = 72;
         for (let i = 0; i <= numPoints; i++) {
           const angle = (i / numPoints) * 2 * Math.PI;
 
@@ -390,7 +390,7 @@ const Dashboard = ({
 
   return (
     <div
-      className="w-100 d-flex flex-column align-items-center justify-content-start p-3 position-relative"
+      className="w-100 h-100 flex-grow-1 d-flex flex-column align-items-center justify-content-center p-3 position-relative my-auto"
       style={{ minHeight: '100%' }}
     >
       <style>{`
@@ -529,20 +529,20 @@ const Dashboard = ({
 
       {/* Contenido Principal */}
       {currentTrack ? (
-        <div className="container-fluid max-w-[1050px] mx-auto mt-5 mt-md-3">
-          <div className="row justify-content-center align-items-center g-4" style={{ minHeight: '60vh' }}>
+        <div className="container-fluid max-w-[1050px] mx-auto my-auto d-flex flex-column align-items-center justify-content-center flex-grow-1">
+          <div className="row justify-content-center align-items-center g-3 w-100 my-auto">
 
             {/* Columna del visualizador circular centrada */}
-            <div className="col-12 d-flex flex-column align-items-center justify-content-center">
+            <div className="col-12 d-flex flex-column align-items-center justify-content-center my-auto">
               {(() => {
                 const currentCover = getDisplayCover(currentTrack);
                 return (
                   <>
-                    {/* Visualizador circular de arte */}
+                    {/* Visualizador circular de arte (Ampliado a 280px) */}
                     <div
-                      className={`position-relative rounded-circle border border-2 border-white shadow-sm overflow-hidden d-flex align-items-center justify-content-center ${isPlaying && !isLoading ? 'animate-subtle-pulse' : ''
+                      className={`position-relative rounded-circle border border-2 border-white shadow-lg overflow-hidden d-flex align-items-center justify-content-center ${isPlaying && !isLoading ? 'animate-subtle-pulse' : ''
                         }`}
-                      style={{ width: '220px', height: '220px', background: isDefaultCover(currentCover) ? 'transparent' : '#eceef0' }}
+                      style={{ width: '280px', height: '280px', background: isDefaultCover(currentCover) ? 'transparent' : '#eceef0' }}
                     >
                       {isLoading && (
                         <div className="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex flex-column align-items-center justify-content-center z-3 p-2 text-center text-white">
@@ -562,17 +562,17 @@ const Dashboard = ({
                       {/* Visualizador en tiempo real con Web Audio */}
                       <canvas
                         ref={canvasRef}
-                        width="220"
-                        height="220"
+                        width="280"
+                        height="280"
                         className="position-absolute top-0 start-0 w-100 h-100 z-1"
                       />
 
-                      {/* Portada central dentro del anillo del visualizador */}
+                      {/* Portada central dentro del anillo del visualizador (Ampliada a 175px) */}
                       <div
                         className="rounded-circle overflow-hidden position-relative z-2 d-flex align-items-center justify-content-center"
                         style={{
-                          width: '130px',
-                          height: '130px',
+                          width: '175px',
+                          height: '175px',
                           background: isDefaultCover(currentCover) ? 'transparent' : '#eceef0',
                           border: isDefaultCover(currentCover) ? 'none' : '1px solid rgba(255,255,255,0.25)',
                           boxShadow: isDefaultCover(currentCover) ? 'none' : 'inset 0 2px 4px rgba(0,0,0,0.1)'
@@ -584,7 +584,7 @@ const Dashboard = ({
                           <span
                             className="material-symbols-outlined notranslate text-white select-none animate-subtle-pulse z-3" translate="no"
                             style={{
-                              fontSize: '32px',
+                              fontSize: '46px',
                               color: '#ffffff',
                               textShadow: '0 0 15px rgba(255,255,255,0.8), 0 0 30px var(--bs-primary)',
                               opacity: isPlaying ? 0.95 : 0.65,
@@ -608,16 +608,15 @@ const Dashboard = ({
               })()}
 
               {/* Titulo y artista (Visualizador principal) */}
-              <div className="text-center mt-3 mb-2 w-100">
-                <h4 className="h6 fw-bold mb-1 truncate px-3 text-on-surface">{currentTrack.title}</h4>
+              <div className="text-center mt-3 mb-1 w-100">
+                <h4 className="h5 fw-bold mb-1 truncate px-3 text-on-surface">{currentTrack.title}</h4>
                 <p className="text-muted small mb-0 truncate">{currentTrack.artist}</p>
               </div>
 
-
             </div>
-          {/* Spacer para que el player bar fijo no tape las últimas canciones */}
-          <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />
-        </div>
+          </div>
+          {/* Spacer para que el player bar fijo no tape el contenido */}
+          <div style={{ height: '100px', minHeight: '100px', width: '100%', flexShrink: 0 }} />
         </div>
       ) : (
         <div className="text-center py-5">

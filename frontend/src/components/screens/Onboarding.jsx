@@ -218,19 +218,21 @@ const Onboarding = ({ onLogin, initialMode = 'select' }) => {
             {
               <div className="position-relative w-100">
                 <Button
+                  disabled={true}
                   onClick={handleSpotifyLogin}
-                  className="w-100 py-3.5"
-                  style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff' }}
+                  className="w-100 py-3.5 opacity-60"
+                  style={{ backgroundColor: '#1DB954', borderColor: '#1DB954', color: '#ffffff', cursor: 'not-allowed' }}
+                  title="Inicio de sesión con Spotify deshabilitado temporalmente"
                 >
                   <span className="d-inline-flex align-items-center gap-2 justify-content-center">
                     <img
                       src={spotifyLogo}
                       alt="Spotify Logo"
-                      style={{ width: '22px', height: '22px' }}
+                      style={{ width: '22px', height: '22px', filter: 'grayscale(20%)' }}
                     />
                     <span className="d-flex flex-column align-items-center" style={{ lineHeight: '1.2' }}>
                       <span className="fs-5 fw-semibold">Iniciar Sesión con Spotify</span>
-                      <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>(Aún en producción)</span>
+                      <span style={{ fontSize: '0.65rem', opacity: 0.85 }}>(Deshabilitado temporalmente)</span>
                     </span>
                   </span>
                 </Button>

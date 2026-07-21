@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Button from '../common/Button';
 import { apiCall } from '../../utils/fetch.js';
+import { fetchArtistImageFromITunes, enrichArtistsWithITunesImages } from '../../utils/artistCovers.js';
 
 const PAGE_SIZE = 15;
 
@@ -30,56 +31,75 @@ const DynamicAvatar = ({ name, size }) => {
 };
 
 /* ---------- Tarjeta de artista ---------- */
-const ArtistCard = ({ artist, isSelected, isInjected, onClick, size = 86 }) => (
-  <div
-    onClick={() => onClick(artist)}
-    style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-    className={`animate-fade-in-up`}
-  >
+const ArtistCard = ({ artist, isSelected, isInjected, onClick, size = 86 }) => {
+  const [imgUrl, setImgUrl] = useState(artist.img || null);
+
+  useEffect(() => {
+    let active = true;
+    if (artist.img) {
+      setImgUrl(artist.img);
+    } else if (artist.name) {
+      fetchArtistImageFromITunes(artist.name).then(url => {
+        if (active && url) {
+          setImgUrl(url);
+          artist.img = url;
+        }
+      });
+    }
+    return () => { active = false; };
+  }, [artist.img, artist.name]);
+
+  return (
     <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        overflow: 'hidden',
-        position: 'relative',
-        boxShadow: isSelected
-          ? '0 0 0 3px var(--bs-primary), 0 4px 16px rgba(13,110,253,0.35)'
-          : isInjected
-          ? '0 0 0 2px rgba(13,110,253,0.25), 0 2px 8px rgba(0,0,0,0.1)'
-          : '0 2px 8px rgba(0,0,0,0.1)',
-        transition: 'box-shadow 0.25s ease, transform 0.2s ease',
-        transform: isSelected ? 'scale(1.07)' : 'scale(1)',
-        flexShrink: 0,
-      }}
+      onClick={() => onClick(artist)}
+      style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      className="animate-fade-in-up"
     >
-      {artist.img
-        ? <img src={artist.img} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <DynamicAvatar name={artist.name} size={size} />
-      }
-      {/* Overlay seleccion */}
-      <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        background: 'rgba(13,110,253,0.42)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: isSelected ? 1 : 0, transition: 'opacity 0.2s',
-      }}>
-        <span className="material-symbols-outlined notranslate text-white filled" translate="no" style={{ fontSize: 26 }}>
-          check_circle
-        </span>
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          position: 'relative',
+          boxShadow: isSelected
+            ? '0 0 0 3px var(--bs-primary), 0 4px 16px rgba(13,110,253,0.35)'
+            : isInjected
+            ? '0 0 0 2px rgba(13,110,253,0.25), 0 2px 8px rgba(0,0,0,0.1)'
+            : '0 2px 8px rgba(0,0,0,0.1)',
+          transition: 'box-shadow 0.25s ease, transform 0.2s ease',
+          transform: isSelected ? 'scale(1.07)' : 'scale(1)',
+          flexShrink: 0,
+        }}
+      >
+        {imgUrl
+          ? <img src={imgUrl} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <DynamicAvatar name={artist.name} size={size} />
+        }
+        {/* Overlay seleccion */}
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: '50%',
+          background: 'rgba(13,110,253,0.42)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: isSelected ? 1 : 0, transition: 'opacity 0.2s',
+        }}>
+          <span className="material-symbols-outlined notranslate text-white filled" translate="no" style={{ fontSize: 26 }}>
+            check_circle
+          </span>
+        </div>
       </div>
+      <span
+        style={{
+          fontSize: 11, lineHeight: 1.25, textAlign: 'center', marginTop: 6,
+          fontWeight: 600, maxWidth: size + 12, wordBreak: 'break-word',
+          color: isSelected ? 'var(--bs-primary)' : '#212529',
+        }}
+      >
+        {artist.name}
+      </span>
     </div>
-    <span
-      style={{
-        fontSize: 11, lineHeight: 1.25, textAlign: 'center', marginTop: 6,
-        fontWeight: 600, maxWidth: size + 12, wordBreak: 'break-word',
-        color: isSelected ? 'var(--bs-primary)' : '#212529',
-      }}
-    >
-      {artist.name}
-    </span>
-  </div>
-);
+  );
+};
 
 /* ======================================================
    Componente principal
@@ -120,11 +140,15 @@ const ArtistSurvey = ({ onConfirm }) => {
         if (res?.success && active) {
           const artistsList = res.data?.artists || (Array.isArray(res.data) ? res.data : []);
           const paginationInfo = res.data?.pagination || res.pagination;
-          setBaseArtists(dedupe(artistsList));
+          const deduped = dedupe(artistsList);
+          setBaseArtists(deduped);
           setTotalPages(paginationInfo?.totalPages || 1);
-          // Limpiar expansiones al cambiar pagina/busqueda
           setInjected({});
           setOpenId(null);
+
+          enrichArtistsWithITunesImages(deduped).then(enriched => {
+            if (active) setBaseArtists(enriched);
+          });
         }
       } catch (e) { console.error(e); }
       finally { if (active) setLoading(false); }
@@ -168,6 +192,11 @@ const ArtistSurvey = ({ onConfirm }) => {
         const filtered = dedupe(artistsList).filter(a => !baseIds.has(a.id)).slice(0, 6);
         relatedCache.current[id] = filtered;
         setInjected(prev => ({ ...prev, [id]: filtered }));
+
+        enrichArtistsWithITunesImages(filtered).then(enriched => {
+          relatedCache.current[id] = enriched;
+          setInjected(prev => ({ ...prev, [id]: enriched }));
+        });
       }
     } catch (e) { console.error(e); }
   }, [openId, baseArtists]);

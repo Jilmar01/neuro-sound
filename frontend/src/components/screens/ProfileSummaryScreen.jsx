@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import Button from '../common/Button';
 import { apiCall } from '../../utils/fetch.js';
+import { fetchArtistImageFromITunes, enrichArtistsWithITunesImages } from '../../utils/artistCovers.js';
 
 /* ─── Avatar generativo ─── */
 const DynamicAvatar = ({ name, size = 40 }) => {
@@ -61,41 +62,60 @@ const EMOTION_LABELS = ['Muy triste', 'Algo triste', 'Neutral', 'Algo feliz', 'M
 const PAGE_SIZE = 15;
 
 /* ─── Tarjeta de artista compacta ─── */
-const ArtistCard = ({ artist, isSelected, onClick }) => (
-  <div
-    onClick={() => onClick(artist)}
-    style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}
-  >
-    <div style={{
-      width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0,
-      boxShadow: isSelected
-        ? '0 0 0 3px var(--bs-primary), 0 4px 16px rgba(13,110,253,0.35)'
-        : '0 2px 8px rgba(0,0,0,0.1)',
-      transition: 'box-shadow 0.2s, transform 0.2s',
-      transform: isSelected ? 'scale(1.08)' : 'scale(1)',
-    }}>
-      {artist.img
-        ? <img src={artist.img} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <DynamicAvatar name={artist.name} size={72} />
-      }
+const ArtistCard = ({ artist, isSelected, onClick }) => {
+  const [imgUrl, setImgUrl] = useState(artist.img || null);
+
+  useEffect(() => {
+    let active = true;
+    if (artist.img) {
+      setImgUrl(artist.img);
+    } else if (artist.name) {
+      fetchArtistImageFromITunes(artist.name).then(url => {
+        if (active && url) {
+          setImgUrl(url);
+          artist.img = url;
+        }
+      });
+    }
+    return () => { active = false; };
+  }, [artist.img, artist.name]);
+
+  return (
+    <div
+      onClick={() => onClick(artist)}
+      style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', userSelect: 'none' }}
+    >
       <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        background: 'rgba(13,110,253,0.42)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: isSelected ? 1 : 0, transition: 'opacity 0.2s',
+        width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', position: 'relative', flexShrink: 0,
+        boxShadow: isSelected
+          ? '0 0 0 3px var(--bs-primary), 0 4px 16px rgba(13,110,253,0.35)'
+          : '0 2px 8px rgba(0,0,0,0.1)',
+        transition: 'box-shadow 0.2s, transform 0.2s',
+        transform: isSelected ? 'scale(1.08)' : 'scale(1)',
       }}>
-        <span className="material-symbols-outlined notranslate text-white filled" translate="no" style={{ fontSize: 22 }}>check_circle</span>
+        {imgUrl
+          ? <img src={imgUrl} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <DynamicAvatar name={artist.name} size={72} />
+        }
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: '50%',
+          background: 'rgba(13,110,253,0.42)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: isSelected ? 1 : 0, transition: 'opacity 0.2s',
+        }}>
+          <span className="material-symbols-outlined notranslate text-white filled" translate="no" style={{ fontSize: 22 }}>check_circle</span>
+        </div>
       </div>
+      <span style={{
+        fontSize: 10, lineHeight: 1.25, textAlign: 'center', marginTop: 5,
+        fontWeight: 600, maxWidth: 80, wordBreak: 'break-word',
+        color: isSelected ? 'var(--bs-primary)' : '#212529',
+      }}>
+        {artist.name}
+      </span>
     </div>
-    <span style={{
-      fontSize: 10, lineHeight: 1.25, textAlign: 'center', marginTop: 5,
-      fontWeight: 600, maxWidth: 80, wordBreak: 'break-word',
-      color: isSelected ? 'var(--bs-primary)' : '#212529',
-    }}>
-      {artist.name}
-    </span>
-  </div>
-);
+  );
+};
 
 /* ══════════════════════════════════════════════════════════
    Editor de artistas inline
@@ -126,8 +146,13 @@ const ArtistEditor = ({ preselected = [], onSave, onCancel }) => {
         if (res?.success && active) {
           const artistsList = res.data?.artists || (Array.isArray(res.data) ? res.data : []);
           const paginationInfo = res.data?.pagination || res.pagination;
-          setBaseArtists(dedupe(artistsList));
+          const deduped = dedupe(artistsList);
+          setBaseArtists(deduped);
           setTotalPages(paginationInfo?.totalPages || 1);
+
+          enrichArtistsWithITunesImages(deduped).then(enriched => {
+            if (active) setBaseArtists(enriched);
+          });
         }
       } catch (e) { console.error(e); }
       finally { if (active) setLoading(false); }
@@ -260,6 +285,45 @@ const ArtistEditor = ({ preselected = [], onSave, onCancel }) => {
           )}
         </button>
       </div>
+    </div>
+  );
+};
+
+/* ─── Item de artista para el resumen ─── */
+const ProfileArtistItem = ({ artist }) => {
+  const name = artist.name || '?';
+  const [imgUrl, setImgUrl] = useState(artist.img || null);
+
+  useEffect(() => {
+    let active = true;
+    if (artist.img) {
+      setImgUrl(artist.img);
+    } else if (name && name !== '?') {
+      fetchArtistImageFromITunes(name).then(url => {
+        if (active && url) {
+          setImgUrl(url);
+          artist.img = url;
+        }
+      });
+    }
+    return () => { active = false; };
+  }, [artist.img, name]);
+
+  return (
+    <div className="d-flex flex-column align-items-center flex-shrink-0" style={{ width: 68 }}>
+      <div style={{
+        width: 52, height: 52, borderRadius: '50%', overflow: 'hidden',
+        boxShadow: '0 2px 10px rgba(13,110,253,0.2)',
+        border: '2px solid var(--bs-primary)',
+      }}>
+        {imgUrl
+          ? <img src={imgUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <DynamicAvatar name={name} size={52} />
+        }
+      </div>
+      <span style={{ fontSize: 10, textAlign: 'center', marginTop: 5, fontWeight: 600, color: '#495057', lineHeight: 1.2, maxWidth: 68, wordBreak: 'break-word' }}>
+        {name}
+      </span>
     </div>
   );
 };
@@ -518,24 +582,7 @@ const ProfileSummaryScreen = ({
                     <div className="d-flex gap-3 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
                       {localArtists.map((artist, idx) => {
                         const key = artist.id || artist._id || artist.artist_id || `artist-${idx}`;
-                        const name = artist.name || '?';
-                        return (
-                          <div key={key} className="d-flex flex-column align-items-center flex-shrink-0" style={{ width: 68 }}>
-                            <div style={{
-                              width: 52, height: 52, borderRadius: '50%', overflow: 'hidden',
-                              boxShadow: '0 2px 10px rgba(13,110,253,0.2)',
-                              border: '2px solid var(--bs-primary)',
-                            }}>
-                              {artist.img
-                                ? <img src={artist.img} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                : <DynamicAvatar name={name} size={52} />
-                              }
-                            </div>
-                            <span style={{ fontSize: 10, textAlign: 'center', marginTop: 5, fontWeight: 600, color: '#495057', lineHeight: 1.2, maxWidth: 68, wordBreak: 'break-word' }}>
-                              {name}
-                            </span>
-                          </div>
-                        );
+                        return <ProfileArtistItem key={key} artist={artist} />;
                       })}
                     </div>
                   )}
