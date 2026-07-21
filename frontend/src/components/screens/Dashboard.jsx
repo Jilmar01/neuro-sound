@@ -363,16 +363,19 @@ const Dashboard = ({
    */
   const handleFeedbackClick = (type) => {
     const isCurrentlyPositive = currentTrack.feedback === true;
-    const isCurrentlyNegative = currentTrack.feedback === null;
+    const isCurrentlyNegative = currentTrack.feedback === false;
 
     if (type === 'positive') {
       const nextType = isCurrentlyPositive ? 'none' : 'positive';
       showToast(isCurrentlyPositive ? 'Sintonía óptima removida.' : '¡Validado! Guardando sintonía óptima.', 'success');
-      onFeedback(nextType);
+      onFeedback(nextType, currentTrack, false);
     } else {
       const nextType = isCurrentlyNegative ? 'none' : 'negative';
-      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Ajustando algoritmo. Cargando nuevas frecuencias...', 'warning');
-      onFeedback(nextType);
+      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Pista descartada. Cambiando de canción...', 'warning');
+      onFeedback(nextType, currentTrack, false);
+      if (nextType !== 'none' && onNext) {
+        onNext(false, true);
+      }
     }
   };
 

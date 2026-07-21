@@ -461,16 +461,19 @@ function MainApp() {
     const track = playlist[currentIndex] || null;
     if (!track) return;
     const isCurrentlyPositive = track.feedback === true;
-    const isCurrentlyNegative = track.feedback === null;
+    const isCurrentlyNegative = track.feedback === false;
 
     if (type === 'positive') {
       const nextType = isCurrentlyPositive ? 'none' : 'positive';
       showToast(isCurrentlyPositive ? 'Sintonía óptima removida.' : '¡Validado! Guardando sintonía óptima.', 'success');
-      handleFeedback(nextType);
+      handleFeedback(nextType, track, false);
     } else {
       const nextType = isCurrentlyNegative ? 'none' : 'negative';
-      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Ajustando algoritmo. Cargando nuevas frecuencias...', 'warning');
-      handleFeedback(nextType, null, true);
+      showToast(isCurrentlyNegative ? 'Filtro de frecuencia removido.' : 'Pista descartada. Cambiando de canción...', 'warning');
+      handleFeedback(nextType, track, false);
+      if (nextType !== 'none') {
+        handleNext(false, true);
+      }
     }
   };
 
@@ -1238,18 +1241,20 @@ function MainApp() {
    * @param {boolean} [isManual=false] - Indica si el cambio de track fue realizado manualmente por el usuario.
    * @returns {Promise<void>}
    */
-  const handleNext = async (isManual = false) => {
+  const handleNext = async (isManual = false, skipAutoFeedback = false) => {
     if (playlist.length === 0) return;
     const currentTrack = playlist[currentIndex];
 
-    if (isManual && currentTrack) {
-      if (progress < 60) {
-        await handleFeedback('negative', currentTrack, false);
+    if (!skipAutoFeedback && currentTrack && (currentTrack.feedback === null || currentTrack.feedback === undefined)) {
+      if (isManual) {
+        if (progress < 60) {
+          await handleFeedback('negative', currentTrack, false);
+        } else {
+          await handleFeedback('positive', currentTrack);
+        }
       } else {
         await handleFeedback('positive', currentTrack);
       }
-    } else if (!isManual && currentTrack) {
-      await handleFeedback('positive', currentTrack);
     }
 
     if (currentIndex === playlist.length - 1) {
@@ -1298,7 +1303,7 @@ function MainApp() {
     if (playlist.length === 0) return;
     const currentTrack = playlist[currentIndex];
 
-    if (isManual && currentTrack) {
+    if (isManual && currentTrack && (currentTrack.feedback === null || currentTrack.feedback === undefined)) {
       if (progress < 60) {
         await handleFeedback('negative', currentTrack, false);
       } else {
@@ -1340,7 +1345,7 @@ function MainApp() {
     }
     const currentTrack = playlist[currentIndex];
 
-    if (isManual && currentTrack) {
+    if (isManual && currentTrack && (currentTrack.feedback === null || currentTrack.feedback === undefined)) {
       if (progress < 60) {
         await handleFeedback('negative', currentTrack, false);
       } else {
@@ -1854,11 +1859,14 @@ function MainApp() {
    * @param {"negative"|"positive"} type - Tipo de feedback.
    * @returns {Promise<void>}
    */
-  const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = true) => {
+  const handleFeedback = async (type, trackToFeedback = null, shouldRegenerate = false) => {
     const track = trackToFeedback || playlist[currentIndex];
     if (!track) return;
 
-    const feedbackVal = type === 'positive' ? true : (type === 'negative' ? null : false);
+    const feedbackVal = type === 'positive' ? true : (type === 'negative' ? false : null);
+
+    // Actualizar la playlist local para reflejar el estado del feedback siempre
+    setPlaylist(prev => prev.map(t => t.id === track.id ? { ...t, feedback: feedbackVal } : t));
 
     // Sincronizar feedback con el backend
     if (track.recommendationId) {
@@ -1868,8 +1876,6 @@ function MainApp() {
           trackId: track.id,
           feedback: feedbackVal
         });
-        // Actualizar la playlist local para reflejar el estado del feedback
-        setPlaylist(prev => prev.map(t => t.id === track.id ? { ...t, feedback: feedbackVal } : t));
       } catch (e) {
         console.error("❌ Error al enviar feedback al backend:", e);
       }
@@ -2047,7 +2053,7 @@ function MainApp() {
             volume={volume}
             onVolumeChange={setVolume}
             onPlayPause={handlePlayPause}
-            onNext={() => handleNext(true)}
+            onNext={(isManual, skipAutoFeedback) => handleNext(isManual !== undefined ? isManual : true, skipAutoFeedback)}
             onPrev={() => handlePrev(true)}
             onSelectTrack={(idx) => handleSelectTrack(idx, true)}
             onSeek={handleSeek}
@@ -2329,10 +2335,6 @@ function MainApp() {
         <div className="d-flex flex-column flex-md-row vh-100 w-100 position-relative overflow-hidden">
           <style>{themeStyle}</style>
 
-          {/* Background Ambient Glows */}
-          <div className="ambient-glow" />
-          <div className="ambient-glow-bottom" />
-
           {/* Left Sidebar */}
           <Sidebar
             activeTab={screen}
@@ -2348,7 +2350,7 @@ function MainApp() {
 
           {/* Main Content Area - Locked Height, Independently Scrollable */}
           <div className={`main-content-area flex-grow-1 w-100 h-md-100 overflow-y-auto d-flex flex-column align-items-center ${screen === 'dashboard' ? 'justify-content-center my-auto screen-dashboard' : 'justify-content-start'} p-3 p-md-4 position-relative z-1`}>
-            <MouseGradient colorRgb={theme.primaryRgb} />
+            <MouseGradient colorRgb={theme.primaryRgb} analyserNode={analyserNode} isPlaying={isPlaying} />
             {renderScreen()}
             {currentTrack && screen !== 'dashboard' && <div style={{ height: '120px', minHeight: '120px', width: '100%', flexShrink: 0 }} />}
           </div>
@@ -2868,10 +2870,8 @@ function MainApp() {
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface position-relative overflow-hidden">
       <style>{themeStyle}</style>
-      <div className="ambient-glow" />
-      <div className="ambient-glow-bottom" />
       <div className="position-relative z-1 w-full flex-1 flex flex-col items-center justify-center">
-        <MouseGradient />
+        <MouseGradient colorRgb={theme.primaryRgb} analyserNode={analyserNode} isPlaying={isPlaying} />
         {renderScreen()}
       </div>
     </div>

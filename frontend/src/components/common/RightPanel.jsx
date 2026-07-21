@@ -35,8 +35,6 @@ const RightPanel = ({
 }) => {
   const [coversMap, setCoversMap] = useState({});
 
-  console.log("RightPanel Rendered. isOpen:", isOpen, "tracks count:", tracks.length);
-
   // Buscador de portadas en segundo plano igual que en Dashboard
   useEffect(() => {
     if (!isOpen) return;
@@ -256,9 +254,9 @@ const RightPanel = ({
                   <button
                     onClick={() => onFeedbackClickGlobal('negative')}
                     className={`btn btn-outline-danger d-flex align-items-center gap-2 rounded-pill px-3 py-2 fw-semibold`}
-                    style={{ fontSize: '12px', opacity: currentTrack.feedback === null ? 1 : 0.6 }}
+                    style={{ fontSize: '12px', opacity: currentTrack.feedback === false ? 1 : 0.6 }}
                   >
-                    <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === null ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
+                    <span className={`material-symbols-outlined notranslate ${currentTrack.feedback === false ? 'filled' : ''}`} translate="no" style={{ fontSize: '18px' }}>
                       thumb_down
                     </span>
                     No ayuda

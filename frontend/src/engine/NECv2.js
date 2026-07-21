@@ -381,7 +381,7 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
                             
                             genre: genre,
                             recommendationId: genResult?._id || null,
-                            feedback: track.feedback !== undefined ? track.feedback : false
+                            feedback: track.feedback !== undefined ? track.feedback : null
                         };
                     });
                 }
@@ -413,7 +413,7 @@ function getTrackMetrics(trackId, trackTitle, trackGenre) {
                             tempo: originalTrack?.tempo !== undefined ? originalTrack.tempo : (originalTrack?.bpm !== undefined ? originalTrack.bpm : metrics.bpm),
                             genre: genre,
                             recommendationId: genResult?._id || null,
-                            feedback: originalTrack && originalTrack.feedback !== undefined ? originalTrack.feedback : false
+                            feedback: originalTrack && originalTrack.feedback !== undefined ? originalTrack.feedback : null
                         };
                     });
                 }
