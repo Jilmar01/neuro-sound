@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 /**
  * Componente de cuadrícula de bolitas alineadas en Perspectiva 3D.
- * Cobertura 100% total de la pantalla (sin bordes ni partes blancas).
+ * Configuración Suave y Ambiental (No distrae, movimiento fluido y sutil al ritmo de la música).
  *
  * @param {Object} props
  * @param {string} [props.colorRgb='43, 75, 113'] - Color RGB de los puntos.
@@ -96,48 +96,47 @@ export default function MouseGradient({
           targetMid = mSum / ((midBins - bassBins) * 255);
           targetTreble = tSum / ((bufferLength - midBins) * 255);
         } else {
-          // Simulación armónica si no hay nodo analizador directo (Spotify / HTML5 stream)
-          const time = Date.now() * 0.003;
-          targetBass = Math.sin(time * 2.2) * 0.35 + 0.5;
-          targetMid = Math.cos(time * 1.8 + 1) * 0.3 + 0.45;
-          targetTreble = Math.sin(time * 3.2 + 2) * 0.25 + 0.4;
+          // Simulación armónica suave si no hay nodo analizador directo (Spotify / HTML5 stream)
+          const time = Date.now() * 0.0015;
+          targetBass = Math.sin(time * 1.5) * 0.2 + 0.35;
+          targetMid = Math.cos(time * 1.2 + 1) * 0.2 + 0.3;
+          targetTreble = Math.sin(time * 2.0 + 2) * 0.15 + 0.25;
         }
       } else {
-        // En reposo, desciende a 0 para que la cuadrícula 3D vuelva a estar plana
+        // En reposo, desciende suavemente a 0 para mantener la calma ambiental
         targetBass = 0;
         targetMid = 0;
         targetTreble = 0;
       }
 
-      // Transición suave (Lerp)
-      smoothBass += (targetBass - smoothBass) * 0.12;
-      smoothMid += (targetMid - smoothMid) * 0.12;
-      smoothTreble += (targetTreble - smoothTreble) * 0.12;
+      // Transición ultra-suave y orgánica (Lerp suave de 0.04)
+      smoothBass += (targetBass - smoothBass) * 0.04;
+      smoothMid += (targetMid - smoothMid) * 0.04;
+      smoothTreble += (targetTreble - smoothTreble) * 0.04;
 
       ctx.clearRect(0, 0, width, height);
 
-      // Proyección 3D de alta densidad que cubre el 100% de la pantalla
+      // Proyección 3D ambiental de baja intensidad
       const fov = 750;
       const cameraZ = 450;
       const centerX = width / 2;
       const centerY = height * 0.5;
 
-      // Inclinación suave en 3D
-      const rotX = -48 * Math.PI / 180;
-      const rotY = 8 * Math.PI / 180;
+      // Inclinación 3D armónica
+      const rotX = -45 * Math.PI / 180;
+      const rotY = 6 * Math.PI / 180;
 
       const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
       const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
 
-      // Dimensiones ampliadas de la matriz para garantizar cobertura completa en todas las esquinas
-      const step = 38;
-      const cols = Math.max(70, Math.ceil(width / 16));
-      const rows = Math.max(65, Math.ceil(height / 16));
-      const time = Date.now() * 0.002;
+      const step = 40; // Espaciado elegante entre puntos
+      const cols = Math.max(65, Math.ceil(width / 18));
+      const rows = Math.max(60, Math.ceil(height / 18));
+      const time = Date.now() * 0.0012; // Velocidad relajada y sin aceleraciones agresivas
 
       const mouseX = latestMouseRef.current.x;
       const mouseY = latestMouseRef.current.y;
-      const maxMouseDist = 320;
+      const maxMouseDist = 280;
 
       const pointsToRender = [];
 
@@ -146,10 +145,10 @@ export default function MouseGradient({
           const localX = (c - cols / 2) * step;
           const localY = (r - rows / 2) * step;
 
-          // Salto hacia arriba (+Y) impulsado por el audio
-          const yBounce = -Math.abs(Math.sin(r * 0.28 - time * 3.8)) * (smoothBass * 140 + smoothMid * 70) - (smoothBass * 25);
-          const zWave = Math.sin(c * 0.25 + r * 0.25 - time * 3) * (smoothBass * 45 + smoothMid * 25);
-          const zJitter = Math.sin(c * 1.5 + r * 1.5 + time * 5) * (smoothTreble * 20);
+          // Movimiento de respiración suave (Ondulación sutil de max 22px en lugar de saltos bruscos)
+          const yBounce = -Math.abs(Math.sin(r * 0.2 - time * 2.2)) * (smoothBass * 22 + smoothMid * 12);
+          const zWave = Math.sin(c * 0.18 + r * 0.18 - time * 2.0) * (smoothBass * 14 + smoothMid * 8);
+          const zJitter = Math.sin(c * 1.2 + r * 1.2 + time * 3) * (smoothTreble * 4);
 
           const curX = localX;
           const curY = localY + yBounce;
@@ -170,16 +169,15 @@ export default function MouseGradient({
           const screenX = centerX + x1 * scale;
           const screenY = centerY + y2 * scale;
 
-          // Margen de tolerancia para incluir puntos que cubran las esquinas extremas de la pantalla
-          if (screenX < -100 || screenX > width + 100 || screenY < -100 || screenY > height + 100) {
+          if (screenX < -80 || screenX > width + 80 || screenY < -80 || screenY > height + 80) {
             continue;
           }
 
-          // Interacción con el ratón
+          // Interacción suave con el ratón
           const distToMouse = Math.hypot(screenX - mouseX, screenY - mouseY);
           let mouseFactor = 0;
           if (distToMouse < maxMouseDist) {
-            mouseFactor = Math.pow(1 - distToMouse / maxMouseDist, 1.6);
+            mouseFactor = Math.pow(1 - distToMouse / maxMouseDist, 1.8);
           }
 
           pointsToRender.push({
@@ -193,23 +191,25 @@ export default function MouseGradient({
         }
       }
 
-      // Ordenar por Z-Depth de atrás hacia adelante
+      // Ordenar por profundidad Z
       pointsToRender.sort((a, b) => b.zDepth - a.zDepth);
 
-      // Renderizar las bolitas proyectadas
+      // Renderizar los puntos con opacidad translúcida y suave
       pointsToRender.forEach((pt) => {
         const { screenX, screenY, scale, mouseFactor, c, r } = pt;
 
-        let radius = (1.5 + smoothBass * 2.2 + Math.sin(time * 2 + c + r) * 0.4) * Math.min(1.8, Math.max(0.4, scale));
-        let alpha = (0.14 + smoothBass * 0.22) * Math.min(1.4, Math.max(0.35, scale));
+        // Tamaño pequeño y sutil
+        let radius = (1.2 + smoothBass * 0.6 + Math.sin(time * 1.5 + c + r) * 0.3) * Math.min(1.5, Math.max(0.4, scale));
+        // Opacidad ambiental baja (0.06 base) para no distorsionar ni distraer la vista
+        let alpha = (0.06 + smoothBass * 0.08) * Math.min(1.3, Math.max(0.3, scale));
 
         if (mouseFactor > 0) {
-          alpha = Math.min(0.9, alpha + mouseFactor * 0.7);
-          radius += mouseFactor * 2.5;
+          alpha = Math.min(0.6, alpha + mouseFactor * 0.45);
+          radius += mouseFactor * 1.5;
         }
 
         ctx.beginPath();
-        ctx.arc(screenX, screenY, Math.max(0.7, radius), 0, 2 * Math.PI);
+        ctx.arc(screenX, screenY, Math.max(0.6, radius), 0, 2 * Math.PI);
         ctx.fillStyle = `rgba(${colorRgb}, ${alpha})`;
         ctx.fill();
       });
