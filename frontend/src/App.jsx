@@ -2201,8 +2201,13 @@ function MainApp() {
             onNavigate={setScreen}
             onSubmit={async (finalSurveyData) => {
               try {
-                console.log("💾 Enviando encuesta final IAE al backend...", finalSurveyData);
-                await apiCall('neuro', '/api/iae-survey/register', 'POST', finalSurveyData);
+                const recId = playlist[currentIndex]?.recommendationId || playlist[0]?.recommendationId;
+                const payload = {
+                  ...finalSurveyData,
+                  ...(recId ? { recommendationId: recId } : {})
+                };
+                console.log("💾 Enviando encuesta final IAE al backend...", payload);
+                await apiCall('neuro', '/api/iae-survey/register', 'POST', payload);
                 console.log("✅ Encuesta final IAE registrada con éxito");
               } catch (e) {
                 console.error("❌ Error al registrar encuesta final IAE:", e);

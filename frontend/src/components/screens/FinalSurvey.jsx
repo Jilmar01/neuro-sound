@@ -16,48 +16,29 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSessionConfirm, setShowSessionConfirm] = useState(false);
 
-  const satisfaction = ((q1 + q2 + (q3 === 'si' ? 5 : q3 === 'no' ? 1 : 0)) / 11 * 100).toFixed(0);
-
-  const handleAction = async (actionType) => {
-    if (actionType === 'finish') {
-      if (q3 !== null && onSubmit) {
-        setIsSubmitting(true);
-        try {
-          await onSubmit({
-            M1: q1,
-            M2: q2,
-            M3: q3 === 'si' ? 1 : 0,
-            satisfaction: Number(satisfaction)
-          });
-          // Abrir modal de confirmación en lugar de redirigir directamente
-          setShowSessionConfirm(true);
-        } catch (err) {
-          console.error("Error submitting final survey:", err);
-          setShowSessionConfirm(true); // Mostrar confirmación incluso si falla el guardado
-        } finally {
-          setIsSubmitting(false);
-        }
-      } else {
+  const handleFinish = async () => {
+    if (q3 !== null && onSubmit) {
+      setIsSubmitting(true);
+      try {
+        const m1 = q1;
+        const m2 = q2;
+        const m3 = q3 === 'si' ? 1 : 0;
+        // Formula IAE = (M1 + M2 + (M3 * 5)) / 3
+        const satisfactionVal = Number(((m1 + m2 + (m3 * 5)) / 3).toFixed(2));
+        await onSubmit({
+          M1: m1,
+          M2: m2,
+          M3: m3,
+          satisfaction: satisfactionVal
+        });
+      } catch (err) {
+        console.error("Error submitting final survey:", err);
+      } finally {
+        setIsSubmitting(false);
         setShowSessionConfirm(true);
       }
     } else {
-      // Caso de 'new' (Nueva Sintonía)
-      if (q3 !== null && onSubmit) {
-        setIsSubmitting(true);
-        try {
-          await onSubmit({
-            M1: q1,
-            M2: q2,
-            M3: q3 === 'si' ? 1 : 0,
-            satisfaction: Number(satisfaction)
-          });
-        } catch (err) {
-          console.error("Error submitting final survey:", err);
-        } finally {
-          setIsSubmitting(false);
-        }
-      }
-      onAction('new');
+      setShowSessionConfirm(true);
     }
   };
 
@@ -67,21 +48,29 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
         const isActive = value === item.val;
         return (
           <div key={item.val} className="d-flex flex-column align-items-center gap-1" style={{ width: '60px' }}>
-            <button type="button" onClick={() => setter(item.val)}
+            <button
+              type="button"
+              onClick={() => setter(item.val)}
               className={`border-0 d-flex align-items-center justify-content-center rounded-3 transition-all duration-300 focus:outline-none ${isActive ? 'bg-primary bg-opacity-10 border-primary' : 'bg-body-tertiary border-light-subtle'}`}
               style={{
-                width: '48px', height: '48px',
+                width: '48px',
+                height: '48px',
                 border: isActive ? '2px solid' : '2px solid',
                 transform: isActive ? 'scale(1.1)' : 'scale(1)',
                 cursor: 'pointer',
-              }}>
-              <span className={`material-symbols-outlined notranslate ${isActive ? 'text-primary' : 'text-secondary'}`}
-                style={{ fontSize: '22px', fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+              }}
+            >
+              <span
+                className={`material-symbols-outlined notranslate ${isActive ? 'text-primary' : 'text-secondary'}`}
+                style={{ fontSize: '22px', fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+              >
                 {item.icon}
               </span>
             </button>
-            <span className={`text-uppercase fw-bold ${isActive ? 'text-primary' : 'text-secondary'}`}
-              style={{ fontSize: '8px', letterSpacing: '0.5px', marginTop: '4px' }}>
+            <span
+              className={`text-uppercase fw-bold ${isActive ? 'text-primary' : 'text-secondary'}`}
+              style={{ fontSize: '8px', letterSpacing: '0.5px', marginTop: '4px' }}
+            >
               {item.label}
             </span>
           </div>
@@ -97,51 +86,62 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
           <span className="material-symbols-outlined notranslate text-primary" translate="no" style={{ fontSize: '40px' }}>
             rate_review
           </span>
-          <h1 className="h5 text-primary fw-bold mb-1">Evaluacion de Sesion</h1>
+          <h1 className="h5 text-primary fw-bold mb-1">Evaluación de Sesión</h1>
           <p className="text-secondary small mb-0">
-            Cuentanos como fue tu experiencia con esta sintonia terapeutica
+            Cuéntanos cómo fue tu experiencia con esta sintonía terapéutica
           </p>
         </header>
 
         <div className="w-100 d-flex flex-column gap-3 mt-2">
           <section className="glass-panel p-4 rounded-4 border border-light-subtle shadow-sm">
             <h2 className="text-primary fw-bold mb-3" style={{ fontSize: '14px', lineHeight: '1.4' }}>
-              1. Que tan bien entendio el sistema tu estado emocional?
+              1. ¿Qué tan bien entendió el sistema tu estado emocional?
             </h2>
             {renderRating(q1, setQ1)}
           </section>
 
           <section className="glass-panel p-4 rounded-4 border border-light-subtle shadow-sm">
             <h2 className="text-primary fw-bold mb-3" style={{ fontSize: '14px', lineHeight: '1.4' }}>
-              2. Que tanto reflejo la musica tu emocion?
+              2. ¿Qué tanto reflejó la música tu emoción?
             </h2>
             {renderRating(q2, setQ2)}
           </section>
 
           <section className="glass-panel p-4 rounded-4 border border-light-subtle shadow-sm">
             <h2 className="text-primary fw-bold mb-3" style={{ fontSize: '14px', lineHeight: '1.4' }}>
-              3. Pudiste mantener o cambiar tu estado emocional como deseabas?
+              3. ¿Pudiste mantener o cambiar tu estado emocional como deseabas?
             </h2>
             <div className="d-flex flex-column gap-2">
               {[
-                { id: 'no', icon: 'cancel', label: 'No logre mi objetivo' },
-                { id: 'si', icon: 'check_circle', label: 'Si logre mi objetivo' }
+                { id: 'no', icon: 'cancel', label: 'No logré mi objetivo' },
+                { id: 'si', icon: 'check_circle', label: 'Sí logré mi objetivo' }
               ].map((option) => {
                 const isSelected = q3 === option.id;
                 return (
-                  <button key={option.id} type="button" onClick={() => setQ3(option.id)}
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setQ3(option.id)}
                     className={`w-100 d-flex align-items-center gap-3 p-3 rounded-3 border text-start fw-medium transition-all duration-200 ${isSelected ? 'bg-primary bg-opacity-10 border-primary' : 'bg-body-tertiary border-light-subtle'}`}
-                    style={{ fontSize: '13.5px', cursor: 'pointer' }}>
-                    <span className="material-symbols-outlined notranslate"
-                      style={{ fontSize: '20px', color: isSelected ? 'var(--bs-primary)' : 'var(--bs-secondary)' }}>
+                    style={{ fontSize: '13.5px', cursor: 'pointer' }}
+                  >
+                    <span
+                      className="material-symbols-outlined notranslate"
+                      style={{ fontSize: '20px', color: isSelected ? 'var(--bs-primary)' : 'var(--bs-secondary)' }}
+                    >
                       {option.icon}
                     </span>
                     <span className={isSelected ? 'text-primary' : 'text-body'}>
                       {option.label}
                     </span>
                     {isSelected && (
-                      <span className="ms-auto material-symbols-outlined notranslate fill text-primary" translate="no"
-                        style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      <span
+                        className="ms-auto material-symbols-outlined notranslate fill text-primary"
+                        translate="no"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        check_circle
+                      </span>
                     )}
                   </button>
                 );
@@ -154,17 +154,11 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
           <Button
             variant="primary"
             icon={isSubmitting ? undefined : "check_circle"}
-            onClick={() => handleAction('finish')}
+            onClick={handleFinish}
             className="w-100 py-3 rounded-pill fw-semibold shadow-sm"
-            disabled={q3 === null || isSubmitting}>
-            {isSubmitting ? "Enviando..." : "Finalizar Sesion"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleAction('new')}
-            className="w-100 py-3 rounded-pill fw-semibold"
-            disabled={isSubmitting}>
-            Nueva Sintonia
+            disabled={q3 === null || isSubmitting}
+          >
+            {isSubmitting ? "Enviando..." : "Finalizar Sesión"}
           </Button>
         </div>
       </main>
@@ -172,7 +166,10 @@ const FinalSurvey = ({ initialStress = 8, onAction, onNavigate, onSubmit }) => {
       {/* Modal Deseas Seguir en esta sesión */}
       {showSessionConfirm && (
         <div className="modal-backdrop-custom d-flex align-items-center justify-content-center">
-          <div className="bg-white p-4 rounded-4 shadow-lg border border-light-subtle text-center animate-fade-in-up" style={{ maxWidth: '400px', width: '90%', background: '#ffffff' }}>
+          <div
+            className="bg-white p-4 rounded-4 shadow-lg border border-light-subtle text-center animate-fade-in-up"
+            style={{ maxWidth: '400px', width: '90%', background: '#ffffff' }}
+          >
             <span className="material-symbols-outlined notranslate text-primary mb-3" translate="no" style={{ fontSize: '48px' }}>
               help_center
             </span>
